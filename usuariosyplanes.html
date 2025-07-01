@@ -91,6 +91,7 @@
 
   <h2>Usuarios y Planes</h2>
 
+  <!-- Bloque de estadísticas -->
   <div class="stats">
     <div class="stat-card"><h3>Últimos 15 minutos</h3><p id="stat15min">0</p></div>
     <div class="stat-card"><h3>Últimas 24 horas</h3><p id="stat24h">0</p></div>
@@ -99,6 +100,7 @@
     <div class="stat-card"><h3>Últimos 6 meses</h3><p id="stat6m">0</p></div>
   </div>
 
+  <!-- Tabla de usuarios -->
   <table>
     <thead>
       <tr>
@@ -112,7 +114,7 @@
       </tr>
     </thead>
     <tbody id="tablaUsuarios">
-      <!-- Datos dinámicos -->
+      <!-- Se cargan dinámicamente -->
     </tbody>
   </table>
 <script>
@@ -121,11 +123,10 @@
   const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI';
   const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-  // Estadísticas
+  // 🔢 Cargar estadísticas por rango de tiempo
   async function cargarEstadisticas() {
     const ahora = new Date();
-
-    const filtros = {
+    const rangos = {
       'stat15min': new Date(ahora.getTime() - 15 * 60 * 1000),
       'stat24h': new Date(ahora.getTime() - 24 * 60 * 60 * 1000),
       'stat7d': new Date(ahora.getTime() - 7 * 24 * 60 * 60 * 1000),
@@ -133,7 +134,7 @@
       'stat6m': new Date(ahora.getTime() - 180 * 24 * 60 * 60 * 1000)
     };
 
-    for (const [id, fecha] of Object.entries(filtros)) {
+    for (const [id, fecha] of Object.entries(rangos)) {
       const { count } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
@@ -143,12 +144,18 @@
     }
   }
 
-  // Cargar lista de usuarios
+  // 👥 Cargar usuarios y mostrarlos en tabla
   async function cargarUsuarios() {
-    const { data: usuarios } = await supabase
+    const { data: usuarios, error } = await supabase
       .from('profiles')
       .select('*')
       .order('created_at', { ascending: false });
+
+    if (error) {
+      alert('Error al cargar usuarios');
+      console.error(error);
+      return;
+    }
 
     const tabla = document.getElementById('tablaUsuarios');
     tabla.innerHTML = '';
@@ -156,7 +163,7 @@
     usuarios.forEach(u => {
       const fila = document.createElement('tr');
       fila.innerHTML = `
-        <td>${u.nombre || ''}</td>
+        <td>${u.nombres || ''} ${u.apellidos || ''}</td>
         <td>${u.email}</td>
         <td>${new Date(u.created_at).toLocaleDateString()}</td>
         <td>
@@ -168,44 +175,66 @@
           </select>
         </td>
         <td>
-          <input type="number" min="0" max="100" value="${u.porcentaje ?? 0}" onchange="actualizarPorcentaje('${u.id}', this.value)" style="width: 60px;" />
+          <input type="number" min="0" max="100" value="${u.porcentaje ?? 0}" 
+            onchange="actualizarPorcentaje('${u.id}', this.value)" style="width: 60px;" />
         </td>
         <td>${u.recarga_confirmada ? '✅ Confirmada' : '❌ Pendiente'}</td>
         <td>
-          <button onclick="confirmarRecarga('${u.id}')">Confirmar</button>
+          ${!u.recarga_confirmada 
+            ? `<button onclick="confirmarRecarga('${u.id}', ${u.monto_confirmado || 0})">Confirmar</button>`
+            : ''
+          }
         </td>
       `;
       tabla.appendChild(fila);
     });
   }
 
-  // Cambiar nivel
+  // 🔁 Actualizar nivel de inversión
   async function actualizarNivel(id, nivel) {
-    const { error } = await supabase.from('profiles').update({ nivel }).eq('id', id);
-    if (error) alert('Error al actualizar nivel');
-    else alert('Nivel actualizado');
+    const { error } = await supabase
+      .from('profiles')
+      .update({ nivel })
+      .eq('id', id);
+    if (error) alert('❌ Error al actualizar nivel');
+    else alert('✅ Nivel actualizado');
   }
 
-  // Cambiar porcentaje
+  // % Cambiar porcentaje de interés
   async function actualizarPorcentaje(id, porcentaje) {
     const valor = parseFloat(porcentaje);
-    if (isNaN(valor) || valor < 0 || valor > 100) return alert('Porcentaje inválido');
-    const { error } = await supabase.from('profiles').update({ porcentaje: valor }).eq('id', id);
-    if (error) alert('Error al actualizar porcentaje');
-    else alert('Porcentaje actualizado');
+    if (isNaN(valor) || valor < 0 || valor > 100) {
+      return alert('❌ Porcentaje inválido');
+    }
+    const { error } = await supabase
+      .from('profiles')
+      .update({ porcentaje: valor })
+      .eq('id', id);
+    if (error) alert('❌ Error al actualizar porcentaje');
+    else alert('✅ Porcentaje actualizado');
   }
 
-  // Confirmar recarga
-  async function confirmarRecarga(id) {
-    const { error } = await supabase.from('profiles').update({ recarga_confirmada: true }).eq('id', id);
-    if (error) alert('Error al confirmar recarga');
+  // ✅ Confirmar recarga y asignar nivel automáticamente según monto
+  async function confirmarRecarga(id, monto) {
+    let nivel = '';
+    if (monto >= 500000) nivel = 'Avanzado Pro';
+    else if (monto >= 100000) nivel = 'Avanzado';
+    else if (monto >= 50000) nivel = 'Medio';
+    else nivel = 'Básico';
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ recarga_confirmada: true, nivel })
+      .eq('id', id);
+
+    if (error) alert('❌ Error al confirmar recarga');
     else {
-      alert('Recarga confirmada');
-      cargarUsuarios(); // recargar tabla
+      alert('✅ Recarga confirmada y nivel asignado');
+      cargarUsuarios(); // Recargar la tabla
     }
   }
 
-  // Ejecutar al cargar
+  // ▶️ Ejecutar al iniciar
   cargarEstadisticas();
   cargarUsuarios();
 </script>
