@@ -19,6 +19,7 @@
 
     h2 {
       color: #2c3e50;
+      margin-bottom: 15px;
     }
 
     .stats {
@@ -35,6 +36,7 @@
       flex: 1;
       min-width: 200px;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      user-select: none;
     }
 
     .stat-card h3 {
@@ -62,6 +64,7 @@
       padding: 12px;
       text-align: left;
       border-bottom: 1px solid #ddd;
+      vertical-align: middle;
     }
 
     th {
@@ -80,16 +83,30 @@
       margin: 2px;
       border-radius: 4px;
       border: 1px solid #ccc;
+      font-size: 14px;
     }
 
     button {
       background-color: #3498db;
       color: white;
       cursor: pointer;
+      transition: background-color 0.3s;
     }
 
     button:hover {
       background-color: #2980b9;
+    }
+
+    /* Mensajes de estado */
+    #mensajeEstado {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #d1ecf1;
+      border: 1px solid #bee5eb;
+      color: #0c5460;
+      border-radius: 4px;
+      display: none;
+      user-select: none;
     }
   </style>
 </head>
@@ -137,12 +154,31 @@
       <!-- Se cargan dinámicamente -->
     </tbody>
   </table>
+
+  <!-- Mensaje para mostrar estado / errores -->
+  <div id="mensajeEstado"></div>
 <script>
   // Conexión a Supabase
   const supabaseUrl = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
   const supabaseKey =
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI';
   const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+  const mensajeEstado = document.getElementById('mensajeEstado');
+
+  // Mostrar mensaje con timeout
+  function mostrarMensaje(texto, esError = false) {
+    mensajeEstado.style.display = 'block';
+    mensajeEstado.textContent = texto;
+    mensajeEstado.style.backgroundColor = esError ? '#f8d7da' : '#d1ecf1';
+    mensajeEstado.style.color = esError ? '#721c24' : '#0c5460';
+
+    if (!esError) {
+      setTimeout(() => {
+        mensajeEstado.style.display = 'none';
+      }, 4000);
+    }
+  }
 
   // 🔢 Cargar estadísticas por rango de tiempo
   async function cargarEstadisticas() {
@@ -156,12 +192,17 @@
     };
 
     for (const [id, fecha] of Object.entries(rangos)) {
-      const { count } = await supabase
+      const { count, error } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', fecha.toISOString());
 
-      document.getElementById(id).textContent = count ?? 0;
+      if (error) {
+        console.error(`Error al cargar estadísticas (${id}):`, error);
+        document.getElementById(id).textContent = 'Error';
+      } else {
+        document.getElementById(id).textContent = count ?? 0;
+      }
     }
   }
 
@@ -173,7 +214,7 @@
       .order('created_at', { ascending: false });
 
     if (error) {
-      alert('Error al cargar usuarios');
+      mostrarMensaje('Error al cargar usuarios', true);
       console.error(error);
       return;
     }
@@ -235,19 +276,28 @@
   // 🔁 Actualizar nivel de inversión
   async function actualizarNivel(id, nivel) {
     const { error } = await supabase.from('profiles').update({ nivel }).eq('id', id);
-    if (error) alert('❌ Error al actualizar nivel');
-    else alert('✅ Nivel actualizado');
+    if (error) {
+      mostrarMensaje('❌ Error al actualizar nivel', true);
+      console.error(error);
+    } else {
+      mostrarMensaje('✅ Nivel actualizado');
+    }
   }
 
   // % Cambiar porcentaje de interés
   async function actualizarPorcentaje(id, porcentaje) {
     const valor = parseFloat(porcentaje);
     if (isNaN(valor) || valor < 0 || valor > 100) {
-      return alert('❌ Porcentaje inválido');
+      mostrarMensaje('❌ Porcentaje inválido', true);
+      return;
     }
     const { error } = await supabase.from('profiles').update({ porcentaje: valor }).eq('id', id);
-    if (error) alert('❌ Error al actualizar porcentaje');
-    else alert('✅ Porcentaje actualizado');
+    if (error) {
+      mostrarMensaje('❌ Error al actualizar porcentaje', true);
+      console.error(error);
+    } else {
+      mostrarMensaje('✅ Porcentaje actualizado');
+    }
   }
 
   // ✅ Confirmar recarga y asignar nivel automáticamente según monto
@@ -263,10 +313,12 @@
       .update({ recarga_confirmada: true, nivel })
       .eq('id', id);
 
-    if (error) alert('❌ Error al confirmar recarga');
-    else {
-      alert('✅ Recarga confirmada y nivel asignado');
-      cargarUsuarios(); // Recargar la tabla
+    if (error) {
+      mostrarMensaje('❌ Error al confirmar recarga', true);
+      console.error(error);
+    } else {
+      mostrarMensaje('✅ Recarga confirmada y nivel asignado');
+      cargarUsuarios(); // Recargar la tabla para actualizar la vista
     }
   }
 
