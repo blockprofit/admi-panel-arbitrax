@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Usuarios y Planes</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+  />
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -13,16 +16,19 @@
       margin: 0;
       padding: 20px;
     }
+
     h2 {
       color: #2c3e50;
       margin-bottom: 15px;
     }
+
     .stats {
       display: flex;
       flex-wrap: wrap;
       gap: 15px;
       margin-bottom: 20px;
     }
+
     .stat-card {
       background: white;
       border-left: 5px solid #3498db;
@@ -32,16 +38,19 @@
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
       user-select: none;
     }
+
     .stat-card h3 {
       margin: 0;
       font-size: 16px;
       color: #34495e;
     }
+
     .stat-card p {
       font-size: 20px;
       font-weight: bold;
       margin: 5px 0 0;
     }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -49,35 +58,45 @@
       margin-top: 20px;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
-    th, td {
+
+    th,
+    td {
       padding: 12px;
       text-align: left;
       border-bottom: 1px solid #ddd;
       vertical-align: middle;
     }
+
     th {
       background-color: #2980b9;
       color: white;
     }
+
     tr:hover {
       background-color: #f1f1f1;
     }
-    select, button, input {
+
+    select,
+    button,
+    input {
       padding: 6px 10px;
       margin: 2px;
       border-radius: 4px;
       border: 1px solid #ccc;
       font-size: 14px;
     }
+
     button {
       background-color: #3498db;
       color: white;
       cursor: pointer;
       transition: background-color 0.3s;
     }
+
     button:hover {
       background-color: #2980b9;
     }
+
     #mensajeEstado {
       margin-top: 10px;
       padding: 10px;
@@ -118,166 +137,177 @@
 
   <div id="mensajeEstado"></div>
 
-<script>
-  const supabaseUrl = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
-  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; // reemplazar por tu clave real
-  const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Inicialización de Supabase
+      const supabaseUrl = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
+      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI';
+      const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-  const mensajeEstado = document.getElementById('mensajeEstado');
+      const mensajeEstado = document.getElementById('mensajeEstado');
 
-  function mostrarMensaje(texto, esError = false) {
-    mensajeEstado.style.display = 'block';
-    mensajeEstado.textContent = texto;
-    mensajeEstado.style.backgroundColor = esError ? '#f8d7da' : '#d1ecf1';
-    mensajeEstado.style.color = esError ? '#721c24' : '#0c5460';
-    if (!esError) {
-      setTimeout(() => { mensajeEstado.style.display = 'none'; }, 4000);
-    }
-  }
-
-  async function cargarEstadisticas() {
-    const ahora = new Date();
-    const rangos = {
-      stat15min: new Date(ahora.getTime() - 15 * 60 * 1000),
-      stat24h: new Date(ahora.getTime() - 24 * 60 * 60 * 1000),
-      stat7d: new Date(ahora.getTime() - 7 * 24 * 60 * 60 * 1000),
-      stat30d: new Date(ahora.getTime() - 30 * 24 * 60 * 60 * 1000),
-      stat6m: new Date(ahora.getTime() - 180 * 24 * 60 * 60 * 1000),
-    };
-
-    for (const [id, fecha] of Object.entries(rangos)) {
-      const { count, error } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', fecha.toISOString());
-
-      if (error) {
-        console.error(`Error al cargar ${id}:`, error);
-        document.getElementById(id).textContent = 'Error';
-      } else {
-        document.getElementById(id).textContent = count ?? 0;
+      function mostrarMensaje(texto, esError = false) {
+        mensajeEstado.style.display = 'block';
+        mensajeEstado.textContent = texto;
+        mensajeEstado.style.backgroundColor = esError ? '#f8d7da' : '#d1ecf1';
+        mensajeEstado.style.color = esError ? '#721c24' : '#0c5460';
+        if (!esError) {
+          setTimeout(() => { mensajeEstado.style.display = 'none'; }, 4000);
+        }
       }
-    }
-  }
-async function cargarUsuarios() {
-    const { data: usuarios, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
 
-    if (error) {
-      mostrarMensaje('Error al cargar usuarios', true);
-      console.error(error);
-      return;
-    }
+      async function cargarEstadisticas() {
+        const ahora = new Date();
+        const rangos = {
+          stat15min: new Date(ahora.getTime() - 15 * 60 * 1000),
+          stat24h: new Date(ahora.getTime() - 24 * 60 * 60 * 1000),
+          stat7d: new Date(ahora.getTime() - 7 * 24 * 60 * 60 * 1000),
+          stat30d: new Date(ahora.getTime() - 30 * 24 * 60 * 60 * 1000),
+          stat6m: new Date(ahora.getTime() - 180 * 24 * 60 * 60 * 1000),
+        };
 
-    const tabla = document.getElementById('tablaUsuarios');
-    tabla.innerHTML = '';
+        for (const [id, fecha] of Object.entries(rangos)) {
+          const { count, error } = await supabase
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .gte('created_at', fecha.toISOString());
 
-    usuarios.forEach((u) => {
-      const fila = document.createElement('tr');
-      fila.innerHTML = `
-        <td>${(u.nombre ?? '')} ${(u.apellido ?? '')}</td>
-        <td>${u.email ?? ''}</td>
-        <td>${u.created_at ? new Date(u.created_at).toLocaleDateString() : 'Sin fecha'}</td>
-        <td>
-          <select onchange="actualizarNivel('${u.id}', this.value)">
-            <option value="Básico" ${u.nivel === 'Básico' ? 'selected' : ''}>Básico</option>
-            <option value="Medio" ${u.nivel === 'Medio' ? 'selected' : ''}>Medio</option>
-            <option value="Avanzado" ${u.nivel === 'Avanzado' ? 'selected' : ''}>Avanzado</option>
-            <option value="Avanzado Pro" ${u.nivel === 'Avanzado Pro' ? 'selected' : ''}>Avanzado Pro</option>
-          </select>
-        </td>
-        <td><input type="number" min="0" max="100" value="${u.porcentaje ?? 0}" onchange="actualizarPorcentaje('${u.id}', this.value)" style="width: 60px;" /></td>
-        <td>${u.recarga_confirmada ? '✅ Confirmada' : '❌ Pendiente'}</td>
-        <td>
-          ${
-            !u.recarga_confirmada
-              ? `<button onclick="confirmarRecarga('${u.id}', ${u.monto_confirmado ?? 0})">Confirmar</button>`
-              : ''
+          if (error) {
+            console.error(`Error al cargar ${id}:`, error);
+            document.getElementById(id).textContent = 'Error';
+          } else {
+            document.getElementById(id).textContent = count ?? 0;
           }
-        </td>
-      `;
-      tabla.appendChild(fila);
+        }
+      }
+
+      async function cargarUsuarios() {
+        const { data: usuarios, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          mostrarMensaje('Error al cargar usuarios', true);
+          console.error(error);
+          return;
+        }
+
+        const tabla = document.getElementById('tablaUsuarios');
+        tabla.innerHTML = '';
+
+        usuarios.forEach((u) => {
+          const fila = document.createElement('tr');
+          fila.innerHTML = `
+            <td>${(u.nombre ?? '')} ${(u.apellido ?? '')}</td>
+            <td>${u.email ?? ''}</td>
+            <td>${u.created_at ? new Date(u.created_at).toLocaleDateString() : 'Sin fecha'}</td>
+            <td>
+              <select onchange="actualizarNivel('${u.id}', this.value)">
+                <option value="Básico" ${u.nivel === 'Básico' ? 'selected' : ''}>Básico</option>
+                <option value="Medio" ${u.nivel === 'Medio' ? 'selected' : ''}>Medio</option>
+                <option value="Avanzado" ${u.nivel === 'Avanzado' ? 'selected' : ''}>Avanzado</option>
+                <option value="Avanzado Pro" ${u.nivel === 'Avanzado Pro' ? 'selected' : ''}>Avanzado Pro</option>
+              </select>
+            </td>
+            <td><input type="number" min="0" max="100" value="${u.porcentaje ?? 0}" onchange="actualizarPorcentaje('${u.id}', this.value)" style="width: 60px;" /></td>
+            <td>${u.recarga_confirmada ? '✅ Confirmada' : '❌ Pendiente'}</td>
+            <td>
+              ${
+                !u.recarga_confirmada
+                  ? `<button onclick="confirmarRecarga('${u.id}', ${u.monto_confirmado ?? 0})">Confirmar</button>`
+                  : ''
+              }
+            </td>
+          `;
+          tabla.appendChild(fila);
+        });
+      }
+// Actualizar nivel de inversión
+      window.actualizarNivel = async function (id, nivel) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ nivel })
+          .eq('id', id);
+
+        if (error) {
+          mostrarMensaje('❌ Error al actualizar nivel', true);
+          console.error(error);
+        } else {
+          mostrarMensaje('✅ Nivel actualizado correctamente');
+        }
+      };
+
+      // Actualizar porcentaje de interés
+      window.actualizarPorcentaje = async function (id, porcentaje) {
+        const valor = parseFloat(porcentaje);
+        if (isNaN(valor) || valor < 0 || valor > 100) {
+          mostrarMensaje('❌ Porcentaje inválido (0-100)', true);
+          return;
+        }
+
+        const { error } = await supabase
+          .from('profiles')
+          .update({ porcentaje: valor })
+          .eq('id', id);
+
+        if (error) {
+          mostrarMensaje('❌ Error al actualizar porcentaje', true);
+          console.error(error);
+        } else {
+          mostrarMensaje('✅ Porcentaje actualizado');
+        }
+      };
+
+      // Confirmar recarga y asignar nivel automáticamente
+      window.confirmarRecarga = async function (id, monto) {
+        let nivel = '';
+        if (monto >= 500000) nivel = 'Avanzado Pro';
+        else if (monto >= 100000) nivel = 'Avanzado';
+        else if (monto >= 50000) nivel = 'Medio';
+        else nivel = 'Básico';
+
+        const { error } = await supabase
+          .from('profiles')
+          .update({ recarga_confirmada: true, nivel })
+          .eq('id', id);
+
+        if (error) {
+          mostrarMensaje('❌ Error al confirmar recarga', true);
+          console.error(error);
+        } else {
+          mostrarMensaje('✅ Recarga confirmada y nivel asignado');
+          cargarUsuarios(); // Refrescar tabla
+        }
+      };
+
+      // Validar sesión administrador e iniciar carga de datos
+      async function iniciar() {
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
+
+        if (error) {
+          console.error('Error al obtener sesión:', error);
+          alert('Error al verificar la sesión.');
+          window.location.href = 'principal.html';
+          return;
+        }
+
+        if (!session || session.user.email !== 'arbitrax9@gmail.com') {
+          alert('Acceso restringido. Solo el administrador puede ingresar.');
+          window.location.href = 'principal.html';
+          return;
+        }
+
+        await cargarEstadisticas();
+        await cargarUsuarios();
+      }
+
+      // Ejecutar función iniciar al cargar la página
+      iniciar();
     });
-  }
-
-  async function actualizarNivel(id, nivel) {
-    const { error } = await supabase
-      .from('profiles')
-      .update({ nivel })
-      .eq('id', id);
-
-    if (error) {
-      mostrarMensaje('❌ Error al actualizar nivel', true);
-      console.error(error);
-    } else {
-      mostrarMensaje('✅ Nivel actualizado correctamente');
-    }
-  }
-
-  async function actualizarPorcentaje(id, porcentaje) {
-    const valor = parseFloat(porcentaje);
-    if (isNaN(valor) || valor < 0 || valor > 100) {
-      mostrarMensaje('❌ Porcentaje inválido (0-100)', true);
-      return;
-    }
-
-    const { error } = await supabase
-      .from('profiles')
-      .update({ porcentaje: valor })
-      .eq('id', id);
-
-    if (error) {
-      mostrarMensaje('❌ Error al actualizar porcentaje', true);
-      console.error(error);
-    } else {
-      mostrarMensaje('✅ Porcentaje actualizado');
-    }
-  }
-
-  async function confirmarRecarga(id, monto) {
-    let nivel = '';
-    if (monto >= 500000) nivel = 'Avanzado Pro';
-    else if (monto >= 100000) nivel = 'Avanzado';
-    else if (monto >= 50000) nivel = 'Medio';
-    else nivel = 'Básico';
-
-    const { error } = await supabase
-      .from('profiles')
-      .update({ recarga_confirmada: true, nivel })
-      .eq('id', id);
-
-    if (error) {
-      mostrarMensaje('❌ Error al confirmar recarga', true);
-      console.error(error);
-    } else {
-      mostrarMensaje('✅ Recarga confirmada y nivel asignado');
-      cargarUsuarios();
-    }
-  }
-
-  async function iniciar() {
-    const { data: { session }, error } = await supabase.auth.getSession();
-
-    if (error) {
-      console.error('Error al obtener sesión:', error);
-      alert('Error al verificar la sesión.');
-      window.location.href = 'principal.html';
-      return;
-    }
-
-    if (!session || session.user.email !== 'arbitrax9@gmail.com') {
-      alert('Acceso restringido. Solo el administrador puede ingresar.');
-      window.location.href = 'principal.html';
-      return;
-    }
-
-    await cargarEstadisticas();
-    await cargarUsuarios();
-  }
-
-  iniciar();
-</script>
+  </script>
 </body>
 </html>
