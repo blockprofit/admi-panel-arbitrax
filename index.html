@@ -1,0 +1,124 @@
+<!-- admin-login.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Panel Admin - Login</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-image: url('imageniniciodesesionadmi.jpeg');
+      background-size: cover;
+      background-position: center;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .login-container {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      padding: 40px 30px;
+      max-width: 400px;
+      width: 90%;
+      color: white;
+    }
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    input {
+      background: rgba(255,255,255,0.85);
+      color: #000;
+    }
+    button {
+      background: #00a8ff;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    p#error {
+      color: red;
+      margin-top: 10px;
+    }
+    #registerAdminBtn {
+      background-color: #28a745;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <h2>Acceso Administrador</h2>
+    <input type="email" id="loginEmail" placeholder="Correo del administrador" />
+    <input type="password" id="loginPass" placeholder="Contraseña" />
+    <button onclick="adminLogin()">Entrar</button>
+    <button id="registerAdminBtn" onclick="registrarAdmin()">Registrar Admin</button>
+    <p id="error"></p>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI';
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function adminLogin() {
+      const email = document.getElementById("loginEmail").value.trim();
+      const pass = document.getElementById("loginPass").value;
+      const errorBox = document.getElementById("error");
+      errorBox.textContent = '';
+
+      // Solo permite login del correo exacto del admin
+      if (email !== "arbitrax9@gmail.com") {
+        errorBox.textContent = "Correo no autorizado.";
+        return;
+      }
+
+      const { error } = await client.auth.signInWithPassword({ email, password: pass });
+      if (error) {
+        errorBox.textContent = "Credenciales inválidas.";
+      } else {
+        window.location.href = "principal.html";
+      }
+    }
+
+    // Solo se ejecuta una vez para registrar al admin
+    async function registrarAdmin() {
+      const email = "arbitrax9@gmail.com";
+      const password = "Osuna123";
+      const errorBox = document.getElementById("error");
+
+      const { data, error } = await client.auth.signUp({
+        email,
+        password
+      });
+
+      if (error) {
+        errorBox.textContent = "Error al registrar: " + error.message;
+        return;
+      }
+
+      // Inserta el rol en la tabla 'roles'
+      const { data: rolData, error: rolError } = await client.from("roles").insert([
+        { user_id: data.user.id, role: "admin" }
+      ]);
+
+      if (rolError) {
+        errorBox.textContent = "Registrado pero error al guardar rol: " + rolError.message;
+      } else {
+        errorBox.style.color = "green";
+        errorBox.textContent = "Administrador registrado correctamente.";
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Recargas</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      color: #fff;
+      background: transparent;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h2, h3 {
+      color: #ffffff;
+    }
+
+    .dashboard-cards {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 30px;
+    }
+
+    .card {
+      flex: 1;
+      min-width: 250px;
+      background: rgba(0, 0, 0, 0.3);
+      border-left: 5px solid #3498db;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    }
+
+    .card h3 {
+      margin: 0 0 10px;
+    }
+
+    form {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 500px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    input {
+      width: 100%;
+      margin: 10px 0;
+      padding: 10px;
+      border: none;
+      border-radius: 4px;
+    }
+
+    button {
+      background: #3498db;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #2980b9;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      text-align: left;
+    }
+
+    th {
+      background-color: rgba(52, 152, 219, 0.2);
+    }
+
+    tr:hover {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+  </style>
+</head>
+<body>
+
+  <h2>💰 Gestión de Recargas</h2>
+
+  <!-- RESUMEN DE INGRESOS -->
+  <div class="dashboard-cards">
+    <div class="card">
+      <h3>Ingresos hoy</h3>
+      <p id="ingresoDia">Cargando...</p>
+    </div>
+    <div class="card">
+      <h3>Ingresos esta semana</h3>
+      <p id="ingresoSemana">Cargando...</p>
+    </div>
+    <div class="card">
+      <h3>Ingresos este mes</h3>
+      <p id="ingresoMes">Cargando...</p>
+    </div>
+  </div>
+
+  <!-- CONFIGURACIÓN DE CBU Y USDT -->
+  <form id="formBanco">
+    <h3>🏦 Datos bancarios</h3>
+    <input type="text" id="inputCBU" placeholder="CBU" required />
+    <input type="text" id="inputUSDT" placeholder="Dirección USDT" required />
+    <button type="submit">💾 Guardar CBU y USDT</button>
+  </form>
+
+  <!-- LISTADO DE RECARGAS -->
+  <div style="margin-top: 40px;">
+    <h3>📋 Recargas pendientes</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Monto</th>
+          <th>Fecha</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody id="tablaRecargas"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const supabase = supabase.createClient("https://YOUR_PROJECT.supabase.co", "YOUR_PUBLIC_ANON_KEY");
+
+    async function cargarResumen() {
+      const hoy = new Date();
+      const desdeHoy = new Date(hoy);
+      desdeHoy.setHours(0,0,0,0);
+      const desdeSemana = new Date(hoy);
+      desdeSemana.setDate(hoy.getDate() - 7);
+      const desdeMes = new Date(hoy);
+      desdeMes.setDate(hoy.getDate() - 30);
+
+      const { data: recargas, error } = await supabase.from('recargas').select('*').eq('confirmado', true);
+      if (error) return;
+
+      const suma = (desde) => recargas
+        .filter(r => new Date(r.created_at) >= desde)
+        .reduce((acc, r) => acc + r.monto, 0);
+
+      document.getElementById('ingresoDia').textContent = "$" + suma(desdeHoy).toFixed(2);
+      document.getElementById('ingresoSemana').textContent = "$" + suma(desdeSemana).toFixed(2);
+      document.getElementById('ingresoMes').textContent = "$" + suma(desdeMes).toFixed(2);
+    }
+
+    async function cargarBanco() {
+      const { data, error } = await supabase.from('config_banco').select('*').eq('id', 1).single();
+      if (data) {
+        document.getElementById('inputCBU').value = data.cbu;
+        document.getElementById('inputUSDT').value = data.usdt;
+      }
+    }
+
+    document.getElementById('formBanco').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const cbu = document.getElementById('inputCBU').value;
+      const usdt = document.getElementById('inputUSDT').value;
+
+      const { error } = await supabase.from('config_banco').upsert([{ id: 1, cbu, usdt }]);
+      if (!error) alert('Datos guardados correctamente');
+      else alert('Error al guardar: ' + error.message);
+    });
+
+    async function cargarRecargas() {
+      const { data, error } = await supabase.from('recargas').select('*').eq('confirmado', false);
+      const tbody = document.getElementById('tablaRecargas');
+      tbody.innerHTML = '';
+      data.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${r.email}</td>
+          <td>$${r.monto}</td>
+          <td>${new Date(r.created_at).toLocaleString()}</td>
+          <td><button onclick="confirmarRecarga('${r.email}', ${r.monto}, ${r.id})">✅ Confirmar</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function confirmarRecarga(email, monto, idRecarga) {
+      let nivel = "Básico";
+      if (monto >= 1000 && monto < 5000) nivel = "Medio";
+      else if (monto >= 5000 && monto < 10000) nivel = "Avanzado";
+      else if (monto >= 10000) nivel = "Avanzado Pro";
+
+      const { error: err1 } = await supabase.from('recargas').update({ confirmado: true }).eq('id', idRecarga);
+      const { error: err2 } = await supabase.from('profiles').update({ nivel, monto_confirmado: monto }).eq('email', email);
+      if (!err1 && !err2) {
+        alert("Recarga confirmada correctamente.");
+        cargarRecargas();
+        cargarResumen();
+      } else {
+        alert("Error al confirmar.");
+      }
+    }
+
+    cargarResumen();
+    cargarBanco();
+    cargarRecargas();
+  </script>
+</body>
+</html>

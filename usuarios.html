@@ -1,0 +1,280 @@
+<!-- ESTILOS --><style>
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: url('fondo-panel.jpg') no-repeat center center fixed;
+    background-size: cover;
+    color: #fff;
+    margin: 0;
+    padding: 20px;
+  }
+
+  .section {
+    padding: 20px;
+    margin-bottom: 30px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  }
+
+  .section h2 {
+    font-size: 28px;
+    margin-bottom: 20px;
+    color: #00c6ff;
+  }
+
+  .dashboard-cards {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .card {
+    flex: 1;
+    min-width: 250px;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 20px;
+    border-radius: 15px;
+    color: white;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    border-left: 5px solid #1abc9c;
+  }
+
+  .card h3 {
+    font-size: 18px;
+    margin-bottom: 10px;
+  }
+
+  .card p {
+    font-size: 36px;
+    font-weight: bold;
+  }
+
+  form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
+  form .card {
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    box-shadow: none;
+  }
+
+  form .card:nth-child(1) { border-left: 5px solid #3498db; }
+  form .card:nth-child(2) { border-left: 5px solid #e67e22; }
+  form .card:nth-child(3) { border-left: 5px solid #9b59b6; }
+  form .card:nth-child(4) { border-left: 5px solid #e74c3c; }
+
+  select {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    border-radius: 6px;
+    border: none;
+    background-color: #fff;
+    color: #333;
+  }
+
+  select:disabled {
+    background-color: #ccc;
+    color: #666;
+  }
+
+  button[type="submit"] {
+    width: 100%;
+    padding: 15px;
+    margin-top: 20px;
+    background: linear-gradient(to right, #00c6ff, #0072ff);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    transition: opacity 0.3s ease;
+  }
+
+  button[type="submit"]:hover {
+    opacity: 0.9;
+  }
+
+  .tabla-usuarios {
+    width: 100%;
+    border-collapse: collapse;
+    color: white;
+    font-size: 16px;
+    margin-top: 20px;
+  }
+
+  .tabla-usuarios thead {
+    background-color: rgba(0, 0, 0, 0.4);
+  }
+
+  .tabla-usuarios th,
+  .tabla-usuarios td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .tabla-usuarios tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.07);
+  }
+
+  .btn-accion {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    color: white;
+    background-color: #3498db;
+    transition: background 0.3s ease;
+  }
+
+  .btn-accion:hover {
+    background-color: #2980b9;
+  }
+</style><!-- PERFIL --><div id="perfil" class="section">
+  <h2>👤 Perfil del Administrador</h2>
+  <div class="dashboard-cards">
+    <div class="card">
+      <h3>Total de usuarios registrados</h3>
+      <p id="totalUsuarios">Cargando...</p>
+    </div>
+  </div>
+</div><!-- PLANES DE INVERSIÓN --><div id="planes" class="section">
+  <h2>📈 Configuración de Planes de Inversión</h2>
+  <form id="formPlanes">
+    <div class="card">
+      <h3>Plan Básico</h3>
+      <label for="interesBasico">Interés semanal:</label>
+      <select id="interesBasico">
+        <option value="5">5%</option>
+        <option value="10">10%</option>
+        <option value="15">15%</option>
+      </select>
+    </div>
+    <div class="card">
+      <h3>Plan Medio</h3>
+      <label for="interesMedio">Interés semanal:</label>
+      <select id="interesMedio">
+        <option value="10">10%</option>
+        <option value="15">15%</option>
+      </select>
+    </div>
+    <div class="card">
+      <h3>Plan Avanzado</h3>
+      <label for="interesAvanzado">Interés semanal:</label>
+      <select id="interesAvanzado" disabled>
+        <option value="15">15%</option>
+      </select>
+    </div>
+    <div class="card">
+      <h3>Plan Avanzado Pro</h3>
+      <label for="interesAvanzadoPro">Interés semanal:</label>
+      <select id="interesAvanzadoPro" disabled>
+        <option value="15">15%</option>
+      </select>
+    </div>
+    <button type="submit">📂 Guardar Configuración</button>
+  </form>
+</div><!-- USUARIOS REGISTRADOS --><div id="usuarios" class="section">
+  <h2>🧑‍💻 Lista de Usuarios Registrados</h2>
+  <table class="tabla-usuarios">
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Email</th>
+        <th>Fecha de Registro</th>
+        <th>Nivel de Inversión</th>
+      </tr>
+    </thead>
+    <tbody id="tablaUsuarios">
+      <tr><td colspan="4">Cargando usuarios...</td></tr>
+    </tbody>
+  </table>
+</div><script type="module">
+  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+  const supabaseUrl = "https://ovulezkcxwrjvyxlxsdv.supabase.co";
+  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI";
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
+  async function cargarTotalUsuarios() {
+    const { count, error } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true });
+    document.getElementById('totalUsuarios').textContent = error ? "Error" : count;
+  }
+
+  async function cargarUsuarios() {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    const tabla = document.getElementById('tablaUsuarios');
+    tabla.innerHTML = '';
+
+    if (error || !data || data.length === 0) {
+      tabla.innerHTML = '<tr><td colspan="4">No hay usuarios registrados.</td></tr>';
+      return;
+    }
+
+    data.forEach(usuario => {
+      const tr = document.createElement('tr');
+      const nombre = usuario.nombre || usuario.username || 'Sin nombre';
+      const email = usuario.email || 'Sin email';
+      const fecha = new Date(usuario.created_at).toLocaleDateString();
+      const nivel = usuario.nivel_inversion || 'Básico';
+      tr.innerHTML = `
+        <td>${nombre}</td>
+        <td>${email}</td>
+        <td>${fecha}</td>
+        <td>
+          <select onchange="actualizarNivel('${usuario.id}', this.value)">
+            <option value="Basico" ${nivel === 'Basico' ? 'selected' : ''}>Básico</option>
+            <option value="Medio" ${nivel === 'Medio' ? 'selected' : ''}>Medio</option>
+            <option value="Avanzado" ${nivel === 'Avanzado' ? 'selected' : ''}>Avanzado</option>
+            <option value="Avanzado Pro" ${nivel === 'Avanzado Pro' ? 'selected' : ''}>Avanzado Pro</option>
+          </select>
+        </td>
+      `;
+      tabla.appendChild(tr);
+    });
+  }
+
+  window.actualizarNivel = async (id, nuevoNivel) => {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ nivel_inversion: nuevoNivel })
+      .eq('id', id);
+
+    if (!error) {
+      alert("Nivel de inversión actualizado correctamente");
+    } else {
+      alert("Error al actualizar nivel: " + error.message);
+    }
+  };
+
+  document.getElementById('formPlanes').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const valores = {
+      id: 1,
+      basico: parseInt(document.getElementById('interesBasico').value),
+      medio: parseInt(document.getElementById('interesMedio').value),
+      avanzado: 15,
+      avanzadoPro: 15
+    };
+    const { error } = await supabase.from('config_planes').upsert([valores]);
+    if (!error) alert("Configuración guardada correctamente");
+    else alert("Error al guardar: " + error.message);
+  });
+
+  cargarTotalUsuarios();
+  cargarUsuarios();
+</script>
