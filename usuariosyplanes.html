@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Usuarios y Planes</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+  />
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -31,7 +34,7 @@
       padding: 15px;
       flex: 1;
       min-width: 200px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
 
     .stat-card h3 {
@@ -51,10 +54,11 @@
       border-collapse: collapse;
       background: white;
       margin-top: 20px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
 
-    th, td {
+    th,
+    td {
       padding: 12px;
       text-align: left;
       border-bottom: 1px solid #ddd;
@@ -69,7 +73,9 @@
       background-color: #f1f1f1;
     }
 
-    select, button, input {
+    select,
+    button,
+    input {
       padding: 6px 10px;
       margin: 2px;
       border-radius: 4px;
@@ -88,16 +94,30 @@
   </style>
 </head>
 <body>
-
   <h2>Usuarios y Planes</h2>
 
   <!-- Bloque de estadísticas -->
   <div class="stats">
-    <div class="stat-card"><h3>Últimos 15 minutos</h3><p id="stat15min">0</p></div>
-    <div class="stat-card"><h3>Últimas 24 horas</h3><p id="stat24h">0</p></div>
-    <div class="stat-card"><h3>Últimos 7 días</h3><p id="stat7d">0</p></div>
-    <div class="stat-card"><h3>Último mes</h3><p id="stat30d">0</p></div>
-    <div class="stat-card"><h3>Últimos 6 meses</h3><p id="stat6m">0</p></div>
+    <div class="stat-card">
+      <h3>Últimos 15 minutos</h3>
+      <p id="stat15min">0</p>
+    </div>
+    <div class="stat-card">
+      <h3>Últimas 24 horas</h3>
+      <p id="stat24h">0</p>
+    </div>
+    <div class="stat-card">
+      <h3>Últimos 7 días</h3>
+      <p id="stat7d">0</p>
+    </div>
+    <div class="stat-card">
+      <h3>Último mes</h3>
+      <p id="stat30d">0</p>
+    </div>
+    <div class="stat-card">
+      <h3>Últimos 6 meses</h3>
+      <p id="stat6m">0</p>
+    </div>
   </div>
 
   <!-- Tabla de usuarios -->
@@ -120,18 +140,19 @@
 <script>
   // Conexión a Supabase
   const supabaseUrl = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
-  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI';
+  const supabaseKey =
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI';
   const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
   // 🔢 Cargar estadísticas por rango de tiempo
   async function cargarEstadisticas() {
     const ahora = new Date();
     const rangos = {
-      'stat15min': new Date(ahora.getTime() - 15 * 60 * 1000),
-      'stat24h': new Date(ahora.getTime() - 24 * 60 * 60 * 1000),
-      'stat7d': new Date(ahora.getTime() - 7 * 24 * 60 * 60 * 1000),
-      'stat30d': new Date(ahora.getTime() - 30 * 24 * 60 * 60 * 1000),
-      'stat6m': new Date(ahora.getTime() - 180 * 24 * 60 * 60 * 1000)
+      stat15min: new Date(ahora.getTime() - 15 * 60 * 1000),
+      stat24h: new Date(ahora.getTime() - 24 * 60 * 60 * 1000),
+      stat7d: new Date(ahora.getTime() - 7 * 24 * 60 * 60 * 1000),
+      stat30d: new Date(ahora.getTime() - 30 * 24 * 60 * 60 * 1000),
+      stat6m: new Date(ahora.getTime() - 180 * 24 * 60 * 60 * 1000),
     };
 
     for (const [id, fecha] of Object.entries(rangos)) {
@@ -160,29 +181,50 @@
     const tabla = document.getElementById('tablaUsuarios');
     tabla.innerHTML = '';
 
-    usuarios.forEach(u => {
+    usuarios.forEach((u) => {
       const fila = document.createElement('tr');
       fila.innerHTML = `
-        <td>${u.nombres || ''} ${u.apellidos || ''}</td>
-        <td>${u.email}</td>
-        <td>${new Date(u.created_at).toLocaleDateString()}</td>
+        <td>${(u.nombres ?? '') + ' ' + (u.apellidos ?? '')}</td>
+        <td>${u.email ?? ''}</td>
+        <td>${
+          u.created_at
+            ? new Date(u.created_at).toLocaleDateString()
+            : 'Fecha no disponible'
+        }</td>
         <td>
           <select onchange="actualizarNivel('${u.id}', this.value)">
-            <option value="Básico" ${u.nivel === 'Básico' ? 'selected' : ''}>Básico</option>
-            <option value="Medio" ${u.nivel === 'Medio' ? 'selected' : ''}>Medio</option>
-            <option value="Avanzado" ${u.nivel === 'Avanzado' ? 'selected' : ''}>Avanzado</option>
-            <option value="Avanzado Pro" ${u.nivel === 'Avanzado Pro' ? 'selected' : ''}>Avanzado Pro</option>
+            <option value="Básico" ${
+              u.nivel === 'Básico' ? 'selected' : ''
+            }>Básico</option>
+            <option value="Medio" ${u.nivel === 'Medio' ? 'selected' : ''}>
+              Medio
+            </option>
+            <option value="Avanzado" ${
+              u.nivel === 'Avanzado' ? 'selected' : ''
+            }>Avanzado</option>
+            <option value="Avanzado Pro" ${
+              u.nivel === 'Avanzado Pro' ? 'selected' : ''
+            }>Avanzado Pro</option>
           </select>
         </td>
         <td>
-          <input type="number" min="0" max="100" value="${u.porcentaje ?? 0}" 
-            onchange="actualizarPorcentaje('${u.id}', this.value)" style="width: 60px;" />
+          <input
+            type="number"
+            min="0"
+            max="100"
+            value="${u.porcentaje ?? 0}"
+            onchange="actualizarPorcentaje('${u.id}', this.value)"
+            style="width: 60px;"
+          />
         </td>
         <td>${u.recarga_confirmada ? '✅ Confirmada' : '❌ Pendiente'}</td>
         <td>
-          ${!u.recarga_confirmada 
-            ? `<button onclick="confirmarRecarga('${u.id}', ${u.monto_confirmado || 0})">Confirmar</button>`
-            : ''
+          ${
+            !u.recarga_confirmada
+              ? `<button onclick="confirmarRecarga('${u.id}', ${
+                  u.monto_confirmado ?? 0
+                })">Confirmar</button>`
+              : ''
           }
         </td>
       `;
@@ -192,10 +234,7 @@
 
   // 🔁 Actualizar nivel de inversión
   async function actualizarNivel(id, nivel) {
-    const { error } = await supabase
-      .from('profiles')
-      .update({ nivel })
-      .eq('id', id);
+    const { error } = await supabase.from('profiles').update({ nivel }).eq('id', id);
     if (error) alert('❌ Error al actualizar nivel');
     else alert('✅ Nivel actualizado');
   }
@@ -206,10 +245,7 @@
     if (isNaN(valor) || valor < 0 || valor > 100) {
       return alert('❌ Porcentaje inválido');
     }
-    const { error } = await supabase
-      .from('profiles')
-      .update({ porcentaje: valor })
-      .eq('id', id);
+    const { error } = await supabase.from('profiles').update({ porcentaje: valor }).eq('id', id);
     if (error) alert('❌ Error al actualizar porcentaje');
     else alert('✅ Porcentaje actualizado');
   }
