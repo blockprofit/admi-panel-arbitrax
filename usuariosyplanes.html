@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Usuarios y Planes</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h2 {
+      color: #2c3e50;
+    }
+
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: white;
+      border-left: 5px solid #3498db;
+      padding: 15px;
+      flex: 1;
+      min-width: 200px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .stat-card h3 {
+      margin: 0;
+      font-size: 16px;
+      color: #34495e;
+    }
+
+    .stat-card p {
+      font-size: 20px;
+      font-weight: bold;
+      margin: 5px 0 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      margin-top: 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+
+    th {
+      background-color: #2980b9;
+      color: white;
+    }
+
+    tr:hover {
+      background-color: #f1f1f1;
+    }
+
+    select, button, input {
+      padding: 6px 10px;
+      margin: 2px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      background-color: #3498db;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Usuarios y Planes</h2>
+
+  <div class="stats">
+    <div class="stat-card"><h3>Últimos 15 minutos</h3><p id="stat15min">0</p></div>
+    <div class="stat-card"><h3>Últimas 24 horas</h3><p id="stat24h">0</p></div>
+    <div class="stat-card"><h3>Últimos 7 días</h3><p id="stat7d">0</p></div>
+    <div class="stat-card"><h3>Último mes</h3><p id="stat30d">0</p></div>
+    <div class="stat-card"><h3>Últimos 6 meses</h3><p id="stat6m">0</p></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Email</th>
+        <th>Fecha</th>
+        <th>Nivel</th>
+        <th>% Interés</th>
+        <th>Recarga</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody id="tablaUsuarios">
+      <!-- Datos dinámicos -->
+    </tbody>
+  </table>
+<script>
+  // Conexión a Supabase
+  const supabaseUrl = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
+  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI';
+  const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+  // Estadísticas
+  async function cargarEstadisticas() {
+    const ahora = new Date();
+
+    const filtros = {
+      'stat15min': new Date(ahora.getTime() - 15 * 60 * 1000),
+      'stat24h': new Date(ahora.getTime() - 24 * 60 * 60 * 1000),
+      'stat7d': new Date(ahora.getTime() - 7 * 24 * 60 * 60 * 1000),
+      'stat30d': new Date(ahora.getTime() - 30 * 24 * 60 * 60 * 1000),
+      'stat6m': new Date(ahora.getTime() - 180 * 24 * 60 * 60 * 1000)
+    };
+
+    for (const [id, fecha] of Object.entries(filtros)) {
+      const { count } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', fecha.toISOString());
+
+      document.getElementById(id).textContent = count ?? 0;
+    }
+  }
+
+  // Cargar lista de usuarios
+  async function cargarUsuarios() {
+    const { data: usuarios } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    const tabla = document.getElementById('tablaUsuarios');
+    tabla.innerHTML = '';
+
+    usuarios.forEach(u => {
+      const fila = document.createElement('tr');
+      fila.innerHTML = `
+        <td>${u.nombre || ''}</td>
+        <td>${u.email}</td>
+        <td>${new Date(u.created_at).toLocaleDateString()}</td>
+        <td>
+          <select onchange="actualizarNivel('${u.id}', this.value)">
+            <option value="Básico" ${u.nivel === 'Básico' ? 'selected' : ''}>Básico</option>
+            <option value="Medio" ${u.nivel === 'Medio' ? 'selected' : ''}>Medio</option>
+            <option value="Avanzado" ${u.nivel === 'Avanzado' ? 'selected' : ''}>Avanzado</option>
+            <option value="Avanzado Pro" ${u.nivel === 'Avanzado Pro' ? 'selected' : ''}>Avanzado Pro</option>
+          </select>
+        </td>
+        <td>
+          <input type="number" min="0" max="100" value="${u.porcentaje ?? 0}" onchange="actualizarPorcentaje('${u.id}', this.value)" style="width: 60px;" />
+        </td>
+        <td>${u.recarga_confirmada ? '✅ Confirmada' : '❌ Pendiente'}</td>
+        <td>
+          <button onclick="confirmarRecarga('${u.id}')">Confirmar</button>
+        </td>
+      `;
+      tabla.appendChild(fila);
+    });
+  }
+
+  // Cambiar nivel
+  async function actualizarNivel(id, nivel) {
+    const { error } = await supabase.from('profiles').update({ nivel }).eq('id', id);
+    if (error) alert('Error al actualizar nivel');
+    else alert('Nivel actualizado');
+  }
+
+  // Cambiar porcentaje
+  async function actualizarPorcentaje(id, porcentaje) {
+    const valor = parseFloat(porcentaje);
+    if (isNaN(valor) || valor < 0 || valor > 100) return alert('Porcentaje inválido');
+    const { error } = await supabase.from('profiles').update({ porcentaje: valor }).eq('id', id);
+    if (error) alert('Error al actualizar porcentaje');
+    else alert('Porcentaje actualizado');
+  }
+
+  // Confirmar recarga
+  async function confirmarRecarga(id) {
+    const { error } = await supabase.from('profiles').update({ recarga_confirmada: true }).eq('id', id);
+    if (error) alert('Error al confirmar recarga');
+    else {
+      alert('Recarga confirmada');
+      cargarUsuarios(); // recargar tabla
+    }
+  }
+
+  // Ejecutar al cargar
+  cargarEstadisticas();
+  cargarUsuarios();
+</script>
+</body>
+</html>
