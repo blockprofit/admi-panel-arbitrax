@@ -184,134 +184,146 @@
     <button onclick="logout()"><i class="fas fa-power-off"></i> Cerrar sesión</button>
   </div>
 <div class="content" onclick="closeSidebar()">
-    <div id="welcome" class="section active">
-      <h2>Bienvenido de nuevo!</h2>
-      <div class="dashboard-cards">
-        <div class="card" style="border-color: #00d4ff;"><h3>Usuarios registrados</h3><p id="contadorUsuarios">$0</p></div>
-        <div class="card" style="border-color: #c56cf0;"><h3>Recargas últimos 7 días</h3><p id="contadorRecargas">$0</p></div>
-        <div class="card" style="border-color: #ff6b81;"><h3>Próximos pagos</h3><p id="contadorPagos">$0</p></div>
-      </div>
-      <canvas id="graficaRegistros"></canvas>
-      <canvas id="graficaIngresosRetiros"></canvas>
+  <div id="welcome" class="section active">
+    <h2>Bienvenido de nuevo!</h2>
+    <div class="dashboard-cards">
+      <div class="card" style="border-color: #00d4ff;"><h3>Usuarios registrados</h3><p id="contadorUsuarios">$0</p></div>
+      <div class="card" style="border-color: #c56cf0;"><h3>Recargas últimos 7 días</h3><p id="contadorRecargas">$0</p></div>
+      <div class="card" style="border-color: #ff6b81;"><h3>Próximos pagos</h3><p id="contadorPagos">$0</p></div>
     </div>
-
-    <!-- Cada opción carga su archivo independiente -->
-    <div id="usuariosPlanes" class="section">
-      <iframe src="usuariosyplanes.html" style="width: 100%; height: 80vh; border: none;"></iframe>
-    </div>
-    <div id="depositosRetiros" class="section">
-      <iframe src="depositosyretiros.html" style="width: 100%; height: 80vh; border: none;"></iframe>
-    </div>
-    <div id="referidos" class="section">
-      <iframe src="referidos.html" style="width: 100%; height: 80vh; border: none;"></iframe>
-    </div>
-    <div id="trivia" class="section">
-      <iframe src="trivia.html" style="width: 100%; height: 80vh; border: none;"></iframe>
-    </div>
-    <div id="pool" class="section">
-      <iframe src="pool.html" style="width: 100%; height: 80vh; border: none;"></iframe>
-    </div>
-    <div id="mystery" class="section">
-      <iframe src="mystery.html" style="width: 100%; height: 80vh; border: none;"></iframe>
-    </div>
-    <div id="loteria" class="section">
-      <iframe src="loteria.html" style="width: 100%; height: 80vh; border: none;"></iframe>
-    </div>
-    <div id="configuracion" class="section">
-      <iframe src="configuracion.html" style="width: 100%; height: 80vh; border: none;"></iframe>
-    </div>
-    <div id="tickets" class="section">
-      <iframe src="tickets.html" style="width: 100%; height: 80vh; border: none;"></iframe>
-    </div>
+    <canvas id="graficaRegistros"></canvas>
+    <canvas id="graficaIngresosRetiros"></canvas>
   </div>
 
-  <!-- Soporte -->
-  <div id="botAyuda" onclick="toggleAyuda()"><i class="fas fa-comment-dots"></i></div>
-  <div id="modalAyuda">
-    <div class="contenido-ayuda">
-      <h3>Soporte / Consulta</h3>
-      <input type="email" id="emailAyuda" placeholder="Tu correo electrónico" />
-      <input type="text" id="asuntoAyuda" placeholder="Asunto" />
-      <textarea id="mensajeAyuda" placeholder="Escribe tu mensaje aquí..."></textarea>
-      <button onclick="enviarTicket()">Enviar</button>
-      <span class="cerrar" onclick="toggleAyuda()">&times;</span>
-      <div id="historialTickets">
-        <h4>Últimos tickets</h4><ul id="listaTickets"></ul>
-      </div>
+  <!-- Cada sección carga un archivo HTML externo -->
+  <div id="usuariosPlanes" class="section">
+    <iframe src="usuariosyplanes.html" style="width: 100%; height: 80vh; border: none;"></iframe>
+  </div>
+  <div id="depositosRetiros" class="section">
+    <iframe src="depositosyretiros.html" style="width: 100%; height: 80vh; border: none;"></iframe>
+  </div>
+  <div id="referidos" class="section">
+    <iframe src="referidos.html" style="width: 100%; height: 80vh; border: none;"></iframe>
+  </div>
+  <div id="trivia" class="section">
+    <iframe src="trivia.html" style="width: 100%; height: 80vh; border: none;"></iframe>
+  </div>
+  <div id="pool" class="section">
+    <iframe src="pool.html" style="width: 100%; height: 80vh; border: none;"></iframe>
+  </div>
+  <div id="mystery" class="section">
+    <iframe src="mystery.html" style="width: 100%; height: 80vh; border: none;"></iframe>
+  </div>
+  <div id="loteria" class="section">
+    <iframe src="loteria.html" style="width: 100%; height: 80vh; border: none;"></iframe>
+  </div>
+  <div id="configuracion" class="section">
+    <iframe src="configuracion.html" style="width: 100%; height: 80vh; border: none;"></iframe>
+  </div>
+  <div id="tickets" class="section">
+    <iframe src="tickets.html" style="width: 100%; height: 80vh; border: none;"></iframe>
+  </div>
+</div>
+
+<!-- Soporte / Ayuda -->
+<div id="botAyuda" onclick="toggleAyuda()"><i class="fas fa-comment-dots"></i></div>
+<div id="modalAyuda">
+  <div class="contenido-ayuda">
+    <h3>Soporte / Consulta</h3>
+    <input type="email" id="emailAyuda" placeholder="Tu correo electrónico" />
+    <input type="text" id="asuntoAyuda" placeholder="Asunto" />
+    <textarea id="mensajeAyuda" placeholder="Escribe tu mensaje aquí..."></textarea>
+    <button onclick="enviarTicket()">Enviar</button>
+    <span class="cerrar" onclick="toggleAyuda()">&times;</span>
+    <div id="historialTickets">
+      <h4>Últimos tickets</h4>
+      <ul id="listaTickets"></ul>
     </div>
   </div>
+</div>
 
-  <script>
-    function toggleSidebar() {
-      document.getElementById('sidebar').classList.toggle('open');
-    }
+<script>
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+  }
 
-    function closeSidebar() {
-      document.getElementById('sidebar').classList.remove('open');
-    }
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+  }
 
-    function showSection(id) {
-      document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
-      document.querySelectorAll('.sidebar button').forEach(btn => btn.classList.remove('active'));
-      event.target.closest('button').classList.add('active');
-    }
+  function showSection(id) {
+    document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.querySelectorAll('.sidebar button').forEach(btn => btn.classList.remove('active'));
+    event.target.closest('button').classList.add('active');
+  }
 
-    function toggleAyuda() {
-      const modal = document.getElementById("modalAyuda");
-      modal.style.display = modal.style.display === "block" ? "none" : "block";
-    }
+  function toggleAyuda() {
+    const modal = document.getElementById("modalAyuda");
+    modal.style.display = modal.style.display === "block" ? "none" : "block";
+  }
 
-    // Gráfica de usuarios registrados
-    const ctx1 = document.getElementById('graficaRegistros').getContext('2d');
-    new Chart(ctx1, {
-      type: 'bar',
-      data: {
-        labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
-        datasets: [{
-          label: 'Usuarios registrados',
-          data: [12, 19, 3, 5, 2, 3, 7],
-          backgroundColor: '#00d4ff',
-          borderRadius: 5
-        }]
+  // Gráfico de usuarios registrados
+  const ctx1 = document.getElementById('graficaRegistros').getContext('2d');
+  new Chart(ctx1, {
+    type: 'bar',
+    data: {
+      labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+      datasets: [{
+        label: 'Usuarios registrados',
+        data: [12, 19, 3, 5, 2, 3, 7],
+        backgroundColor: '#00d4ff',
+        borderRadius: 5
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: { color: 'white' }
+        }
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            labels: { color: 'white' }
-          }
-        },
-        scales: {
-          x: { ticks: { color: 'white' } },
-          y: { ticks: { color: 'white' } }
+      scales: {
+        x: { ticks: { color: 'white' } },
+        y: { ticks: { color: 'white' } }
+      }
+    }
+  });
+
+  // Gráfico de ingresos vs retiros
+  const ctx2 = document.getElementById('graficaIngresosRetiros').getContext('2d');
+  new Chart(ctx2, {
+    type: 'doughnut',
+    data: {
+      labels: ['Ingresos', 'Retiros'],
+      datasets: [{
+        data: [65, 35],
+        backgroundColor: ['#2ecc71', '#e74c3c'],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: { color: 'white' }
         }
       }
-    });
+    }
+  });
 
-    // Gráfica de ingresos vs retiros
-    const ctx2 = document.getElementById('graficaIngresosRetiros').getContext('2d');
-    new Chart(ctx2, {
-      type: 'doughnut',
-      data: {
-        labels: ['Ingresos', 'Retiros'],
-        datasets: [{
-          data: [65, 35],
-          backgroundColor: ['#2ecc71', '#e74c3c'],
-          borderWidth: 1
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            labels: { color: 'white' }
-          }
-        }
-      }
-    });
-  </script>
+  function logout() {
+    // Lógica para cerrar sesión
+    alert("Sesión cerrada.");
+    window.location.href = "login.html";
+  }
+
+  function enviarTicket() {
+    alert("Tu mensaje fue enviado al soporte.");
+    // Acá iría la lógica para enviar el ticket a Supabase o correo
+  }
+</script>
 </body>
 </html>
