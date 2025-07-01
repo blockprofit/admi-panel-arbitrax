@@ -13,19 +13,16 @@
       margin: 0;
       padding: 20px;
     }
-
     h2 {
       color: #2c3e50;
       margin-bottom: 15px;
     }
-
     .stats {
       display: flex;
       flex-wrap: wrap;
       gap: 15px;
       margin-bottom: 20px;
     }
-
     .stat-card {
       background: white;
       border-left: 5px solid #3498db;
@@ -35,19 +32,16 @@
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
       user-select: none;
     }
-
     .stat-card h3 {
       margin: 0;
       font-size: 16px;
       color: #34495e;
     }
-
     .stat-card p {
       font-size: 20px;
       font-weight: bold;
       margin: 5px 0 0;
     }
-
     table {
       width: 100%;
       border-collapse: collapse;
@@ -55,45 +49,35 @@
       margin-top: 20px;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
-
-    th,
-    td {
+    th, td {
       padding: 12px;
       text-align: left;
       border-bottom: 1px solid #ddd;
       vertical-align: middle;
     }
-
     th {
       background-color: #2980b9;
       color: white;
     }
-
     tr:hover {
       background-color: #f1f1f1;
     }
-
-    select,
-    button,
-    input {
+    select, button, input {
       padding: 6px 10px;
       margin: 2px;
       border-radius: 4px;
       border: 1px solid #ccc;
       font-size: 14px;
     }
-
     button {
       background-color: #3498db;
       color: white;
       cursor: pointer;
       transition: background-color 0.3s;
     }
-
     button:hover {
       background-color: #2980b9;
     }
-
     #mensajeEstado {
       margin-top: 10px;
       padding: 10px;
@@ -136,7 +120,7 @@
 
 <script>
   const supabaseUrl = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
-  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; // <-- recortado por seguridad
+  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; // reemplazar por tu clave real
   const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
   const mensajeEstado = document.getElementById('mensajeEstado');
@@ -175,8 +159,7 @@
       }
     }
   }
-
-  async function cargarUsuarios() {
+async function cargarUsuarios() {
     const { data: usuarios, error } = await supabase
       .from('profiles')
       .select('*')
@@ -218,7 +201,7 @@
       tabla.appendChild(fila);
     });
   }
-// 🔁 Actualizar nivel de inversión
+
   async function actualizarNivel(id, nivel) {
     const { error } = await supabase
       .from('profiles')
@@ -233,7 +216,6 @@
     }
   }
 
-  // % Cambiar porcentaje de interés
   async function actualizarPorcentaje(id, porcentaje) {
     const valor = parseFloat(porcentaje);
     if (isNaN(valor) || valor < 0 || valor > 100) {
@@ -254,7 +236,6 @@
     }
   }
 
-  // ✅ Confirmar recarga y asignar nivel automáticamente
   async function confirmarRecarga(id, monto) {
     let nivel = '';
     if (monto >= 500000) nivel = 'Avanzado Pro';
@@ -272,11 +253,10 @@
       console.error(error);
     } else {
       mostrarMensaje('✅ Recarga confirmada y nivel asignado');
-      cargarUsuarios(); // Refrescar la tabla
+      cargarUsuarios();
     }
   }
 
-  // 🔐 Iniciar y validar sesión de administrador
   async function iniciar() {
     const { data: { session }, error } = await supabase.auth.getSession();
 
@@ -293,12 +273,10 @@
       return;
     }
 
-    // Si es válido, cargar datos
     await cargarEstadisticas();
     await cargarUsuarios();
   }
 
-  // 🚀 Ejecutar al cargar la página
   iniciar();
 </script>
 </body>
