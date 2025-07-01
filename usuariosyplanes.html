@@ -322,9 +322,24 @@
     }
   }
 
-  // ▶️ Ejecutar al iniciar
-  cargarEstadisticas();
-  cargarUsuarios();
+  // Función para iniciar: chequea sesión y luego carga datos si es admin
+  async function iniciar() {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session || session.user.email !== 'arbitrax9@gmail.com') {
+      alert('Acceso restringido. Debes iniciar sesión como administrador.');
+      window.location.href = 'principal.html'; // Cambia esta ruta si usas otra página de login
+      return;
+    }
+
+    cargarEstadisticas();
+    cargarUsuarios();
+  }
+
+  // Ejecutar inicio al cargar la página
+  iniciar();
 </script>
 </body>
 </html>
