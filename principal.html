@@ -172,18 +172,18 @@
   <div class="menu-toggle" onclick="toggleSidebar()">☰</div>
   <div class="sidebar" id="sidebar">
     <button onclick="showSection('welcome')" class="active"><i class="fas fa-home"></i> Inicio</button>
-    <button onclick="showSection('perfil')"><i class="fas fa-user"></i> Perfil</button>
-    <button onclick="showSection('usuarios')"><i class="fas fa-users"></i> Usuarios</button>
-    <button onclick="showSection('planes')"><i class="fas fa-chart-line"></i> Planes de Inversión</button>
-    <button onclick="showSection('recargas')"><i class="fas fa-wallet"></i> Recargas</button>
-    <button onclick="showSection('retiros')"><i class="fas fa-arrow-circle-up"></i> Retiros</button>
-    <button onclick="showSection('referidos')"><i class="fas fa-user-plus"></i> Referidos</button>
-    <button onclick="showSection('sorteo')"><i class="fas fa-gift"></i> Sorteo</button>
+    <button onclick="showSection('usuariosPlanes')"><i class="fas fa-users-cog"></i> Usuarios y planes</button>
+    <button onclick="showSection('depositosRetiros')"><i class="fas fa-exchange-alt"></i> Depósitos y Retiros</button>
+    <button onclick="showSection('referidos')"><i class="fas fa-user-friends"></i> Referidos</button>
+    <button onclick="showSection('trivia')"><i class="fas fa-brain"></i> Trivia Cripto</button>
+    <button onclick="showSection('pool')"><i class="fas fa-coins"></i> Mini Pool</button>
+    <button onclick="showSection('mystery')"><i class="fas fa-box-open"></i> Mystery Box</button>
+    <button onclick="showSection('loteria')"><i class="fas fa-gift"></i> Lotería</button>
+    <button onclick="showSection('configuracion')"><i class="fas fa-cog"></i> Configuración</button>
     <button onclick="showSection('tickets')"><i class="fas fa-ticket-alt"></i> Tickets</button>
     <button onclick="logout()"><i class="fas fa-power-off"></i> Cerrar sesión</button>
   </div>
-
-  <div class="content" onclick="closeSidebar()">
+<div class="content" onclick="closeSidebar()">
     <div id="welcome" class="section active">
       <h2>Bienvenido de nuevo!</h2>
       <div class="dashboard-cards">
@@ -195,21 +195,34 @@
       <canvas id="graficaIngresosRetiros"></canvas>
     </div>
 
-    <div id="perfil" class="section">...</div>
-    <div id="usuarios" class="section">
-      <iframe src="usuarios.html" style="width: 100%; height: 80vh; border: none;"></iframe>
+    <!-- Cada opción carga su archivo independiente -->
+    <div id="usuariosPlanes" class="section">
+      <iframe src="usuariosyplanes.html" style="width: 100%; height: 80vh; border: none;"></iframe>
     </div>
-    <div id="planes" class="section">Sección Planes de Inversión</div>
-
-    <!-- Sección Recargas con iframe -->
-    <div id="recargas" class="section">
-      <iframe src="recargas.html" style="width: 100%; height: 80vh; border: none;"></iframe>
+    <div id="depositosRetiros" class="section">
+      <iframe src="depositosyretiros.html" style="width: 100%; height: 80vh; border: none;"></iframe>
     </div>
-
-    <div id="retiros" class="section">Sección Retiros</div>
-    <div id="referidos" class="section">Sección Referidos</div>
-    <div id="sorteo" class="section">Sección Sorteo</div>
-    <div id="tickets" class="section">Sección Tickets</div>
+    <div id="referidos" class="section">
+      <iframe src="referidos.html" style="width: 100%; height: 80vh; border: none;"></iframe>
+    </div>
+    <div id="trivia" class="section">
+      <iframe src="trivia.html" style="width: 100%; height: 80vh; border: none;"></iframe>
+    </div>
+    <div id="pool" class="section">
+      <iframe src="pool.html" style="width: 100%; height: 80vh; border: none;"></iframe>
+    </div>
+    <div id="mystery" class="section">
+      <iframe src="mystery.html" style="width: 100%; height: 80vh; border: none;"></iframe>
+    </div>
+    <div id="loteria" class="section">
+      <iframe src="loteria.html" style="width: 100%; height: 80vh; border: none;"></iframe>
+    </div>
+    <div id="configuracion" class="section">
+      <iframe src="configuracion.html" style="width: 100%; height: 80vh; border: none;"></iframe>
+    </div>
+    <div id="tickets" class="section">
+      <iframe src="tickets.html" style="width: 100%; height: 80vh; border: none;"></iframe>
+    </div>
   </div>
 
   <!-- Soporte -->
