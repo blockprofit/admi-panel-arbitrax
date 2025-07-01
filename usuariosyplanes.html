@@ -136,10 +136,9 @@
   </table>
 
   <div id="mensajeEstado"></div>
-
-  <script>
+<script>
     document.addEventListener('DOMContentLoaded', async () => {
-      // Inicialización de Supabase
+      // Inicialización de Supabase (primero, siempre)
       const supabaseUrl = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
       const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI';
       const supabase = supabase.createClient(supabaseUrl, supabaseKey);
@@ -223,7 +222,8 @@
           tabla.appendChild(fila);
         });
       }
-// Actualizar nivel de inversión
+
+      // Funciones globales para usar en HTML
       window.actualizarNivel = async function (id, nivel) {
         const { error } = await supabase
           .from('profiles')
@@ -238,7 +238,6 @@
         }
       };
 
-      // Actualizar porcentaje de interés
       window.actualizarPorcentaje = async function (id, porcentaje) {
         const valor = parseFloat(porcentaje);
         if (isNaN(valor) || valor < 0 || valor > 100) {
@@ -259,7 +258,6 @@
         }
       };
 
-      // Confirmar recarga y asignar nivel automáticamente
       window.confirmarRecarga = async function (id, monto) {
         let nivel = '';
         if (monto >= 500000) nivel = 'Avanzado Pro';
@@ -281,7 +279,6 @@
         }
       };
 
-      // Validar sesión administrador e iniciar carga de datos
       async function iniciar() {
         const {
           data: { session },
@@ -305,7 +302,6 @@
         await cargarUsuarios();
       }
 
-      // Ejecutar función iniciar al cargar la página
       iniciar();
     });
   </script>
