@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Panel Admin - Login</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <style>
@@ -20,13 +20,12 @@
     .login-container {
       background: rgba(255, 255, 255, 0.1);
       backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
       border-radius: 20px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
       padding: 40px 30px;
       max-width: 400px;
       width: 90%;
       color: white;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
     }
     input, button {
       width: 100%;
@@ -66,21 +65,21 @@
   const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   async function adminLogin() {
-    const email = document.getElementById("loginEmail").value.trim();
-    const pass = document.getElementById("loginPass").value;
-    const errorBox = document.getElementById("error");
+    const email = document.getElementById('loginEmail').value.trim();
+    const pass = document.getElementById('loginPass').value;
+    const errorBox = document.getElementById('error');
     errorBox.textContent = '';
 
-    if (email !== "arbitrax9@gmail.com") {
-      errorBox.textContent = "Correo no autorizado.";
+    if (email !== 'arbitrax9@gmail.com') {
+      errorBox.textContent = 'Correo no autorizado.';
       return;
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
+    const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
     if (error) {
-      errorBox.textContent = "Credenciales inválidas.";
+      errorBox.textContent = 'Credenciales inválidas.';
     } else {
-      window.location.href = "principal.html";
+      window.location.href = 'principal.html';
     }
   }
 </script>
