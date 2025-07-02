@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Usuarios y Planes</title>
-  <link rel="icon" href="favicon.ico" type="image/x-icon" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <style>
@@ -15,18 +14,15 @@
       background: rgba(0, 0, 0, 0.7);
       color: white;
     }
-
     h2 {
       margin-bottom: 10px;
     }
-
     .stats {
       display: flex;
       flex-wrap: wrap;
       gap: 15px;
       margin-bottom: 20px;
     }
-
     .stat {
       background: #2c3e50;
       padding: 15px;
@@ -35,7 +31,6 @@
       min-width: 200px;
       flex: 1;
     }
-
     table {
       width: 100%;
       border-collapse: collapse;
@@ -45,27 +40,22 @@
       border-radius: 6px;
       overflow: hidden;
     }
-
     th, td {
       padding: 10px;
       text-align: left;
       border-bottom: 1px solid #bdc3c7;
     }
-
     th {
       background: #34495e;
       color: white;
     }
-
     select, button {
       padding: 5px 10px;
       margin: 0;
     }
-
     input[type='checkbox'] {
       transform: scale(1.2);
     }
-
     @media (max-width: 768px) {
       table, .stats {
         font-size: 14px;
@@ -75,7 +65,6 @@
 </head>
 <body>
   <h2>Usuarios y Planes</h2>
-
   <div class="stats">
     <div class="stat">Últimos 15 min: <span id="stat15">0</span></div>
     <div class="stat">Últimas 24h: <span id="stat24">0</span></div>
@@ -99,107 +88,106 @@
     </thead>
     <tbody></tbody>
   </table>
+<script>
+  const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI';
+  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  <script>
-    const ADMIN_EMAIL = 'arbitrax9@gmail.com';
+  const ADMIN_EMAIL = 'arbitrax9@gmail.com';
 
-    const supabase = supabase.createClient(
-      'https://ovulezkcxwrjvyxlxsdv.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI'
-    );
-
-    async function verificarSesion() {
-      const { data, error } = await supabase.auth.getSession();
-      const user = data?.session?.user;
-      if (!user || user.email !== ADMIN_EMAIL) {
-        alert('Acceso denegado');
-        window.location.href = 'login.html';
-      }
+  async function verificarSesion() {
+    const { data, error } = await supabase.auth.getSession();
+    const user = data?.session?.user;
+    if (!user || user.email !== ADMIN_EMAIL) {
+      alert('Acceso denegado');
+      window.location.href = 'login.html';
     }
-async function cargarUsuarios() {
-      const { data, error } = await supabase.from('profiles').select('*');
-      if (error) {
-        alert('Error al cargar usuarios');
-        console.error(error);
-        return;
-      }
+  }
 
-      const tbody = document.querySelector('#tablaUsuarios tbody');
-      tbody.innerHTML = '';
-
-      data.forEach(user => {
-        if (user.email === ADMIN_EMAIL) return; // Ocultar admin
-
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${user.nombre || ''}</td>
-          <td>${user.email || ''}</td>
-          <td>${user.celular || ''}</td>
-          <td>${user.cbu || ''}</td>
-          <td>
-            <select onchange="actualizarCampo('${user.id}', 'nivel', this.value)">
-              <option value="Basico" ${user.nivel === 'Basico' ? 'selected' : ''}>Básico</option>
-              <option value="Medio" ${user.nivel === 'Medio' ? 'selected' : ''}>Medio</option>
-              <option value="Avanzado" ${user.nivel === 'Avanzado' ? 'selected' : ''}>Avanzado</option>
-              <option value="Avanzado Pro" ${user.nivel === 'Avanzado Pro' ? 'selected' : ''}>Avanzado Pro</option>
-            </select>
-          </td>
-          <td>
-            <select onchange="actualizarCampo('${user.id}', 'porcentaje', this.value)">
-              <option value="5" ${user.porcentaje == 5 ? 'selected' : ''}>5%</option>
-              <option value="10" ${user.porcentaje == 10 ? 'selected' : ''}>10%</option>
-              <option value="15" ${user.porcentaje == 15 ? 'selected' : ''}>15%</option>
-            </select>
-          </td>
-          <td>
-            <input type="checkbox" ${user.recarga_confirmada ? 'checked' : ''} onchange="actualizarCampo('${user.id}', 'recarga_confirmada', this.checked)">
-          </td>
-          <td><button onclick="actualizarUsuario('${user.id}')">Guardar</button></td>
-        `;
-        tbody.appendChild(tr);
-      });
+  async function cargarUsuarios() {
+    const { data, error } = await supabase.from('profiles').select('*');
+    if (error) {
+      alert('Error al cargar usuarios');
+      return;
     }
 
-    async function actualizarCampo(id, campo, valor) {
-      const actualizacion = {};
-      actualizacion[campo] = campo === 'recarga_confirmada' ? valor : valor;
-      const { error } = await supabase.from('profiles').update(actualizacion).eq('id', id);
-      if (error) {
-        alert(`Error actualizando ${campo}`);
-        console.error(error);
-      }
-    }
+    const tbody = document.querySelector('#tablaUsuarios tbody');
+    tbody.innerHTML = '';
 
-    async function actualizarUsuario(id) {
-      alert('Cambios guardados correctamente');
-      cargarUsuarios();
-    }
+    data.forEach(user => {
+      if (user.email === ADMIN_EMAIL) return; // Omitir al administrador
 
-    async function cargarEstadisticas() {
-      const hoy = new Date();
-      const rangos = {
-        stat15: new Date(hoy.getTime() - 15 * 60 * 1000),
-        stat24: new Date(hoy.getTime() - 24 * 60 * 60 * 1000),
-        stat7: new Date(hoy.getTime() - 7 * 24 * 60 * 60 * 1000),
-        stat30: new Date(hoy.getTime() - 30 * 24 * 60 * 60 * 1000),
-        stat180: new Date(hoy.getTime() - 180 * 24 * 60 * 60 * 1000)
-      };
-
-      for (const [id, fecha] of Object.entries(rangos)) {
-        const { count, error } = await supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true })
-          .neq('email', ADMIN_EMAIL)
-          .gte('created_at', fecha.toISOString());
-
-        document.getElementById(id).textContent = count || 0;
-      }
-    }
-
-    verificarSesion().then(() => {
-      cargarUsuarios();
-      cargarEstadisticas();
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${user.nombre || ''}</td>
+        <td>${user.email || ''}</td>
+        <td>${user.celular || ''}</td>
+        <td>${user.cbu || ''}</td>
+        <td>
+          <select onchange="actualizarCampo('${user.id}', 'nivel', this.value)">
+            <option value="Basico" ${user.nivel === 'Basico' ? 'selected' : ''}>Básico</option>
+            <option value="Medio" ${user.nivel === 'Medio' ? 'selected' : ''}>Medio</option>
+            <option value="Avanzado" ${user.nivel === 'Avanzado' ? 'selected' : ''}>Avanzado</option>
+            <option value="Avanzado Pro" ${user.nivel === 'Avanzado Pro' ? 'selected' : ''}>Avanzado Pro</option>
+          </select>
+        </td>
+        <td>
+          <select onchange="actualizarCampo('${user.id}', 'porcentaje', this.value)">
+            <option value="5" ${user.porcentaje == 5 ? 'selected' : ''}>5%</option>
+            <option value="10" ${user.porcentaje == 10 ? 'selected' : ''}>10%</option>
+            <option value="15" ${user.porcentaje == 15 ? 'selected' : ''}>15%</option>
+          </select>
+        </td>
+        <td>
+          <input type="checkbox" ${user.recarga_confirmada ? 'checked' : ''} onchange="actualizarCampo('${user.id}', 'recarga_confirmada', this.checked)">
+        </td>
+        <td><button onclick="actualizarUsuario('${user.id}')">Guardar</button></td>
+      `;
+      tbody.appendChild(tr);
     });
-  </script>
+  }
+
+  async function actualizarCampo(id, campo, valor) {
+    const valorFinal = campo === 'recarga_confirmada' ? valor === true : valor;
+    const { error } = await supabase.from('profiles').update({ [campo]: valorFinal }).eq('id', id);
+    if (error) {
+      alert(`Error actualizando ${campo}`);
+      console.error(error);
+    }
+  }
+
+  async function actualizarUsuario(id) {
+    alert('Cambios guardados correctamente');
+    cargarUsuarios();
+  }
+
+  async function cargarEstadisticas() {
+    const hoy = new Date();
+    const fechas = {
+      stat15: new Date(hoy.getTime() - 15 * 60 * 1000),
+      stat24: new Date(hoy.getTime() - 24 * 60 * 60 * 1000),
+      stat7: new Date(hoy.getTime() - 7 * 24 * 60 * 60 * 1000),
+      stat30: new Date(hoy.getTime() - 30 * 24 * 60 * 60 * 1000),
+      stat180: new Date(hoy.getTime() - 180 * 24 * 60 * 60 * 1000)
+    };
+
+    for (const [id, fecha] of Object.entries(fechas)) {
+      const { count, error } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', fecha.toISOString());
+      if (!error) {
+        document.getElementById(id).textContent = count || 0;
+      } else {
+        console.error(error);
+      }
+    }
+  }
+
+  verificarSesion().then(() => {
+    cargarUsuarios();
+    cargarEstadisticas();
+  });
+</script>
 </body>
 </html>
