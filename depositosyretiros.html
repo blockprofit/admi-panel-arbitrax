@@ -5,55 +5,61 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Depósitos y Retiros</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <style>
     body {
-      background: #0b1a2d;
-      color: white;
-      font-family: 'Segoe UI', sans-serif;
+      font-family: Arial, sans-serif;
       margin: 0;
       padding: 20px;
+      background: #111;
+      color: white;
     }
 
     h2 {
-      text-align: center;
-      margin-bottom: 20px;
+      margin-top: 30px;
+      color: #00d4ff;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      background: rgba(255,255,255,0.05);
-      color: white;
-      margin-bottom: 40px;
+      margin-top: 10px;
+      background: #fff;
+      color: #000;
+      border-radius: 8px;
+      overflow: hidden;
     }
 
     th, td {
       padding: 12px;
       text-align: left;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
+      border-bottom: 1px solid #ddd;
     }
 
     th {
-      background: rgba(255,255,255,0.1);
+      background: #00a8ff;
+      color: white;
     }
 
     button {
-      background: #00a8ff;
-      color: white;
+      padding: 5px 10px;
       border: none;
-      padding: 6px 12px;
       border-radius: 4px;
       cursor: pointer;
-      margin-right: 6px;
+      font-weight: bold;
+    }
+
+    button:hover {
+      opacity: 0.9;
     }
 
     button.rechazar {
       background: #e74c3c;
+      color: white;
     }
 
-    button:hover {
-      opacity: 0.85;
+    button.confirmar {
+      background: #2ecc71;
+      color: white;
     }
 
     .estado {
@@ -63,124 +69,126 @@
   </style>
 </head>
 <body>
-  <h2>Últimos depósitos</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>Fecha</th>
-        <th>Moneda</th>
-        <th>Monto</th>
-        <th>Estado</th>
-        <th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody id="tablaDepositos"></tbody>
-  </table>
 
-  <h2>Historial de Retiros</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>Fecha</th>
-        <th>Moneda</th>
-        <th>Monto</th>
-        <th>Estado</th>
-        <th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody id="tablaRetiros"></tbody>
-  </table>
+<h2>Historial de Depósitos</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Fecha</th>
+      <th>Tipo</th>
+      <th>Monto</th>
+      <th>Estado</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody id="tablaDepositos"></tbody>
+</table>
 
-  <script>
-    const supabase = supabase.createClient(
-      'https://ovulezkcxwrjvyxlxsdv.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI'
-    );
+<h2>Historial de Retiros</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Fecha</th>
+      <th>Tipo</th>
+      <th>Monto</th>
+      <th>Estado</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody id="tablaRetiros"></tbody>
+</table>
 
-    async function cargarDepositos() {
-      const { data, error } = await supabase
-        .from("depositos")
-        .select("*")
-        .order("fecha", { ascending: false });
+<script>
+  const supabaseClient = supabase.createClient(
+    'https://ovulezkcxwrjvyxlxsdv.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI'
+  );
 
-      if (error) return alert("Error al cargar depósitos");
+  function formatearFecha(fecha) {
+    return new Date(fecha).toLocaleDateString("es-AR", {
+      day: "2-digit", month: "2-digit", year: "numeric"
+    });
+  }
 
-      const tabla = document.getElementById("tablaDepositos");
-      tabla.innerHTML = "";
+  async function cargarDepositos() {
+    const { data, error } = await supabaseClient
+      .from("depositos")
+      .select("*")
+      .order("fecha", { ascending: false });
 
-      data.forEach(dep => {
-        const fila = document.createElement("tr");
-        fila.innerHTML = `
-          <td>${formatearFecha(dep.fecha)}</td>
-          <td>${dep.tipo}</td>
-          <td>${dep.monto}</td>
-          <td class="estado">${dep.estado}</td>
-          <td>
-            <button onclick="actualizarEstadoDeposito('${dep.id}', 'confirmado')">Confirmar</button>
-            <button class="rechazar" onclick="actualizarEstadoDeposito('${dep.id}', 'rechazado')">Rechazar</button>
-          </td>
-        `;
-        tabla.appendChild(fila);
-      });
-    }
+    if (error) return alert("Error al cargar depósitos");
 
-    function formatearFecha(fecha) {
-      if (!fecha) return '';
-      const f = new Date(fecha);
-      return f.toLocaleDateString('es-AR');
-    }
+    const tabla = document.getElementById("tablaDepositos");
+    tabla.innerHTML = "";
 
-    async function actualizarEstadoDeposito(id, estado) {
-      const { error } = await supabase
-        .from("depositos")
-        .update({ estado })
-        .eq("id", id);
+    data.forEach(dep => {
+      const fila = document.createElement("tr");
+      fila.innerHTML = `
+        <td>${formatearFecha(dep.fecha)}</td>
+        <td>${dep.tipo}</td>
+        <td>${dep.monto}</td>
+        <td class="estado">${dep.estado}</td>
+        <td>
+          <button class="confirmar" onclick="actualizarEstadoDeposito('${dep.id}', 'confirmado')">Confirmar</button>
+          <button class="rechazar" onclick="actualizarEstadoDeposito('${dep.id}', 'rechazado')">Rechazar</button>
+        </td>
+      `;
+      tabla.appendChild(fila);
+    });
+  }
 
-      if (error) return alert("Error al actualizar estado");
+  async function actualizarEstadoDeposito(id, estado) {
+    const { error } = await supabaseClient
+      .from("depositos")
+      .update({ estado })
+      .eq("id", id);
 
-      cargarDepositos();
-    }
+    if (error) return alert("Error al actualizar depósito");
 
     cargarDepositos();
+  }
+
+  cargarDepositos();
 async function cargarRetiros() {
-      const { data, error } = await supabase
-        .from("retiros")
-        .select("*")
-        .order("fecha", { ascending: false });
+    const { data, error } = await supabaseClient
+      .from("retiros")
+      .select("*")
+      .order("fecha", { ascending: false });
 
-      if (error) return alert("Error al cargar retiros");
+    if (error) return alert("Error al cargar retiros");
 
-      const tabla = document.getElementById("tablaRetiros");
-      tabla.innerHTML = "";
+    const tabla = document.getElementById("tablaRetiros");
+    tabla.innerHTML = "";
 
-      data.forEach(ret => {
-        const fila = document.createElement("tr");
-        fila.innerHTML = `
-          <td>${formatearFecha(ret.fecha)}</td>
-          <td>${ret.tipo}</td>
-          <td>${ret.cantidad}</td>
-          <td class="estado">${ret.estado}</td>
-          <td>
-            <button onclick="actualizarEstadoRetiro('${ret.id}', 'confirmado')">Confirmar</button>
-            <button class="rechazar" onclick="actualizarEstadoRetiro('${ret.id}', 'rechazado')">Rechazar</button>
-          </td>
-        `;
-        tabla.appendChild(fila);
-      });
-    }
+    data.forEach(ret => {
+      const fila = document.createElement("tr");
+      fila.innerHTML = `
+        <td>${formatearFecha(ret.fecha)}</td>
+        <td>${ret.tipo}</td>
+        <td>${ret.cantidad}</td>
+        <td class="estado">${ret.estado}</td>
+        <td>
+          <button class="confirmar" onclick="actualizarEstadoRetiro('${ret.id}', 'confirmado')">Confirmar</button>
+          <button class="rechazar" onclick="actualizarEstadoRetiro('${ret.id}', 'rechazado')">Rechazar</button>
+        </td>
+      `;
+      tabla.appendChild(fila);
+    });
+  }
 
-    async function actualizarEstadoRetiro(id, estado) {
-      const { error } = await supabase
-        .from("retiros")
-        .update({ estado })
-        .eq("id", id);
+  async function actualizarEstadoRetiro(id, estado) {
+    const { error } = await supabaseClient
+      .from("retiros")
+      .update({ estado })
+      .eq("id", id);
 
-      if (error) return alert("Error al actualizar retiro");
-
-      cargarRetiros();
-    }
+    if (error) return alert("Error al actualizar retiro");
 
     cargarRetiros();
-  </script>
+  }
+
+  cargarRetiros();
+</script>
+
 </body>
 </html>
