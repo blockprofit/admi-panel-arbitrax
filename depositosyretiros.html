@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Depósitos y Retiros</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+    }
+
+    h2 {
+      margin-bottom: 10px;
+    }
+
+    .section {
+      margin-bottom: 40px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #ecf0f1;
+      color: #2c3e50;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #bdc3c7;
+    }
+
+    th {
+      background: #34495e;
+      color: white;
+    }
+
+    button {
+      padding: 6px 12px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    .status-confirmado {
+      color: green;
+      font-weight: bold;
+    }
+
+    .status-pendiente {
+      color: orange;
+      font-weight: bold;
+    }
+
+    @media (max-width: 768px) {
+      table {
+        font-size: 13px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h2>Panel de Depósitos y Retiros</h2>
+
+  <div class="section">
+    <h3>Depósitos</h3>
+    <table id="tablaDepositos">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Monto</th>
+          <th>Tipo</th>
+          <th>Fecha</th>
+          <th>Estado</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+<div class="section">
+    <h3>Retiros</h3>
+    <table id="tablaRetiros">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Monto</th>
+          <th>Tipo</th>
+          <th>CBU / Dirección</th>
+          <th>Fecha</th>
+          <th>Estado</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    const supabase = supabase.createClient(
+      'https://ovulezkcxwrjvyxlxsdv.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI'
+    );
+
+    const ADMIN_EMAIL = 'arbitrax9@gmail.com';
+
+    async function verificarSesion() {
+      const { data, error } = await supabase.auth.getSession();
+      const user = data?.session?.user;
+      if (!user || user.email !== ADMIN_EMAIL) {
+        alert('Acceso denegado');
+        window.location.href = 'login.html';
+      }
+    }
+
+    async function cargarDepositos() {
+      const { data, error } = await supabase.from('depositos').select('*').order('fecha', { ascending: false });
+      const tbody = document.querySelector('#tablaDepositos tbody');
+      tbody.innerHTML = '';
+      data.forEach(dep => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${dep.email}</td>
+          <td>${dep.monto}</td>
+          <td>${dep.tipo}</td>
+          <td>${new Date(dep.fecha).toLocaleString()}</td>
+          <td class="${dep.estado === 'confirmado' ? 'status-confirmado' : 'status-pendiente'}">${dep.estado}</td>
+          <td>
+            <button onclick="cambiarEstadoDeposito('${dep.id}', '${dep.estado}')">
+              ${dep.estado === 'confirmado' ? 'Revertir' : 'Confirmar'}
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function cargarRetiros() {
+      const { data, error } = await supabase.from('retiros').select('*').order('fecha', { ascending: false });
+      const tbody = document.querySelector('#tablaRetiros tbody');
+      tbody.innerHTML = '';
+      data.forEach(ret => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${ret.email}</td>
+          <td>${ret.monto}</td>
+          <td>${ret.tipo}</td>
+          <td>${ret.cbu_usdt}</td>
+          <td>${new Date(ret.fecha).toLocaleString()}</td>
+          <td class="${ret.estado === 'pagado' ? 'status-confirmado' : 'status-pendiente'}">${ret.estado}</td>
+          <td>
+            <button onclick="cambiarEstadoRetiro('${ret.id}', '${ret.estado}')">
+              ${ret.estado === 'pagado' ? 'Pendiente' : 'Marcar pagado'}
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function cambiarEstadoDeposito(id, estadoActual) {
+      const nuevoEstado = estadoActual === 'confirmado' ? 'pendiente' : 'confirmado';
+      await supabase.from('depositos').update({ estado: nuevoEstado }).eq('id', id);
+      cargarDepositos();
+    }
+
+    async function cambiarEstadoRetiro(id, estadoActual) {
+      const nuevoEstado = estadoActual === 'pagado' ? 'pendiente' : 'pagado';
+      await supabase.from('retiros').update({ estado: nuevoEstado }).eq('id', id);
+      cargarRetiros();
+    }
+
+    verificarSesion().then(() => {
+      cargarDepositos();
+      cargarRetiros();
+    });
+  </script>
+</body>
+</html>
