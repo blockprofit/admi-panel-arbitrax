@@ -60,34 +60,19 @@
       backdrop-filter: blur(4px);
     }
 
-    .dashboard-cards {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
-      margin-bottom: 20px;
-    }
-
-    .card {
-      flex: 1;
-      min-width: 250px;
-      background: rgba(255, 255, 255, 0.2);
-      color: white;
-      border-left: 5px solid #3498db;
-      border-radius: 4px;
-      padding: 20px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-    }
-
-    canvas {
-      background: transparent;
-      border-radius: 8px;
-      padding: 10px;
-      margin-top: 20px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-      max-width: 500px;
-      max-height: 300px;
+    iframe {
       width: 100%;
-      height: auto;
+      height: 85vh;
+      border: none;
+      display: none;
+    }
+
+    iframe.active {
+      display: block;
+    }
+
+    .dashboard {
+      display: block;
     }
 
     #botAyuda {
@@ -146,9 +131,6 @@
       cursor: pointer;
     }
 
-    .section { display: none; }
-    .section.active { display: block; }
-
     @media (max-width: 768px) {
       .sidebar {
         width: 200px;
@@ -165,83 +147,70 @@
       }
       .menu-toggle { display: block; }
     }
+
+    .dashboard-cards {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      flex: 1;
+      min-width: 250px;
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border-left: 5px solid #3498db;
+      border-radius: 4px;
+      padding: 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    }
+
+    canvas {
+      background: transparent;
+      border-radius: 8px;
+      padding: 10px;
+      margin-top: 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      max-width: 500px;
+      max-height: 300px;
+      width: 100%;
+      height: auto;
+    }
+
   </style>
 </head>
 <body>
-
   <div class="menu-toggle" onclick="toggleSidebar()">☰</div>
   <div class="sidebar" id="sidebar">
-    <button onclick="showSection('welcome')" class="active"><i class="fas fa-home"></i> Inicio</button>
-    <button onclick="showSection('usuariosPlanes')"><i class="fas fa-users-cog"></i> Usuarios y planes</button>
-    <button onclick="showSection('depositosRetiros')"><i class="fas fa-exchange-alt"></i> Depósitos y Retiros</button>
-    <button onclick="showSection('referidos')"><i class="fas fa-user-friends"></i> Referidos</button>
-    <button onclick="showSection('trivia')"><i class="fas fa-brain"></i> Trivia Cripto</button>
-    <button onclick="showSection('pool')"><i class="fas fa-coins"></i> Mini Pool</button>
-    <button onclick="showSection('mystery')"><i class="fas fa-box-open"></i> Mystery Box</button>
-    <button onclick="showSection('loteria')"><i class="fas fa-gift"></i> Lotería</button>
-    <button onclick="showSection('configuracion')"><i class="fas fa-cog"></i> Configuración</button>
-    <button onclick="showSection('tickets')"><i class="fas fa-ticket-alt"></i> Tickets</button>
+    <button onclick="showIframe('dashboard')" class="active"><i class="fas fa-home"></i> Inicio</button>
+    <button onclick="showIframe('usuariosyplanes.html')"><i class="fas fa-users-cog"></i> Usuarios y planes</button>
+    <button onclick="showIframe('depositosyretiros.html')"><i class="fas fa-exchange-alt"></i> Depósitos y Retiros</button>
+    <button onclick="showIframe('referidos.html')"><i class="fas fa-user-friends"></i> Referidos</button>
+    <button onclick="showIframe('trivia.html')"><i class="fas fa-brain"></i> Trivia Cripto</button>
+    <button onclick="showIframe('pool.html')"><i class="fas fa-coins"></i> Mini Pool</button>
+    <button onclick="showIframe('mystery.html')"><i class="fas fa-box-open"></i> Mystery Box</button>
+    <button onclick="showIframe('loteria.html')"><i class="fas fa-gift"></i> Lotería</button>
+    <button onclick="showIframe('configuracion.html')"><i class="fas fa-cog"></i> Configuración</button>
+    <button onclick="showIframe('tickets.html')"><i class="fas fa-ticket-alt"></i> Tickets</button>
     <button onclick="logout()"><i class="fas fa-power-off"></i> Cerrar sesión</button>
   </div>
-<div class="content" onclick="closeSidebar()">
-  <div id="welcome" class="section active">
-    <h2>Bienvenido de nuevo!</h2>
-    <div class="dashboard-cards">
-      <div class="card" style="border-color: #00d4ff;"><h3>Usuarios registrados</h3><p id="contadorUsuarios">$0</p></div>
-      <div class="card" style="border-color: #c56cf0;"><h3>Recargas últimos 7 días</h3><p id="contadorRecargas">$0</p></div>
-      <div class="card" style="border-color: #ff6b81;"><h3>Próximos pagos</h3><p id="contadorPagos">$0</p></div>
+
+  <div class="content" onclick="closeSidebar()">
+    <div id="dashboard" class="dashboard">
+      <h2>Bienvenido de nuevo!</h2>
+      <div class="dashboard-cards">
+        <div class="card" style="border-color: #00d4ff;"><h3>Usuarios registrados</h3><p id="contadorUsuarios">$0</p></div>
+        <div class="card" style="border-color: #c56cf0;"><h3>Recargas últimos 7 días</h3><p id="contadorRecargas">$0</p></div>
+        <div class="card" style="border-color: #ff6b81;"><h3>Próximos pagos</h3><p id="contadorPagos">$0</p></div>
+      </div>
+      <canvas id="graficaRegistros"></canvas>
+      <canvas id="graficaIngresosRetiros"></canvas>
     </div>
-    <canvas id="graficaRegistros"></canvas>
-    <canvas id="graficaIngresosRetiros"></canvas>
+    
+    <!-- Iframes de secciones -->
+    <iframe id="iframe" class=""></iframe>
   </div>
-
-  <!-- Cada sección carga un archivo HTML externo -->
-  <div id="usuariosPlanes" class="section">
-    <iframe src="usuariosyplanes.html" style="width: 100%; height: 80vh; border: none;"></iframe>
-  </div>
-  <div id="depositosRetiros" class="section">
-    <iframe src="depositosyretiros.html" style="width: 100%; height: 80vh; border: none;"></iframe>
-  </div>
-  <div id="referidos" class="section">
-    <iframe src="referidos.html" style="width: 100%; height: 80vh; border: none;"></iframe>
-  </div>
-  <div id="trivia" class="section">
-    <iframe src="trivia.html" style="width: 100%; height: 80vh; border: none;"></iframe>
-  </div>
-  <div id="pool" class="section">
-    <iframe src="pool.html" style="width: 100%; height: 80vh; border: none;"></iframe>
-  </div>
-  <div id="mystery" class="section">
-    <iframe src="mystery.html" style="width: 100%; height: 80vh; border: none;"></iframe>
-  </div>
-  <div id="loteria" class="section">
-    <iframe src="loteria.html" style="width: 100%; height: 80vh; border: none;"></iframe>
-  </div>
-  <div id="configuracion" class="section">
-    <iframe src="configuracion.html" style="width: 100%; height: 80vh; border: none;"></iframe>
-  </div>
-  <div id="tickets" class="section">
-    <iframe src="tickets.html" style="width: 100%; height: 80vh; border: none;"></iframe>
-  </div>
-</div>
-
-<!-- Soporte / Ayuda -->
-<div id="botAyuda" onclick="toggleAyuda()"><i class="fas fa-comment-dots"></i></div>
-<div id="modalAyuda">
-  <div class="contenido-ayuda">
-    <h3>Soporte / Consulta</h3>
-    <input type="email" id="emailAyuda" placeholder="Tu correo electrónico" />
-    <input type="text" id="asuntoAyuda" placeholder="Asunto" />
-    <textarea id="mensajeAyuda" placeholder="Escribe tu mensaje aquí..."></textarea>
-    <button onclick="enviarTicket()">Enviar</button>
-    <span class="cerrar" onclick="toggleAyuda()">&times;</span>
-    <div id="historialTickets">
-      <h4>Últimos tickets</h4>
-      <ul id="listaTickets"></ul>
-    </div>
-  </div>
-</div>
-
 <script>
   function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('open');
@@ -251,9 +220,21 @@
     document.getElementById('sidebar').classList.remove('open');
   }
 
-  function showSection(id) {
-    document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
+  function showIframe(file) {
+    const iframe = document.getElementById('iframe');
+    const dashboard = document.getElementById('dashboard');
+
+    // Mostrar el iframe con el archivo correspondiente o dashboard si es "Inicio"
+    if (file === 'dashboard') {
+      iframe.classList.remove('active');
+      dashboard.style.display = 'block';
+    } else {
+      iframe.src = file;
+      iframe.classList.add('active');
+      dashboard.style.display = 'none';
+    }
+
+    // Marcar botón activo
     document.querySelectorAll('.sidebar button').forEach(btn => btn.classList.remove('active'));
     event.target.closest('button').classList.add('active');
   }
@@ -261,6 +242,16 @@
   function toggleAyuda() {
     const modal = document.getElementById("modalAyuda");
     modal.style.display = modal.style.display === "block" ? "none" : "block";
+  }
+
+  function logout() {
+    alert("Sesión cerrada.");
+    window.location.href = "login.html";
+  }
+
+  function enviarTicket() {
+    alert("Tu mensaje fue enviado al soporte.");
+    // Acá iría la lógica para enviar ticket a Supabase
   }
 
   // Gráfico de usuarios registrados
@@ -280,9 +271,7 @@
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: {
-          labels: { color: 'white' }
-        }
+        legend: { labels: { color: 'white' } }
       },
       scales: {
         x: { ticks: { color: 'white' } },
@@ -307,23 +296,28 @@
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: {
-          labels: { color: 'white' }
-        }
+        legend: { labels: { color: 'white' } }
       }
     }
   });
-
-  function logout() {
-    // Lógica para cerrar sesión
-    alert("Sesión cerrada.");
-    window.location.href = "login.html";
-  }
-
-  function enviarTicket() {
-    alert("Tu mensaje fue enviado al soporte.");
-    // Acá iría la lógica para enviar el ticket a Supabase o correo
-  }
 </script>
+
+<!-- Soporte / Ayuda -->
+<div id="botAyuda" onclick="toggleAyuda()"><i class="fas fa-comment-dots"></i></div>
+<div id="modalAyuda">
+  <div class="contenido-ayuda">
+    <h3>Soporte / Consulta</h3>
+    <input type="email" id="emailAyuda" placeholder="Tu correo electrónico" />
+    <input type="text" id="asuntoAyuda" placeholder="Asunto" />
+    <textarea id="mensajeAyuda" placeholder="Escribe tu mensaje aquí..."></textarea>
+    <button onclick="enviarTicket()">Enviar</button>
+    <span class="cerrar" onclick="toggleAyuda()">&times;</span>
+    <div id="historialTickets">
+      <h4>Últimos tickets</h4>
+      <ul id="listaTickets"></ul>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
