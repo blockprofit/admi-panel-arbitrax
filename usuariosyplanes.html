@@ -99,108 +99,112 @@
     <tbody></tbody>
   </table>
 
-  <script>
-    const supabase = supabase.createClient(
-      'https://ovulezkcxwrjvyxlxsdv.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI'
-    );
+<script>
+  const supabase = supabase.createClient(
+    'https://ovulezkcxwrjvyxlxsdv.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI'
+  );
 
-    const ADMIN_EMAIL = 'arbitrax9@gmail.com';
+  const ADMIN_EMAIL = 'arbitrax9@gmail.com';
 
-    async function verificarSesion() {
-      const { data, error } = await supabase.auth.getSession();
-      const user = data?.session?.user;
-      if (!user || user.email !== ADMIN_EMAIL) {
-        alert('Acceso denegado');
-        window.location.href = 'login.html';
-      }
+  async function verificarSesion() {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    const user = session?.user;
+
+    if (!user || user.email !== ADMIN_EMAIL) {
+      alert('Acceso denegado');
+      window.location.href = 'login.html';
+    } else {
+      console.log("✅ Sesión activa como admin:", user.email);
+    }
+  }
+
+  async function cargarUsuarios() {
+    const { data, error } = await supabase.from('profiles').select('*');
+    if (error || !data) {
+      alert('Error al cargar usuarios');
+      return;
     }
 
-    async function cargarUsuarios() {
-      const { data, error } = await supabase.from('profiles').select('*');
-      if (error) {
-        alert('Error al cargar usuarios');
-        return;
-      }
+    const tbody = document.querySelector('#tablaUsuarios tbody');
+    tbody.innerHTML = '';
 
-      const tbody = document.querySelector('#tablaUsuarios tbody');
-      tbody.innerHTML = '';
+    data.forEach(user => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${user.nombre || ''}</td>
+        <td>${user.email || ''}</td>
+        <td>${user.celular || ''}</td>
+        <td>${user.cbu || ''}</td>
+        <td>
+          <select onchange="actualizarCampo('${user.id}', 'nivel', this.value)">
+            <option value="Basico" ${user.nivel === 'Basico' ? 'selected' : ''}>Básico</option>
+            <option value="Medio" ${user.nivel === 'Medio' ? 'selected' : ''}>Medio</option>
+            <option value="Avanzado" ${user.nivel === 'Avanzado' ? 'selected' : ''}>Avanzado</option>
+            <option value="Avanzado Pro" ${user.nivel === 'Avanzado Pro' ? 'selected' : ''}>Avanzado Pro</option>
+          </select>
+        </td>
+        <td>
+          <select onchange="actualizarCampo('${user.id}', 'porcentaje', this.value)">
+            <option value="5" ${user.porcentaje == 5 ? 'selected' : ''}>5%</option>
+            <option value="10" ${user.porcentaje == 10 ? 'selected' : ''}>10%</option>
+            <option value="15" ${user.porcentaje == 15 ? 'selected' : ''}>15%</option>
+          </select>
+        </td>
+        <td>
+          <input type="checkbox" ${user.recarga_confirmada ? 'checked' : ''} onchange="actualizarCampo('${user.id}', 'recarga_confirmada', this.checked)">
+        </td>
+        <td><button onclick="actualizarUsuario('${user.id}')">Guardar</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+async function actualizarCampo(id, campo, valor) {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ [campo]: valor })
+      .eq('id', id);
 
-      data.forEach(user => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${user.nombre || ''}</td>
-          <td>${user.email || ''}</td>
-          <td>${user.celular || ''}</td>
-          <td>${user.cbu || ''}</td>
-          <td>
-            <select onchange="actualizarCampo('${user.id}', 'nivel', this.value)">
-              <option value="Basico" ${user.nivel === 'Basico' ? 'selected' : ''}>Básico</option>
-              <option value="Medio" ${user.nivel === 'Medio' ? 'selected' : ''}>Medio</option>
-              <option value="Avanzado" ${user.nivel === 'Avanzado' ? 'selected' : ''}>Avanzado</option>
-              <option value="Avanzado Pro" ${user.nivel === 'Avanzado Pro' ? 'selected' : ''}>Avanzado Pro</option>
-            </select>
-          </td>
-          <td>
-            <select onchange="actualizarCampo('${user.id}', 'porcentaje', this.value)">
-              <option value="5" ${user.porcentaje == 5 ? 'selected' : ''}>5%</option>
-              <option value="10" ${user.porcentaje == 10 ? 'selected' : ''}>10%</option>
-              <option value="15" ${user.porcentaje == 15 ? 'selected' : ''}>15%</option>
-            </select>
-          </td>
-          <td>
-            <input type="checkbox" ${user.recarga_confirmada ? 'checked' : ''} onchange="actualizarCampo('${user.id}', 'recarga_confirmada', this.checked)">
-          </td>
-          <td><button onclick="actualizarUsuario('${user.id}')">Guardar</button></td>
-        `;
-        tbody.appendChild(tr);
-      });
+    if (error) {
+      alert(`Error al actualizar ${campo}`);
+      console.error(error);
     }
-}
+  }
 
-    async function actualizarCampo(id, campo, valor) {
-      let nuevoValor = valor;
-      if (campo === 'recarga_confirmada') {
-        nuevoValor = valor ? true : false;
-      }
-      const { error } = await supabase
+  async function actualizarUsuario(id) {
+    alert('Cambios guardados correctamente');
+    cargarUsuarios();
+  }
+
+  async function cargarEstadisticas() {
+    const hoy = new Date();
+    const fechas = {
+      stat15: new Date(hoy.getTime() - 15 * 60 * 1000),
+      stat24: new Date(hoy.getTime() - 24 * 60 * 60 * 1000),
+      stat7: new Date(hoy.getTime() - 7 * 24 * 60 * 60 * 1000),
+      stat30: new Date(hoy.getTime() - 30 * 24 * 60 * 60 * 1000),
+      stat180: new Date(hoy.getTime() - 180 * 24 * 60 * 60 * 1000)
+    };
+
+    for (const [id, fecha] of Object.entries(fechas)) {
+      const { count, error } = await supabase
         .from('profiles')
-        .update({ [campo]: nuevoValor })
-        .eq('id', id);
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', fecha.toISOString());
+
       if (error) {
-        alert(`Error al actualizar el campo ${campo}`);
-        console.error(error);
-      }
-    }
-
-    async function actualizarUsuario(id) {
-      alert('Cambios guardados correctamente');
-      cargarUsuarios();
-    }
-
-    async function cargarEstadisticas() {
-      const hoy = new Date();
-      const rangos = {
-        stat15: new Date(hoy.getTime() - 15 * 60 * 1000),
-        stat24: new Date(hoy.getTime() - 24 * 60 * 60 * 1000),
-        stat7: new Date(hoy.getTime() - 7 * 24 * 60 * 60 * 1000),
-        stat30: new Date(hoy.getTime() - 30 * 24 * 60 * 60 * 1000),
-        stat180: new Date(hoy.getTime() - 180 * 24 * 60 * 60 * 1000)
-      };
-
-      for (const [id, fecha] of Object.entries(rangos)) {
-        const { count, error } = await supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true })
-          .gte('created_at', fecha.toISOString());
+        console.error(`Error al contar para ${id}:`, error);
+        document.getElementById(id).textContent = '0';
+      } else {
         document.getElementById(id).textContent = count || 0;
       }
     }
+  }
 
-    verificarSesion().then(() => {
-      cargarUsuarios();
-      cargarEstadisticas();
-    });
-  </script>
+  verificarSesion().then(() => {
+    cargarUsuarios();
+    cargarEstadisticas();
+  });
+</script>
 </body>
 </html>
