@@ -65,11 +65,10 @@
     <button id="registerAdminBtn" onclick="registrarAdmin()">Registrar Admin</button>
     <p id="error"></p>
   </div>
-
-  <script>
+<script>
     const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI';
-    const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     async function adminLogin() {
       const email = document.getElementById("loginEmail").value.trim();
@@ -83,7 +82,7 @@
         return;
       }
 
-      const { error } = await client.auth.signInWithPassword({ email, password: pass });
+      const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
       if (error) {
         errorBox.textContent = "Credenciales inválidas.";
       } else {
@@ -91,31 +90,28 @@
       }
     }
 
-    // Solo se ejecuta una vez para registrar al admin
+    // ⚠️ Solo debe ejecutarse una vez para registrar al admin
     async function registrarAdmin() {
       const email = "arbitrax9@gmail.com";
       const password = "Osuna123";
       const errorBox = document.getElementById("error");
 
-      const { data, error } = await client.auth.signUp({
-        email,
-        password
-      });
+      const { data, error } = await supabase.auth.signUp({ email, password });
 
       if (error) {
         errorBox.textContent = "Error al registrar: " + error.message;
         return;
       }
 
-      // Inserta el rol en la tabla 'roles'
-      const { data: rolData, error: rolError } = await client.from("roles").insert([
-        { user_id: data.user.id, role: "admin" }
-      ]);
+      // ⚠️ Si tienes una tabla 'roles', se guarda el rol "admin"
+      const { data: rolData, error: rolError } = await supabase
+        .from("roles")
+        .insert([{ user_id: data.user.id, role: "admin" }]);
 
       if (rolError) {
-        errorBox.textContent = "Registrado pero error al guardar rol: " + rolError.message;
+        errorBox.textContent = "Registrado, pero error al guardar rol: " + rolError.message;
       } else {
-        errorBox.style.color = "green";
+        errorBox.style.color = "lightgreen";
         errorBox.textContent = "Administrador registrado correctamente.";
       }
     }
