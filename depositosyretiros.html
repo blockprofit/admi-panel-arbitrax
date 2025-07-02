@@ -122,12 +122,13 @@
     tabla.innerHTML = "";
 
     data.forEach(dep => {
+      const fecha = dep.fecha || dep.created_at;
       const fila = document.createElement("tr");
       fila.innerHTML = `
-        <td>${formatearFecha(dep.fecha || dep.created_at)}</td>
-        <td>${dep.tipo || "-"}</td>
-        <td>${dep.monto ?? 0}</td>
-        <td class="estado">${dep.estado || "pendiente"}</td>
+        <td>${formatearFecha(fecha)}</td>
+        <td>${dep.tipo || ''}</td>
+        <td>${dep.monto}</td>
+        <td class="estado">${dep.estado || 'pendiente'}</td>
         <td>
           <button class="confirmar" onclick="actualizarEstadoDeposito('${dep.id}', 'confirmado')">Confirmar</button>
           <button class="rechazar" onclick="actualizarEstadoDeposito('${dep.id}', 'rechazado')">Rechazar</button>
@@ -143,13 +144,15 @@
       .update({ estado })
       .eq("id", id);
 
-    if (error) return alert("Error al actualizar depósito");
+    if (error) {
+      console.error("Error actualizando depósito:", error);
+      return alert("Error al actualizar depósito");
+    }
 
-    cargarDepositos();
+    await cargarDepositos();
   }
 
   cargarDepositos();
-</script>
 async function cargarRetiros() {
     const { data, error } = await supabaseClient
       .from("retiros")
@@ -162,9 +165,10 @@ async function cargarRetiros() {
     tabla.innerHTML = "";
 
     data.forEach(ret => {
+      const fecha = ret.fecha || ret.creado;
       const fila = document.createElement("tr");
       fila.innerHTML = `
-        <td>${formatearFecha(ret.fecha || ret.creado)}</td>
+        <td>${formatearFecha(fecha)}</td>
         <td>${ret.tipo}</td>
         <td>${ret.cantidad}</td>
         <td class="estado">${ret.estado}</td>
@@ -185,10 +189,9 @@ async function cargarRetiros() {
 
     if (error) return alert("Error al actualizar retiro");
 
-    cargarRetiros();
+    await cargarRetiros();
   }
 
-  cargarDepositos();
   cargarRetiros();
 </script>
 
