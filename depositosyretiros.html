@@ -114,7 +114,7 @@
     const { data, error } = await supabaseClient
       .from("depositos")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("fecha", { ascending: false });
 
     if (error) return alert("Error al cargar depósitos");
 
@@ -122,11 +122,11 @@
     tabla.innerHTML = "";
 
     data.forEach(dep => {
-      const fecha = dep.fecha || dep.created_at;
+      const fecha = dep.fecha;
       const fila = document.createElement("tr");
       fila.innerHTML = `
         <td>${formatearFecha(fecha)}</td>
-        <td>${dep.tipo || ''}</td>
+        <td>${dep.metodo_pago || ''}</td>
         <td>${dep.monto}</td>
         <td class="estado">${dep.estado || 'pendiente'}</td>
         <td>
@@ -137,8 +137,7 @@
       tabla.appendChild(fila);
     });
   }
-
-  async function actualizarEstadoDeposito(id, estado) {
+async function actualizarEstadoDeposito(id, estado) {
     const { error } = await supabaseClient
       .from("depositos")
       .update({ estado })
@@ -153,7 +152,8 @@
   }
 
   cargarDepositos();
-async function cargarRetiros() {
+
+  async function cargarRetiros() {
     const { data, error } = await supabaseClient
       .from("retiros")
       .select("*")
