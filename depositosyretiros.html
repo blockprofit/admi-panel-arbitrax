@@ -109,25 +109,34 @@
       day: "2-digit", month: "2-digit", year: "numeric"
     });
   }
-
-  async function cargarDepositos() {
+async function cargarDepositos() {
     const { data, error } = await supabaseClient
       .from("depositos")
       .select("*")
-      .order("fecha", { ascending: false });
+      .order("created_at", { ascending: false });
 
-    if (error) return alert("Error al cargar depósitos");
+    if (error) {
+      console.error("Error al cargar depósitos:", error);
+      return alert("Error al cargar depósitos");
+    }
+
+    console.log("Depósitos cargados:", data);
 
     const tabla = document.getElementById("tablaDepositos");
     tabla.innerHTML = "";
 
+    if (!data || data.length === 0) {
+      tabla.innerHTML = '<tr><td colspan="5">No hay depósitos registrados.</td></tr>';
+      return;
+    }
+
     data.forEach(dep => {
-      const fecha = dep.fecha;
+      const fecha = dep.created_at;
       const fila = document.createElement("tr");
       fila.innerHTML = `
         <td>${formatearFecha(fecha)}</td>
-        <td>${dep.metodo_pago || ''}</td>
-        <td>${dep.monto}</td>
+        <td>${dep.tipo || '-'}</td>
+        <td>${dep.monto || '-'}</td>
         <td class="estado">${dep.estado || 'pendiente'}</td>
         <td>
           <button class="confirmar" onclick="actualizarEstadoDeposito('${dep.id}', 'confirmado')">Confirmar</button>
@@ -137,7 +146,8 @@
       tabla.appendChild(fila);
     });
   }
-async function actualizarEstadoDeposito(id, estado) {
+
+  async function actualizarEstadoDeposito(id, estado) {
     const { error } = await supabaseClient
       .from("depositos")
       .update({ estado })
@@ -152,6 +162,8 @@ async function actualizarEstadoDeposito(id, estado) {
   }
 
   cargarDepositos();
+
+  // Parte de retiros queda intacta, solo copio tal cual
 
   async function cargarRetiros() {
     const { data, error } = await supabaseClient
