@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Usuarios y Planes</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <style>
@@ -100,13 +101,12 @@
   </table>
 
   <script>
-    const createClient = supabase.createClient;
-    const supabase = createClient(
+    const ADMIN_EMAIL = 'arbitrax9@gmail.com';
+
+    const supabase = supabase.createClient(
       'https://ovulezkcxwrjvyxlxsdv.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI'
     );
-
-    const ADMIN_EMAIL = 'arbitrax9@gmail.com';
 
     async function verificarSesion() {
       const { data, error } = await supabase.auth.getSession();
@@ -116,8 +116,7 @@
         window.location.href = 'login.html';
       }
     }
-
-    async function cargarUsuarios() {
+async function cargarUsuarios() {
       const { data, error } = await supabase.from('profiles').select('*');
       if (error) {
         alert('Error al cargar usuarios');
@@ -129,6 +128,8 @@
       tbody.innerHTML = '';
 
       data.forEach(user => {
+        if (user.email === ADMIN_EMAIL) return; // Ocultar admin
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${user.nombre || ''}</td>
@@ -158,14 +159,11 @@
         tbody.appendChild(tr);
       });
     }
-}
 
     async function actualizarCampo(id, campo, valor) {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ [campo]: valor })
-        .eq('id', id);
-
+      const actualizacion = {};
+      actualizacion[campo] = campo === 'recarga_confirmada' ? valor : valor;
+      const { error } = await supabase.from('profiles').update(actualizacion).eq('id', id);
       if (error) {
         alert(`Error actualizando ${campo}`);
         console.error(error);
@@ -179,7 +177,7 @@
 
     async function cargarEstadisticas() {
       const hoy = new Date();
-      const fechas = {
+      const rangos = {
         stat15: new Date(hoy.getTime() - 15 * 60 * 1000),
         stat24: new Date(hoy.getTime() - 24 * 60 * 60 * 1000),
         stat7: new Date(hoy.getTime() - 7 * 24 * 60 * 60 * 1000),
@@ -187,22 +185,17 @@
         stat180: new Date(hoy.getTime() - 180 * 24 * 60 * 60 * 1000)
       };
 
-      for (const [id, fecha] of Object.entries(fechas)) {
+      for (const [id, fecha] of Object.entries(rangos)) {
         const { count, error } = await supabase
           .from('profiles')
           .select('*', { count: 'exact', head: true })
+          .neq('email', ADMIN_EMAIL)
           .gte('created_at', fecha.toISOString());
 
-        if (!error) {
-          document.getElementById(id).textContent = count || 0;
-        } else {
-          document.getElementById(id).textContent = '0';
-          console.error(error);
-        }
+        document.getElementById(id).textContent = count || 0;
       }
     }
 
-    // Iniciar funciones al cargar la página
     verificarSesion().then(() => {
       cargarUsuarios();
       cargarEstadisticas();
