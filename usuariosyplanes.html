@@ -14,15 +14,18 @@
       background: rgba(0, 0, 0, 0.7);
       color: white;
     }
+
     h2 {
       margin-bottom: 10px;
     }
+
     .stats {
       display: flex;
       flex-wrap: wrap;
       gap: 15px;
       margin-bottom: 20px;
     }
+
     .stat {
       background: #2c3e50;
       padding: 15px;
@@ -31,6 +34,7 @@
       min-width: 200px;
       flex: 1;
     }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -40,22 +44,27 @@
       border-radius: 6px;
       overflow: hidden;
     }
+
     th, td {
       padding: 10px;
       text-align: left;
       border-bottom: 1px solid #bdc3c7;
     }
+
     th {
       background: #34495e;
       color: white;
     }
+
     select, button {
       padding: 5px 10px;
       margin: 0;
     }
+
     input[type='checkbox'] {
       transform: scale(1.2);
     }
+
     @media (max-width: 768px) {
       table, .stats {
         font-size: 14px;
@@ -65,6 +74,7 @@
 </head>
 <body>
   <h2>Usuarios y Planes</h2>
+
   <div class="stats">
     <div class="stat">Últimos 15 min: <span id="stat15">0</span></div>
     <div class="stat">Últimas 24h: <span id="stat24">0</span></div>
@@ -89,11 +99,11 @@
     <tbody></tbody>
   </table>
 <script>
-  const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI';
-  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
   const ADMIN_EMAIL = 'arbitrax9@gmail.com';
+
+  const supabaseUrl = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
+  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI';
+  const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
   async function verificarSesion() {
     const { data, error } = await supabase.auth.getSession();
@@ -115,8 +125,6 @@
     tbody.innerHTML = '';
 
     data.forEach(user => {
-      if (user.email === ADMIN_EMAIL) return; // Omitir al administrador
-
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${user.nombre || ''}</td>
@@ -148,12 +156,8 @@
   }
 
   async function actualizarCampo(id, campo, valor) {
-    const valorFinal = campo === 'recarga_confirmada' ? valor === true : valor;
-    const { error } = await supabase.from('profiles').update({ [campo]: valorFinal }).eq('id', id);
-    if (error) {
-      alert(`Error actualizando ${campo}`);
-      console.error(error);
-    }
+    const { error } = await supabase.from('profiles').update({ [campo]: valor }).eq('id', id);
+    if (error) alert(`Error actualizando ${campo}`);
   }
 
   async function actualizarUsuario(id) {
@@ -176,11 +180,7 @@
         .from('profiles')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', fecha.toISOString());
-      if (!error) {
-        document.getElementById(id).textContent = count || 0;
-      } else {
-        console.error(error);
-      }
+      document.getElementById(id).textContent = count || 0;
     }
   }
 
