@@ -125,9 +125,9 @@
       const fila = document.createElement("tr");
       fila.innerHTML = `
         <td>${formatearFecha(dep.fecha)}</td>
-        <td>${dep.tipo}</td>
+        <td>${dep.tipo || ''}</td>
         <td>${dep.monto}</td>
-        <td class="estado">${dep.estado}</td>
+        <td class="estado">${dep.estado || 'pendiente'}</td>
         <td>
           <button class="confirmar" onclick="actualizarEstadoDeposito('${dep.id}', 'confirmado')">Confirmar</button>
           <button class="rechazar" onclick="actualizarEstadoDeposito('${dep.id}', 'rechazado')">Rechazar</button>
@@ -140,12 +140,15 @@
   async function actualizarEstadoDeposito(id, estado) {
     const { error } = await supabaseClient
       .from("depositos")
-      .update({ estado })
+      .update({ estado: estado })
       .eq("id", id);
 
-    if (error) return alert("Error al actualizar depósito");
+    if (error) {
+      console.error("Error actualizando depósito:", error);
+      return alert("Error al actualizar depósito");
+    }
 
-    cargarDepositos();
+    await cargarDepositos();
   }
 
   cargarDepositos();
@@ -184,7 +187,7 @@ async function cargarRetiros() {
 
     if (error) return alert("Error al actualizar retiro");
 
-    cargarRetiros();
+    await cargarRetiros();
   }
 
   cargarRetiros();
