@@ -110,9 +110,18 @@
     });
   }
 async function cargarDepositos() {
+    const { data: userData, error: userError } = await supabaseClient.auth.getUser();
+    const user = userData?.user;
+
+    if (userError || !user) {
+      console.error("Usuario no autenticado:", userError);
+      return alert("Debes iniciar sesión para ver los depósitos.");
+    }
+
     const { data, error } = await supabaseClient
       .from("depositos")
       .select("*")
+      .eq("usuario_id", user.id)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -162,8 +171,6 @@ async function cargarDepositos() {
   }
 
   cargarDepositos();
-
-  // Parte de retiros queda intacta, solo copio tal cual
 
   async function cargarRetiros() {
     const { data, error } = await supabaseClient
