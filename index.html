@@ -1,4 +1,3 @@
-<!-- admin-login.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -51,9 +50,6 @@
       color: red;
       margin-top: 10px;
     }
-    #registerAdminBtn {
-      background-color: #28a745;
-    }
   </style>
 </head>
 <body>
@@ -62,59 +58,31 @@
     <input type="email" id="loginEmail" placeholder="Correo del administrador" />
     <input type="password" id="loginPass" placeholder="Contraseña" />
     <button onclick="adminLogin()">Entrar</button>
-    <button id="registerAdminBtn" onclick="registrarAdmin()">Registrar Admin</button>
     <p id="error"></p>
   </div>
 <script>
-    const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI';
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI';
+  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    async function adminLogin() {
-      const email = document.getElementById("loginEmail").value.trim();
-      const pass = document.getElementById("loginPass").value;
-      const errorBox = document.getElementById("error");
-      errorBox.textContent = '';
+  async function adminLogin() {
+    const email = document.getElementById("loginEmail").value.trim();
+    const pass = document.getElementById("loginPass").value;
+    const errorBox = document.getElementById("error");
+    errorBox.textContent = '';
 
-      // Solo permite login del correo exacto del admin
-      if (email !== "arbitrax9@gmail.com") {
-        errorBox.textContent = "Correo no autorizado.";
-        return;
-      }
-
-      const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
-      if (error) {
-        errorBox.textContent = "Credenciales inválidas.";
-      } else {
-        window.location.href = "principal.html";
-      }
+    if (email !== "arbitrax9@gmail.com") {
+      errorBox.textContent = "Correo no autorizado.";
+      return;
     }
 
-    // ⚠️ Solo debe ejecutarse una vez para registrar al admin
-    async function registrarAdmin() {
-      const email = "arbitrax9@gmail.com";
-      const password = "Osuna123";
-      const errorBox = document.getElementById("error");
-
-      const { data, error } = await supabase.auth.signUp({ email, password });
-
-      if (error) {
-        errorBox.textContent = "Error al registrar: " + error.message;
-        return;
-      }
-
-      // ⚠️ Si tienes una tabla 'roles', se guarda el rol "admin"
-      const { data: rolData, error: rolError } = await supabase
-        .from("roles")
-        .insert([{ user_id: data.user.id, role: "admin" }]);
-
-      if (rolError) {
-        errorBox.textContent = "Registrado, pero error al guardar rol: " + rolError.message;
-      } else {
-        errorBox.style.color = "lightgreen";
-        errorBox.textContent = "Administrador registrado correctamente.";
-      }
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
+    if (error) {
+      errorBox.textContent = "Credenciales inválidas.";
+    } else {
+      window.location.href = "principal.html";
     }
-  </script>
+  }
+</script>
 </body>
 </html>
