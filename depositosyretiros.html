@@ -104,7 +104,7 @@
 
 <div style="margin-bottom:20px;">
   <input type="text" id="filtroInput" placeholder="Buscar por correo o ID de usuario" style="padding:8px; width: 300px; border-radius: 5px; border: none;"/>
-  <button onclick="buscarPorEmailOID()" style="padding: 8px 16px; background-color:#00a8ff; color: white; border:none; border-radius: 5px; cursor:pointer;">Buscar</button>
+  <button id="btnBuscar" style="padding: 8px 16px; background-color:#00a8ff; color: white; border:none; border-radius: 5px; cursor:pointer;">Buscar</button>
 </div>
 
 <h2>Historial de Depósitos</h2>
@@ -145,7 +145,6 @@
 
   <button onclick="guardarConfigCuenta()">Guardar configuración</button>
 </div>
-
 <script>
   const supabaseClient = supabase.createClient(
     'https://ovulezkcxwrjvyxlxsdv.supabase.co',
@@ -250,7 +249,8 @@
 
     await cargarDepositos();
   }
-async function cargarRetiros() {
+
+  async function cargarRetiros() {
     let { data, error } = await supabaseClient
       .from("retiros")
       .select("*")
@@ -301,36 +301,9 @@ async function cargarRetiros() {
 
     await cargarRetiros();
   }
-
-  async function buscarPorEmailOID() {
-    const valor = document.getElementById("filtroInput").value.trim().toLowerCase();
-    if (!valor) {
-      usuarioBuscadoId = null;
-      await cargarDepositos();
-      return;
-    }
-
-    if (valor.includes("@")) {
-      const { data, error } = await supabaseClient
-        .from("profiles")
-        .select("id")
-        .ilike("email", valor)
-        .single();
-
-      if (error || !data) {
-        alert("Usuario no encontrado.");
-        usuarioBuscadoId = null;
-        return;
-      }
-
-      usuarioBuscadoId = data.id;
-    } else {
-      usuarioBuscadoId = valor;
-    }
-
-    await cargarDepositos();
-  }
-async function cargarConfigCuenta() {
+</script>
+<script>
+  async function cargarConfigCuenta() {
     const { data, error } = await supabaseClient
       .from("config_depositos")
       .select("cbu, usdt")
@@ -382,7 +355,34 @@ async function cargarConfigCuenta() {
     alert("✅ Cuenta actualizada correctamente.");
   }
 
-  document.getElementById("btnBuscar").addEventListener("click", buscarPorEmailOID);
+  async function buscarPorEmailOID() {
+    const valor = document.getElementById("inputBusqueda").value.trim().toLowerCase();
+    if (!valor) {
+      usuarioBuscadoId = null;
+      await cargarDepositos();
+      return;
+    }
+
+    if (valor.includes("@")) {
+      const { data, error } = await supabaseClient
+        .from("profiles")
+        .select("id")
+        .ilike("email", valor)
+        .single();
+
+      if (error || !data) {
+        alert("Usuario no encontrado.");
+        usuarioBuscadoId = null;
+        return;
+      }
+
+      usuarioBuscadoId = data.id;
+    } else {
+      usuarioBuscadoId = valor;
+    }
+
+    await cargarDepositos();
+  }
 
   cargarDepositos();
   cargarRetiros();
