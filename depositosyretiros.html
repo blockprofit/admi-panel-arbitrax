@@ -99,26 +99,45 @@
       background-color: #00a8ff;
     }
 
-    .busqueda {
-      margin-top: 20px;
-      margin-bottom: -10px;
+    /* Filtro historial - solo para admin */
+    #filtroHistorial {
+      background: #222;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 40px;
+      display: none;
     }
-
-    .busqueda input {
+    #filtroHistorial h3 {
+      color: #00d4ff;
+      margin-bottom: 10px;
+    }
+    #filtroHistorial label {
+      font-weight: bold;
+    }
+    #filtroHistorial input, #filtroHistorial button {
       width: 100%;
       padding: 10px;
-      border-radius: 6px;
+      margin-top: 5px;
+      border-radius: 5px;
       border: none;
       font-size: 16px;
+    }
+    #filtroHistorial button {
+      margin-top: 15px;
+      background-color: #00a8ff;
+      cursor: pointer;
+    }
+
+    /* Historial tablas */
+    .historial {
+      margin-top: 30px;
+      display: none;
     }
   </style>
 </head>
 <body>
 
-<h2>Historial de Depósitos</h2>
-<div class="busqueda">
-  <input type="text" id="busquedaDeposito" placeholder="Buscar por email o ID de usuario..." oninput="cargarDepositos(this.value)">
-</div>
+<h2>Depósitos Pendientes</h2>
 <table>
   <thead>
     <tr>
@@ -132,10 +151,7 @@
   <tbody id="tablaDepositos"></tbody>
 </table>
 
-<h2>Historial de Retiros</h2>
-<div class="busqueda">
-  <input type="text" id="busquedaRetiro" placeholder="Buscar por email o ID de usuario..." oninput="cargarRetiros(this.value)">
-</div>
+<h2>Retiros Pendientes</h2>
 <table>
   <thead>
     <tr>
@@ -160,6 +176,49 @@
   <button onclick="guardarConfigCuenta()">Guardar configuración</button>
 </div>
 
+<!-- FILTRO HISTORIAL PARA ADMIN -->
+<div id="filtroHistorial">
+  <h3>Buscar en Historial</h3>
+  <label for="inputFiltroUsuario">Email o ID de Usuario:</label>
+  <input type="text" id="inputFiltroUsuario" placeholder="Ej: usuario@correo.com o ID" />
+  <button onclick="buscarHistorial()">Buscar</button>
+</div>
+
+<!-- TABLAS HISTORIAL -->
+<div class="historial" id="historialDepositosContenedor">
+  <h2>Historial de Depósitos (Confirmados / Rechazados)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Fecha</th>
+        <th>Tipo</th>
+        <th>Monto</th>
+        <th>Estado</th>
+        <th>Usuario ID</th>
+        <th>Email</th>
+      </tr>
+    </thead>
+    <tbody id="historialDepositos"></tbody>
+  </table>
+</div>
+
+<div class="historial" id="historialRetirosContenedor">
+  <h2>Historial de Retiros (Confirmados / Rechazados)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Fecha</th>
+        <th>Tipo</th>
+        <th>Monto</th>
+        <th>Estado</th>
+        <th>Usuario ID</th>
+        <th>Email</th>
+      </tr>
+    </thead>
+    <tbody id="historialRetiros"></tbody>
+  </table>
+</div>
+
 <script>
   const supabaseClient = supabase.createClient(
     'https://ovulezkcxwrjvyxlxsdv.supabase.co',
@@ -171,8 +230,19 @@
       day: "2-digit", month: "2-digit", year: "numeric"
     });
   }
+// Obtener email usuario por ID (para historial)
+  async function obtenerEmailUsuario(userId) {
+    if (!userId) return '-';
+    const { data, error } = await supabaseClient
+      .from('profiles')
+      .select('email')
+      .eq('id', userId)
+      .single();
+    if (error || !data) return '-';
+    return data.email || '-';
+  }
 
-  async function cargarDepositos(filtro = "") {
+  async function cargarDepositos() {
     const { data: authData, error: userError } = await supabaseClient.auth.getUser();
     const user = authData?.user;
     if (userError || !user) {
@@ -193,34 +263,35 @@
 
     const esAdmin = perfilData.rol === "admi";
     document.getElementById("configCuenta").style.display = esAdmin ? "block" : "none";
+    document.getElementById("filtroHistorial").style.display = esAdmin ? "block" : "none";
 
-    let { data, error } = await supabaseClient
-      .from("depositos")
-      .select("*, perfil:usuario_id(email)")
-      .order("created_at", { ascending: false });
+    let data, error;
+    if (esAdmin) {
+      // Mostrar solo depósitos pendientes (estado nulo o 'pendiente')
+      ({ data, error } = await supabaseClient
+        .from("depositos")
+        .select("*")
+        .or('estado.is.null,estado.eq.pendiente')
+        .order("created_at", { ascending: false }));
+    } else {
+      ({ data, error } = await supabaseClient
+        .from("depositos")
+        .select("*")
+        .eq("usuario_id", user.id)
+        .or('estado.is.null,estado.eq.pendiente')
+        .order("created_at", { ascending: false }));
+    }
 
     if (error) {
       console.error("Error al cargar depósitos:", error);
       return alert("Error al cargar depósitos");
     }
 
-    if (!esAdmin) {
-      data = data.filter(dep => dep.usuario_id === user.id);
-    } else if (filtro) {
-      const filtroMin = filtro.toLowerCase();
-      data = data.filter(dep =>
-        (dep.perfil?.email?.toLowerCase() || "").includes(filtroMin) ||
-        (dep.usuario_id || "").toLowerCase().includes(filtroMin)
-      );
-    } else {
-      data = data.filter(dep => dep.estado === "pendiente");
-    }
-
     const tabla = document.getElementById("tablaDepositos");
     tabla.innerHTML = "";
 
     if (!data || data.length === 0) {
-      tabla.innerHTML = `<tr><td colspan="5">No hay depósitos ${filtro ? "coincidentes" : "pendientes"}.</td></tr>`;
+      tabla.innerHTML = '<tr><td colspan="5">No hay depósitos registrados.</td></tr>';
       return;
     }
 
@@ -258,17 +329,10 @@
 
     await cargarDepositos();
   }
-async function cargarRetiros(filtro = "") {
-    let { data, error } = await supabaseClient
-      .from("retiros")
-      .select("*, perfil:usuario_id(email)")
-      .order("creado", { ascending: false });
 
-    if (error) {
-      console.error("Error al cargar retiros:", error);
-      return alert("Error al cargar retiros");
-    }
-
+  async function cargarRetiros() {
+    const { data: authData, error: userError } = await supabaseClient.auth.getUser
+async function cargarRetiros() {
     const { data: authData, error: userError } = await supabaseClient.auth.getUser();
     const user = authData?.user;
     if (userError || !user) {
@@ -289,23 +353,33 @@ async function cargarRetiros(filtro = "") {
 
     const esAdmin = perfilData.rol === "admi";
 
-    if (!esAdmin) {
-      data = data.filter(ret => ret.usuario_id === user.id);
-    } else if (filtro) {
-      const filtroMin = filtro.toLowerCase();
-      data = data.filter(ret =>
-        (ret.perfil?.email?.toLowerCase() || "").includes(filtroMin) ||
-        (ret.usuario_id || "").toLowerCase().includes(filtroMin)
-      );
+    let data, error;
+    if (esAdmin) {
+      // Mostrar retiros pendientes (estado nulo o 'pendiente')
+      ({ data, error } = await supabaseClient
+        .from("retiros")
+        .select("*")
+        .or('estado.is.null,estado.eq.pendiente')
+        .order("creado", { ascending: false }));
     } else {
-      data = data.filter(ret => ret.estado === "pendiente");
+      ({ data, error } = await supabaseClient
+        .from("retiros")
+        .select("*")
+        .eq("usuario_id", user.id)
+        .or('estado.is.null,estado.eq.pendiente')
+        .order("creado", { ascending: false }));
+    }
+
+    if (error) {
+      console.error("Error al cargar retiros:", error);
+      return alert("Error al cargar retiros");
     }
 
     const tabla = document.getElementById("tablaRetiros");
     tabla.innerHTML = "";
 
     if (!data || data.length === 0) {
-      tabla.innerHTML = `<tr><td colspan="5">No hay retiros ${filtro ? "coincidentes" : "pendientes"}.</td></tr>`;
+      tabla.innerHTML = '<tr><td colspan="5">No hay retiros registrados.</td></tr>';
       return;
     }
 
@@ -314,9 +388,9 @@ async function cargarRetiros(filtro = "") {
       const fila = document.createElement("tr");
       fila.innerHTML = `
         <td>${formatearFecha(fecha)}</td>
-        <td>${ret.tipo}</td>
-        <td>${ret.cantidad}</td>
-        <td class="estado">${ret.estado}</td>
+        <td>${ret.tipo || '-'}</td>
+        <td>${ret.cantidad || '-'}</td>
+        <td class="estado">${ret.estado || 'pendiente'}</td>
         <td>
           <button class="confirmar" onclick="actualizarEstadoRetiro('${ret.id}', 'confirmado')">Confirmar</button>
           <button class="rechazar" onclick="actualizarEstadoRetiro('${ret.id}', 'rechazado')">Rechazar</button>
@@ -333,14 +407,13 @@ async function cargarRetiros(filtro = "") {
       .eq("id", id);
 
     if (error) {
-      console.error("Error al actualizar retiro:", error);
+      console.error("Error actualizando retiro:", error);
       return alert("Error al actualizar retiro");
     }
 
     await cargarRetiros();
   }
-
-  async function cargarConfigCuenta() {
+async function cargarConfigCuenta() {
     const { data, error } = await supabaseClient
       .from("config_depositos")
       .select("cbu, usdt")
@@ -392,9 +465,10 @@ async function cargarRetiros(filtro = "") {
     alert("✅ Cuenta actualizada correctamente.");
   }
 
-  // Carga inicial
+  // Llamadas iniciales para cargar datos
   cargarDepositos();
   cargarRetiros();
+  cargarConfigCuenta();
 </script>
 
 </body>
