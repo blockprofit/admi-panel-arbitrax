@@ -347,11 +347,112 @@ async function actualizarEstadoDeposito(id, estado) {
 
       usuarioBuscadoId = data.id;
     } else {
+      // Aquí el usuario puede poner el ID directamente
       usuarioBuscadoId = valor;
     }
 
-    await cargarDepositos();
-    await cargarRetiros();
+    // Si es admin, mostramos depósitos y retiros de ese usuario, todos los estados
+    const { data: perfilData, error: perfilError } = await supabaseClient
+      .from("profiles")
+      .select("rol")
+      .eq("id", (await supabaseClient.auth.getUser()).data.user.id)
+      .single();
+
+    const esAdmin = perfilData?.rol === "admi";
+
+    if (esAdmin) {
+      await cargarDepositosBuscados(usuarioBuscadoId);
+      await cargarRetirosBuscados(usuarioBuscadoId);
+    } else {
+      // Si no es admin, cargamos solo pendientes para el usuario actual (como siempre)
+      usuarioBuscadoId = null;
+      await cargarDepositos();
+      await cargarRetiros();
+    }
+  }
+
+  // Funciones nuevas para cargar depósitos y retiros de cualquier estado para admin (buscados)
+  async function cargarDepositosBuscados(usuarioId) {
+    let query = supabaseClient
+      .from("depositos")
+      .select("*")
+      .eq("usuario_id", usuarioId)
+      .order("created_at", { ascending: false });
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("Error al cargar depósitos buscados:", error);
+      alert("Error al cargar depósitos.");
+      return;
+    }
+
+    const tabla = document.getElementById("tablaDepositos");
+    tabla.innerHTML = "";
+
+    if (!data || data.length === 0) {
+      tabla.innerHTML = '<tr><td colspan="5">No hay depósitos registrados para este usuario.</td></tr>';
+      return;
+    }
+
+    data.forEach(dep => {
+      const fila = document.createElement("tr");
+      fila.innerHTML = `
+        <td>${formatearFecha(dep.created_at)}</td>
+        <td>${dep.tipo || '-'}</td>
+        <td>${dep.monto || '-'}</td>
+        <td class="estado">${dep.estado || '-'}</td>
+        <td>
+          ${dep.estado === 'pendiente' ? `
+            <button class="confirmar" onclick="actualizarEstadoDeposito('${dep.id}', 'confirmado')">Confirmar</button>
+            <button class="rechazar" onclick="actualizarEstadoDeposito('${dep.id}', 'rechazado')">Rechazar</button>
+          ` : '-'}
+        </td>
+      `;
+      tabla.appendChild(fila);
+    });
+  }
+
+  async function cargarRetirosBuscados(usuarioId) {
+    let query = supabaseClient
+      .from("retiros")
+      .select("*")
+      .eq("usuario_id", usuarioId)
+      .order("creado", { ascending: false });
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("Error al cargar retiros buscados:", error);
+      alert("Error al cargar retiros.");
+      return;
+    }
+
+    const tabla = document.getElementById("tablaRetiros");
+    tabla.innerHTML = "";
+
+    if (!data || data.length === 0) {
+      tabla.innerHTML = '<tr><td colspan="5">No hay retiros registrados para este usuario.</td></tr>';
+      return;
+    }
+
+    data.forEach(ret => {
+      const fecha = ret.fecha || ret.creado;
+      const fila = document.createElement("tr");
+      fila.innerHTML = `
+        <td>${formatearFecha(fecha)}</td>
+        <td>${ret.tipo || '-'}</td>
+        <td>${ret.cantidad || '-'}</td>
+        <td class="estado">${ret.estado || '-'}</td>
+        <td>
+          ${ret.estado === 'pendiente' ? `
+            <button class="confirmar" onclick="actualizarEstadoRetiro('${ret.id}', 'confirmado')">Confirmar</button>
+            <button class="rechazar" onclick="actualizarEstadoRetiro('${ret.id}', 'rechazado')">Rechazar</button>
+          ` : '-'}
+        </td>
+      `;
+      tabla.appendChild(fila);
+    });
   }
 
   async function cargarConfigCuenta() {
@@ -412,7 +513,7 @@ async function actualizarEstadoDeposito(id, estado) {
 
   cargarDepositos();
   cargarRetiros();
-</script>
 
+</script>
 </body>
 </html>
