@@ -159,7 +159,8 @@
       day: "2-digit", month: "2-digit", year: "numeric"
     });
   }
-async function cargarDepositos() {
+
+  async function cargarDepositos() {
     const { data: authData, error: userError } = await supabaseClient.auth.getUser();
     const user = authData?.user;
     if (userError || !user) {
@@ -185,7 +186,6 @@ async function cargarDepositos() {
 
     let data, error;
 
-    // Si es admin y se busca un usuario específico:
     if (esAdmin) {
       if (usuarioBuscadoId) {
         ({ data, error } = await supabaseClient
@@ -195,7 +195,6 @@ async function cargarDepositos() {
           .not("estado", "in", "('confirmado','rechazado')")
           .order("created_at", { ascending: false }));
       } else {
-        // Admin sin filtro, trae todos los depósitos pendientes
         ({ data, error } = await supabaseClient
           .from("depositos")
           .select("*")
@@ -203,11 +202,11 @@ async function cargarDepositos() {
           .order("created_at", { ascending: false }));
       }
     } else {
-      // Usuario normal, solo sus depósitos
       ({ data, error } = await supabaseClient
         .from("depositos")
         .select("*")
         .eq("usuario_id", user.id)
+        .not("estado", "in", "('confirmado','rechazado')") // FILTRADO PARA USUARIO NORMAL
         .order("created_at", { ascending: false }));
     }
 
@@ -259,9 +258,7 @@ async function cargarDepositos() {
 
     await cargarDepositos();
   }
-
-
-  async function cargarRetiros() {
+async function cargarRetiros() {
     const { data: authData, error: userError } = await supabaseClient.auth.getUser();
     const user = authData?.user;
     if (userError || !user) {
@@ -286,7 +283,6 @@ async function cargarDepositos() {
 
     let data, error;
 
-    // Si es admin y hay filtro:
     if (esAdmin) {
       if (usuarioBuscadoId) {
         ({ data, error } = await supabaseClient
@@ -296,7 +292,6 @@ async function cargarDepositos() {
           .not("estado", "in", "('confirmado','rechazado')")
           .order("creado", { ascending: false }));
       } else {
-        // Admin sin filtro, todos retiros pendientes
         ({ data, error } = await supabaseClient
           .from("retiros")
           .select("*")
@@ -304,11 +299,11 @@ async function cargarDepositos() {
           .order("creado", { ascending: false }));
       }
     } else {
-      // Usuario normal, solo sus retiros
       ({ data, error } = await supabaseClient
         .from("retiros")
         .select("*")
         .eq("usuario_id", user.id)
+        .not("estado", "in", "('confirmado','rechazado')") // FILTRADO PARA USUARIO NORMAL
         .order("creado", { ascending: false }));
     }
 
@@ -360,7 +355,6 @@ async function cargarDepositos() {
     await cargarRetiros();
   }
 
-
   async function buscarPorEmailOID() {
     const valor = document.getElementById("filtroInput").value.trim().toLowerCase();
     if (!valor) {
@@ -371,7 +365,6 @@ async function cargarDepositos() {
     }
 
     if (valor.includes("@")) {
-      // Buscar el id de usuario por email
       const { data, error } = await supabaseClient
         .from("profiles")
         .select("id")
@@ -394,7 +387,6 @@ async function cargarDepositos() {
     await cargarDepositos();
     await cargarRetiros();
   }
-
 
   async function cargarConfigCuenta() {
     const { data, error } = await supabaseClient
@@ -450,10 +442,8 @@ async function cargarDepositos() {
     alert("✅ Cuenta actualizada correctamente.");
   }
 
-  // Asignar evento al botón buscar:
   document.getElementById("btnBuscar").addEventListener("click", buscarPorEmailOID);
 
-  // Cargar inicialmente
   cargarDepositos();
   cargarRetiros();
 </script>
