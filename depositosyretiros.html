@@ -66,6 +66,38 @@
       font-weight: bold;
       text-transform: capitalize;
     }
+
+    .configuracion {
+      background: #1b1b1b;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 40px;
+    }
+
+    .configuracion h3 {
+      color: #00d4ff;
+    }
+
+    .configuracion label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    .configuracion input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 5px;
+      border: none;
+      font-size: 16px;
+    }
+
+    .configuracion button {
+      margin-top: 15px;
+      width: 100%;
+      background-color: #00a8ff;
+    }
   </style>
 </head>
 <body>
@@ -98,6 +130,17 @@
   <tbody id="tablaRetiros"></tbody>
 </table>
 
+<div class="configuracion" id="configCuenta">
+  <h3>Configuración de Cuentas para Depósito</h3>
+  <label for="inputCbu">CBU (ARS):</label>
+  <input type="text" id="inputCbu" placeholder="Ej: 0000267900000000189224" />
+
+  <label for="inputUsdt">Dirección USDT (BEP20):</label>
+  <input type="text" id="inputUsdt" placeholder="Ej: 0x9748Fbc810456..." />
+
+  <button onclick="guardarConfigCuenta()">Guardar configuración</button>
+</div>
+
 <script>
   const supabaseClient = supabase.createClient(
     'https://ovulezkcxwrjvyxlxsdv.supabase.co',
@@ -109,8 +152,7 @@
       day: "2-digit", month: "2-digit", year: "numeric"
     });
   }
-
-  async function cargarDepositos() {
+async function cargarDepositos() {
     const { data: authData, error: userError } = await supabaseClient.auth.getUser();
     const user = authData?.user;
     if (userError || !user) {
@@ -118,7 +160,6 @@
       return alert("Debes iniciar sesión.");
     }
 
-    // Consultamos el rol del usuario
     const { data: perfilData, error: perfilError } = await supabaseClient
       .from("profiles")
       .select("rol")
@@ -131,8 +172,8 @@
     }
 
     const esAdmin = perfilData.rol === "admi";
+    document.getElementById("configCuenta").style.display = esAdmin ? "block" : "none";
 
-    // Consulta de depósitos según rol
     let data, error;
     if (esAdmin) {
       ({ data, error } = await supabaseClient
@@ -151,8 +192,6 @@
       console.error("Error al cargar depósitos:", error);
       return alert("Error al cargar depósitos");
     }
-
-    console.log("Depósitos cargados:", data);
 
     const tabla = document.getElementById("tablaDepositos");
     tabla.innerHTML = "";
@@ -177,8 +216,13 @@
       `;
       tabla.appendChild(fila);
     });
+
+    if (esAdmin) {
+      await cargarConfigCuenta();
+    }
   }
-async function actualizarEstadoDeposito(id, estado) {
+
+  async function actualizarEstadoDeposito(id, estado) {
     const { error } = await supabaseClient
       .from("depositos")
       .update({ estado })
@@ -191,8 +235,6 @@ async function actualizarEstadoDeposito(id, estado) {
 
     await cargarDepositos();
   }
-
-  cargarDepositos();
 
   async function cargarRetiros() {
     const { data, error } = await supabaseClient
@@ -233,6 +275,59 @@ async function actualizarEstadoDeposito(id, estado) {
     await cargarRetiros();
   }
 
+  async function cargarConfigCuenta() {
+    const { data, error } = await supabaseClient
+      .from("config_depositos")
+      .select("cbu, usdt")
+      .eq("id", 1)
+      .single();
+
+    if (error) {
+      console.error("Error cargando configuración:", error);
+      return;
+    }
+
+    if (data) {
+      document.getElementById("inputCbu").value = data.cbu || "";
+      document.getElementById("inputUsdt").value = data.usdt || "";
+    }
+  }
+
+  async function guardarConfigCuenta() {
+    const cbu = document.getElementById("inputCbu").value.trim();
+    const usdt = document.getElementById("inputUsdt").value.trim();
+
+    if (!cbu || !usdt) {
+      return alert("Por favor completá ambos campos.");
+    }
+
+    const { data, error: selectError } = await supabaseClient
+      .from("config_depositos")
+      .select("id")
+      .eq("id", 1)
+      .single();
+
+    let response;
+    if (selectError || !data) {
+      response = await supabaseClient
+        .from("config_depositos")
+        .insert([{ id: 1, cbu, usdt }]);
+    } else {
+      response = await supabaseClient
+        .from("config_depositos")
+        .update({ cbu, usdt })
+        .eq("id", 1);
+    }
+
+    if (response.error) {
+      console.error("Error al guardar configuración:", response.error);
+      return alert("Error al guardar configuración.");
+    }
+
+    alert("✅ Cuenta actualizada correctamente.");
+  }
+
+  cargarDepositos();
   cargarRetiros();
 </script>
 
