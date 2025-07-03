@@ -98,11 +98,40 @@
       width: 100%;
       background-color: #00a8ff;
     }
+
+    .filtro-admin {
+      margin-top: 20px;
+      background: #222;
+      padding: 15px;
+      border-radius: 8px;
+    }
+
+    .filtro-admin input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      margin-bottom: 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+    }
+
+    .filtro-admin button {
+      width: 100%;
+      background-color: #00a8ff;
+      color: white;
+    }
   </style>
 </head>
 <body>
 
 <h2>Historial de Depósitos</h2>
+<div class="filtro-admin" id="busquedaAdmin" style="display: none;">
+  <label for="filtroInput">Buscar por email o ID:</label>
+  <input type="text" id="filtroInput" placeholder="ejemplo@correo.com o ID completo" />
+  <button onclick="cargarDepositos()">Buscar</button>
+</div>
+
 <table>
   <thead>
     <tr>
@@ -152,6 +181,8 @@
     });
   }
 
+  let esAdminGlobal = false;
+
   async function cargarDepositos() {
     const { data: authData, error: userError } = await supabaseClient.auth.getUser();
     const user = authData?.user;
@@ -172,21 +203,35 @@
     }
 
     const esAdmin = perfilData.rol === "admi";
+    esAdminGlobal = esAdmin;
     document.getElementById("configCuenta").style.display = esAdmin ? "block" : "none";
+    document.getElementById("busquedaAdmin").style.display = esAdmin ? "block" : "none";
 
-    let data, error;
+    const filtro = document.getElementById("filtroInput")?.value.trim();
+    let query = supabaseClient.from("depositos").select("*").order("created_at", { ascending: false });
+
     if (esAdmin) {
-      ({ data, error } = await supabaseClient
-        .from("depositos")
-        .select("*")
-        .order("created_at", { ascending: false }));
+      query = query.eq("estado", "pendiente");
+
+      if (filtro) {
+        const { data: perfiles, error: errorBusqueda } = await supabaseClient
+          .from("profiles")
+          .select("id")
+          .or(`email.ilike.%${filtro}%,id.eq.${filtro}`);
+
+        if (errorBusqueda || !perfiles || perfiles.length === 0) {
+          document.getElementById("tablaDepositos").innerHTML = `<tr><td colspan="5">No se encontraron resultados.</td></tr>`;
+          return;
+        }
+
+        const ids = perfiles.map(p => p.id);
+        query = query.in("usuario_id", ids);
+      }
     } else {
-      ({ data, error } = await supabaseClient
-        .from("depositos")
-        .select("*")
-        .eq("usuario_id", user.id)
-        .order("created_at", { ascending: false }));
+      query = query.eq("usuario_id", user.id);
     }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error("Error al cargar depósitos:", error);
@@ -201,11 +246,7 @@
       return;
     }
 
-    const depositosFiltrados = esAdmin
-      ? data.filter(dep => dep.estado !== 'confirmado' && dep.estado !== 'rechazado')
-      : data;
-
-    depositosFiltrados.forEach(dep => {
+    data.forEach(dep => {
       const fecha = dep.created_at;
       const fila = document.createElement("tr");
       fila.innerHTML = `
@@ -214,8 +255,10 @@
         <td>${dep.monto || '-'}</td>
         <td class="estado">${dep.estado || 'pendiente'}</td>
         <td>
-          <button class="confirmar" onclick="actualizarEstadoDeposito('${dep.id}', 'confirmado')">Confirmar</button>
-          <button class="rechazar" onclick="actualizarEstadoDeposito('${dep.id}', 'rechazado')">Rechazar</button>
+          ${esAdmin ? `
+            <button class="confirmar" onclick="actualizarEstadoDeposito('${dep.id}', 'confirmado')">Confirmar</button>
+            <button class="rechazar" onclick="actualizarEstadoDeposito('${dep.id}', 'rechazado')">Rechazar</button>
+          ` : '-'}
         </td>
       `;
       tabla.appendChild(fila);
@@ -239,21 +282,34 @@
 
     await cargarDepositos();
   }
+async function cargarRetiros() {
+    const { data: authData, error: userError } = await supabaseClient.auth.getUser();
+    const user = authData?.user;
+    if (userError || !user) {
+      return alert("Debes iniciar sesión.");
+    }
 
-  async function cargarRetiros() {
-    const { data, error } = await supabaseClient
-      .from("retiros")
-      .select("*")
-      .order("creado", { ascending: false });
+    let query = supabaseClient.from("retiros").select("*").order("creado", { ascending: false });
+
+    if (!esAdminGlobal) {
+      query = query.eq("usuario_id", user.id);
+    } else {
+      query = query.eq("estado", "pendiente");
+    }
+
+    const { data, error } = await query;
 
     if (error) return alert("Error al cargar retiros");
 
     const tabla = document.getElementById("tablaRetiros");
     tabla.innerHTML = "";
 
-    const retirosFiltrados = data.filter(ret => ret.estado !== 'confirmado' && ret.estado !== 'rechazado');
+    if (!data || data.length === 0) {
+      tabla.innerHTML = '<tr><td colspan="5">No hay retiros registrados.</td></tr>';
+      return;
+    }
 
-    retirosFiltrados.forEach(ret => {
+    data.forEach(ret => {
       const fecha = ret.fecha || ret.creado;
       const fila = document.createElement("tr");
       fila.innerHTML = `
@@ -262,14 +318,17 @@
         <td>${ret.cantidad}</td>
         <td class="estado">${ret.estado}</td>
         <td>
-          <button class="confirmar" onclick="actualizarEstadoRetiro('${ret.id}', 'confirmado')">Confirmar</button>
-          <button class="rechazar" onclick="actualizarEstadoRetiro('${ret.id}', 'rechazado')">Rechazar</button>
+          ${esAdminGlobal ? `
+            <button class="confirmar" onclick="actualizarEstadoRetiro('${ret.id}', 'confirmado')">Confirmar</button>
+            <button class="rechazar" onclick="actualizarEstadoRetiro('${ret.id}', 'rechazado')">Rechazar</button>
+          ` : '-'}
         </td>
       `;
       tabla.appendChild(fila);
     });
   }
-async function actualizarEstadoRetiro(id, estado) {
+
+  async function actualizarEstadoRetiro(id, estado) {
     const { error } = await supabaseClient
       .from("retiros")
       .update({ estado })
@@ -335,6 +394,13 @@ async function actualizarEstadoRetiro(id, estado) {
   cargarDepositos();
   cargarRetiros();
 </script>
+
+<!-- Buscador para Admin -->
+<div id="busquedaAdmin" style="margin-top: 40px; display: none;">
+  <h3>Buscar Depósitos por Email o ID</h3>
+  <input type="text" id="filtroInput" placeholder="Buscar por email o ID" style="width: 100%; padding: 10px; font-size: 16px;" />
+  <button style="margin-top: 10px; width: 100%; padding: 10px;" onclick="cargarDepositos()">🔍 Buscar</button>
+</div>
 
 </body>
 </html>
