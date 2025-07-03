@@ -153,8 +153,7 @@
   );
 
   let usuarioBuscadoId = null;
-
-  function formatearFecha(fecha) {
+function formatearFecha(fecha) {
     return new Date(fecha).toLocaleDateString("es-AR", {
       day: "2-digit", month: "2-digit", year: "numeric"
     });
@@ -206,7 +205,7 @@
         .from("depositos")
         .select("*")
         .eq("usuario_id", user.id)
-        .not("estado", "in", "('confirmado','rechazado')") // FILTRADO PARA USUARIO NORMAL
+        .not("estado", "in", "('confirmado','rechazado')")
         .order("created_at", { ascending: false }));
     }
 
@@ -256,9 +255,10 @@
       return;
     }
 
-    await cargarDepositos();
+    await cargarDepositos(); // volver a cargar con mismo filtro activo
   }
-async function cargarRetiros() {
+
+  async function cargarRetiros() {
     const { data: authData, error: userError } = await supabaseClient.auth.getUser();
     const user = authData?.user;
     if (userError || !user) {
@@ -280,7 +280,6 @@ async function cargarRetiros() {
     }
 
     const esAdmin = perfilData.rol === "admi";
-
     let data, error;
 
     if (esAdmin) {
@@ -303,7 +302,7 @@ async function cargarRetiros() {
         .from("retiros")
         .select("*")
         .eq("usuario_id", user.id)
-        .not("estado", "in", "('confirmado','rechazado')") // FILTRADO PARA USUARIO NORMAL
+        .not("estado", "in", "('confirmado','rechazado')")
         .order("creado", { ascending: false }));
     }
 
@@ -352,10 +351,9 @@ async function cargarRetiros() {
       return;
     }
 
-    await cargarRetiros();
+    await cargarRetiros(); // recarga manteniendo el filtro activo
   }
-
-  async function buscarPorEmailOID() {
+async function buscarPorEmailOID() {
     const valor = document.getElementById("filtroInput").value.trim().toLowerCase();
     if (!valor) {
       usuarioBuscadoId = null;
