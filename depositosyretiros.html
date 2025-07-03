@@ -109,20 +109,43 @@
       day: "2-digit", month: "2-digit", year: "numeric"
     });
   }
-async function cargarDepositos() {
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser();
-    const user = userData?.user;
 
+  async function cargarDepositos() {
+    const { data: authData, error: userError } = await supabaseClient.auth.getUser();
+    const user = authData?.user;
     if (userError || !user) {
       console.error("Usuario no autenticado:", userError);
-      return alert("Debes iniciar sesión para ver los depósitos.");
+      return alert("Debes iniciar sesión.");
     }
 
-    const { data, error } = await supabaseClient
-      .from("depositos")
-      .select("*")
-      .eq("usuario_id", user.id)
-      .order("created_at", { ascending: false });
+    // Consultamos el rol del usuario
+    const { data: perfilData, error: perfilError } = await supabaseClient
+      .from("profiles")
+      .select("rol")
+      .eq("id", user.id)
+      .single();
+
+    if (perfilError || !perfilData) {
+      console.error("No se pudo obtener el perfil:", perfilError);
+      return alert("Error cargando perfil.");
+    }
+
+    const esAdmin = perfilData.rol === "admi";
+
+    // Consulta de depósitos según rol
+    let data, error;
+    if (esAdmin) {
+      ({ data, error } = await supabaseClient
+        .from("depositos")
+        .select("*")
+        .order("created_at", { ascending: false }));
+    } else {
+      ({ data, error } = await supabaseClient
+        .from("depositos")
+        .select("*")
+        .eq("usuario_id", user.id)
+        .order("created_at", { ascending: false }));
+    }
 
     if (error) {
       console.error("Error al cargar depósitos:", error);
@@ -155,8 +178,7 @@ async function cargarDepositos() {
       tabla.appendChild(fila);
     });
   }
-
-  async function actualizarEstadoDeposito(id, estado) {
+async function actualizarEstadoDeposito(id, estado) {
     const { error } = await supabaseClient
       .from("depositos")
       .update({ estado })
