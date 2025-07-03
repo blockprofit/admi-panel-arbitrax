@@ -104,7 +104,7 @@
 
 <div style="margin-bottom:20px;">
   <input type="text" id="filtroInput" placeholder="Buscar por correo o ID de usuario" style="padding:8px; width: 300px; border-radius: 5px; border: none;"/>
-  <button onclick="buscarPorEmailOID()" style="padding: 8px 16px; background-color:#00a8ff; color: white; border:none; border-radius: 5px; cursor:pointer;">Buscar</button>
+  <button id="btnBuscar" style="padding: 8px 16px; background-color:#00a8ff; color: white; border:none; border-radius: 5px; cursor:pointer;">Buscar</button>
 </div>
 
 <h2>Historial de Depósitos</h2>
@@ -159,13 +159,13 @@
       day: "2-digit", month: "2-digit", year: "numeric"
     });
   }
-
-  async function cargarDepositos() {
+async function cargarDepositos() {
     const { data: authData, error: userError } = await supabaseClient.auth.getUser();
     const user = authData?.user;
     if (userError || !user) {
       console.error("Usuario no autenticado:", userError);
-      return alert("Debes iniciar sesión.");
+      alert("Debes iniciar sesión.");
+      return;
     }
 
     const { data: perfilData, error: perfilError } = await supabaseClient
@@ -176,13 +176,16 @@
 
     if (perfilError || !perfilData) {
       console.error("No se pudo obtener el perfil:", perfilError);
-      return alert("Error cargando perfil.");
+      alert("Error cargando perfil.");
+      return;
     }
 
     const esAdmin = perfilData.rol === "admi";
     document.getElementById("configCuenta").style.display = esAdmin ? "block" : "none";
 
     let data, error;
+
+    // Si es admin y se busca un usuario específico:
     if (esAdmin) {
       if (usuarioBuscadoId) {
         ({ data, error } = await supabaseClient
@@ -192,6 +195,7 @@
           .not("estado", "in", "('confirmado','rechazado')")
           .order("created_at", { ascending: false }));
       } else {
+        // Admin sin filtro, trae todos los depósitos pendientes
         ({ data, error } = await supabaseClient
           .from("depositos")
           .select("*")
@@ -199,6 +203,7 @@
           .order("created_at", { ascending: false }));
       }
     } else {
+      // Usuario normal, solo sus depósitos
       ({ data, error } = await supabaseClient
         .from("depositos")
         .select("*")
@@ -208,7 +213,8 @@
 
     if (error) {
       console.error("Error al cargar depósitos:", error);
-      return alert("Error al cargar depósitos");
+      alert("Error al cargar depósitos");
+      return;
     }
 
     const tabla = document.getElementById("tablaDepositos");
@@ -227,8 +233,10 @@
         <td>${dep.monto || '-'}</td>
         <td class="estado">${dep.estado || 'pendiente'}</td>
         <td>
-          <button class="confirmar" onclick="actualizarEstadoDeposito('${dep.id}', 'confirmado')">Confirmar</button>
-          <button class="rechazar" onclick="actualizarEstadoDeposito('${dep.id}', 'rechazado')">Rechazar</button>
+          ${esAdmin && dep.estado === 'pendiente' ? `
+            <button class="confirmar" onclick="actualizarEstadoDeposito('${dep.id}', 'confirmado')">Confirmar</button>
+            <button class="rechazar" onclick="actualizarEstadoDeposito('${dep.id}', 'rechazado')">Rechazar</button>
+          ` : '-'}
         </td>
       `;
       tabla.appendChild(fila);
@@ -245,26 +253,73 @@
 
     if (error) {
       console.error("Error actualizando depósito:", error);
-      return alert("Error al actualizar depósito");
+      alert("Error al actualizar depósito");
+      return;
     }
 
     await cargarDepositos();
   }
-async function cargarRetiros() {
-    let { data, error } = await supabaseClient
-      .from("retiros")
-      .select("*")
-      .order("creado", { ascending: false });
+
+
+  async function cargarRetiros() {
+    const { data: authData, error: userError } = await supabaseClient.auth.getUser();
+    const user = authData?.user;
+    if (userError || !user) {
+      console.error("Usuario no autenticado:", userError);
+      alert("Debes iniciar sesión.");
+      return;
+    }
+
+    const { data: perfilData, error: perfilError } = await supabaseClient
+      .from("profiles")
+      .select("rol")
+      .eq("id", user.id)
+      .single();
+
+    if (perfilError || !perfilData) {
+      console.error("No se pudo obtener el perfil:", perfilError);
+      alert("Error cargando perfil.");
+      return;
+    }
+
+    const esAdmin = perfilData.rol === "admi";
+
+    let data, error;
+
+    // Si es admin y hay filtro:
+    if (esAdmin) {
+      if (usuarioBuscadoId) {
+        ({ data, error } = await supabaseClient
+          .from("retiros")
+          .select("*")
+          .eq("usuario_id", usuarioBuscadoId)
+          .not("estado", "in", "('confirmado','rechazado')")
+          .order("creado", { ascending: false }));
+      } else {
+        // Admin sin filtro, todos retiros pendientes
+        ({ data, error } = await supabaseClient
+          .from("retiros")
+          .select("*")
+          .not("estado", "in", "('confirmado','rechazado')")
+          .order("creado", { ascending: false }));
+      }
+    } else {
+      // Usuario normal, solo sus retiros
+      ({ data, error } = await supabaseClient
+        .from("retiros")
+        .select("*")
+        .eq("usuario_id", user.id)
+        .order("creado", { ascending: false }));
+    }
 
     if (error) {
       console.error("Error al cargar retiros:", error);
-      return alert("Error al cargar retiros.");
+      alert("Error al cargar retiros.");
+      return;
     }
 
     const tabla = document.getElementById("tablaRetiros");
     tabla.innerHTML = "";
-
-    data = data.filter(r => r.estado !== "confirmado" && r.estado !== "rechazado");
 
     if (!data || data.length === 0) {
       tabla.innerHTML = '<tr><td colspan="5">No hay retiros pendientes.</td></tr>';
@@ -276,12 +331,14 @@ async function cargarRetiros() {
       const fila = document.createElement("tr");
       fila.innerHTML = `
         <td>${formatearFecha(fecha)}</td>
-        <td>${ret.tipo}</td>
-        <td>${ret.cantidad}</td>
-        <td class="estado">${ret.estado}</td>
+        <td>${ret.tipo || '-'}</td>
+        <td>${ret.cantidad || '-'}</td>
+        <td class="estado">${ret.estado || 'pendiente'}</td>
         <td>
-          <button class="confirmar" onclick="actualizarEstadoRetiro('${ret.id}', 'confirmado')">Confirmar</button>
-          <button class="rechazar" onclick="actualizarEstadoRetiro('${ret.id}', 'rechazado')">Rechazar</button>
+          ${esAdmin && ret.estado === 'pendiente' ? `
+            <button class="confirmar" onclick="actualizarEstadoRetiro('${ret.id}', 'confirmado')">Confirmar</button>
+            <button class="rechazar" onclick="actualizarEstadoRetiro('${ret.id}', 'rechazado')">Rechazar</button>
+          ` : '-'}
         </td>
       `;
       tabla.appendChild(fila);
@@ -296,21 +353,25 @@ async function cargarRetiros() {
 
     if (error) {
       console.error("Error al actualizar retiro:", error);
-      return alert("Error al actualizar retiro");
+      alert("Error al actualizar retiro");
+      return;
     }
 
     await cargarRetiros();
   }
+
 
   async function buscarPorEmailOID() {
     const valor = document.getElementById("filtroInput").value.trim().toLowerCase();
     if (!valor) {
       usuarioBuscadoId = null;
       await cargarDepositos();
+      await cargarRetiros();
       return;
     }
 
     if (valor.includes("@")) {
+      // Buscar el id de usuario por email
       const { data, error } = await supabaseClient
         .from("profiles")
         .select("id")
@@ -320,6 +381,8 @@ async function cargarRetiros() {
       if (error || !data) {
         alert("Usuario no encontrado.");
         usuarioBuscadoId = null;
+        await cargarDepositos();
+        await cargarRetiros();
         return;
       }
 
@@ -329,8 +392,11 @@ async function cargarRetiros() {
     }
 
     await cargarDepositos();
+    await cargarRetiros();
   }
-async function cargarConfigCuenta() {
+
+
+  async function cargarConfigCuenta() {
     const { data, error } = await supabaseClient
       .from("config_depositos")
       .select("cbu, usdt")
@@ -353,7 +419,8 @@ async function cargarConfigCuenta() {
     const usdt = document.getElementById("inputUsdt").value.trim();
 
     if (!cbu || !usdt) {
-      return alert("Por favor completá ambos campos.");
+      alert("Por favor completá ambos campos.");
+      return;
     }
 
     const { data, error: selectError } = await supabaseClient
@@ -376,14 +443,17 @@ async function cargarConfigCuenta() {
 
     if (response.error) {
       console.error("Error al guardar configuración:", response.error);
-      return alert("Error al guardar configuración.");
+      alert("Error al guardar configuración.");
+      return;
     }
 
     alert("✅ Cuenta actualizada correctamente.");
   }
 
+  // Asignar evento al botón buscar:
   document.getElementById("btnBuscar").addEventListener("click", buscarPorEmailOID);
 
+  // Cargar inicialmente
   cargarDepositos();
   cargarRetiros();
 </script>
