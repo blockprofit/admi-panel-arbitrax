@@ -140,7 +140,6 @@
 
   <button onclick="guardarConfigCuenta()">Guardar configuración</button>
 </div>
-
 <script>
   const supabaseClient = supabase.createClient(
     'https://ovulezkcxwrjvyxlxsdv.supabase.co',
@@ -152,7 +151,8 @@
       day: "2-digit", month: "2-digit", year: "numeric"
     });
   }
-async function cargarDepositos() {
+
+  async function cargarDepositos() {
     const { data: authData, error: userError } = await supabaseClient.auth.getUser();
     const user = authData?.user;
     if (userError || !user) {
@@ -201,7 +201,11 @@ async function cargarDepositos() {
       return;
     }
 
-    data.forEach(dep => {
+    const depositosFiltrados = esAdmin
+      ? data.filter(dep => dep.estado !== 'confirmado' && dep.estado !== 'rechazado')
+      : data;
+
+    depositosFiltrados.forEach(dep => {
       const fecha = dep.created_at;
       const fila = document.createElement("tr");
       fila.innerHTML = `
@@ -247,7 +251,9 @@ async function cargarDepositos() {
     const tabla = document.getElementById("tablaRetiros");
     tabla.innerHTML = "";
 
-    data.forEach(ret => {
+    const retirosFiltrados = data.filter(ret => ret.estado !== 'confirmado' && ret.estado !== 'rechazado');
+
+    retirosFiltrados.forEach(ret => {
       const fecha = ret.fecha || ret.creado;
       const fila = document.createElement("tr");
       fila.innerHTML = `
@@ -263,8 +269,7 @@ async function cargarDepositos() {
       tabla.appendChild(fila);
     });
   }
-
-  async function actualizarEstadoRetiro(id, estado) {
+async function actualizarEstadoRetiro(id, estado) {
     const { error } = await supabaseClient
       .from("retiros")
       .update({ estado })
