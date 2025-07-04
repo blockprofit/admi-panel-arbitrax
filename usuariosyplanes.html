@@ -127,19 +127,19 @@
   <div class="plan-boxes" id="planesConfig">
     <div class="plan-box">
       <label for="basicoPorcentaje">Básico (%)</label>
-      <input type="number" id="basicoPorcentaje" min="0" max="100" value="5" onchange="guardarPorcentaje('basico', this.value)">
+      <input type="number" id="basicoPorcentaje" min="0" max="100" value="5" onchange="guardarPorcentaje('Basico', this.value)">
     </div>
     <div class="plan-box">
       <label for="medioPorcentaje">Medio (%)</label>
-      <input type="number" id="medioPorcentaje" min="0" max="100" value="10" onchange="guardarPorcentaje('medio', this.value)">
+      <input type="number" id="medioPorcentaje" min="0" max="100" value="10" onchange="guardarPorcentaje('Medio', this.value)">
     </div>
     <div class="plan-box">
       <label for="avanzadoPorcentaje">Avanzado (%)</label>
-      <input type="number" id="avanzadoPorcentaje" min="0" max="100" value="15" onchange="guardarPorcentaje('avanzado', this.value)">
+      <input type="number" id="avanzadoPorcentaje" min="0" max="100" value="15" onchange="guardarPorcentaje('Avanzado', this.value)">
     </div>
     <div class="plan-box">
       <label for="avanzadoProPorcentaje">Avanzado Pro (%)</label>
-      <input type="number" id="avanzadoProPorcentaje" min="0" max="100" value="15" onchange="guardarPorcentaje('avanzadoPro', this.value)">
+      <input type="number" id="avanzadoProPorcentaje" min="0" max="100" value="15" onchange="guardarPorcentaje('Avanzado Pro', this.value)">
     </div>
   </div>
 <script>
@@ -211,9 +211,23 @@
   }
 
   async function guardarPorcentaje(plan, valor) {
-    const updates = {};
-    updates[plan] = parseInt(valor);
-    const { error } = await supabase.from('config_planes').update(updates).eq('id', 1);
+    const planMap = {
+      'Basico': 'basico',
+      'Medio': 'medio',
+      'Avanzado': 'avanzado',
+      'Avanzado Pro': 'avanzadoPro'
+    };
+
+    const campo = planMap[plan];
+    if (!campo) {
+      alert('Plan inválido');
+      return;
+    }
+
+    const { error } = await supabase
+      .from('config_planes')
+      .upsert([{ id: 1, [campo]: parseInt(valor) }], { onConflict: ['id'] });
+
     if (error) {
       alert('Error guardando porcentaje');
     } else {
