@@ -80,13 +80,14 @@
   </table>
 
   <script>
-    const supabase = supabase.createClient(
+    const { createClient } = supabase;
+    const supabaseClient = createClient(
       'https://ovulezkcxwrjvyxlxsdv.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI'
     );
 
     async function cargarReferidos() {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('referidos')
         .select('*')
         .order('fecha', { ascending: false });
@@ -116,15 +117,15 @@
     }
 async function aprobarReferido(id, referidoPor) {
       // 1. Marcar como aprobado
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('referidos')
         .update({ aprobado: true })
         .eq('id', id);
 
       if (error) return alert('Error al aprobar referido');
 
-      // 2. Verificar cuántos referidos aprobados tiene
-      const { data: aprobados, error: errContar } = await supabase
+      // 2. Contar referidos aprobados
+      const { data: aprobados, error: errContar } = await supabaseClient
         .from('referidos')
         .select('*')
         .eq('referido_por', referidoPor)
@@ -134,7 +135,7 @@ async function aprobarReferido(id, referidoPor) {
 
       const total = aprobados.length;
 
-      // 3. Revisar metas alcanzadas
+      // 3. Metas y recompensas
       const metas = [
         { cantidad: 5, recompensa: 20000 },
         { cantidad: 10, recompensa: 80000 },
@@ -144,42 +145,43 @@ async function aprobarReferido(id, referidoPor) {
 
       for (const meta of metas) {
         if (total >= meta.cantidad) {
-          const { data: existe } = await supabase
+          // Verificar si ya se otorgó recompensa
+          const { data: yaExiste } = await supabaseClient
             .from('recompensas')
             .select('*')
             .eq('usuario_id', referidoPor)
             .eq('meta', meta.cantidad)
-            .single();
+            .maybeSingle();
 
-          if (!existe) {
-            // 4. Insertar recompensa si no existe
-            await supabase.from('recompensas').insert({
+          if (!yaExiste) {
+            // Insertar recompensa
+            await supabaseClient.from('recompensas').insert({
               usuario_id: referidoPor,
               meta: meta.cantidad,
               recompensa_ars: meta.recompensa,
               fecha: new Date().toISOString()
             });
 
-            // 5. Sumar al saldo en balances
-            const { data: balanceExistente } = await supabase
+            // Sumar al saldo en balances
+            const { data: balance } = await supabaseClient
               .from('balances')
-              .select('*')
+              .select('saldo')
               .eq('usuario_id', referidoPor)
-              .single();
+              .maybeSingle();
 
-            if (balanceExistente) {
-              const nuevoSaldo = (balanceExistente.saldo || 0) + meta.recompensa;
-              await supabase
+            if (balance) {
+              const nuevoSaldo = (balance.saldo || 0) + meta.recompensa;
+              await supabaseClient
                 .from('balances')
                 .update({ saldo: nuevoSaldo })
                 .eq('usuario_id', referidoPor);
             } else {
-              await supabase
+              await supabaseClient
                 .from('balances')
                 .insert({ usuario_id: referidoPor, saldo: meta.recompensa });
             }
 
-            alert(`Meta alcanzada: ${meta.cantidad} referidos. Se acreditaron $${meta.recompensa} ARS.`);
+            alert(`Se acreditaron $${meta.recompensa} ARS por ${meta.cantidad} referidos.`);
           }
         }
       }
@@ -188,7 +190,7 @@ async function aprobarReferido(id, referidoPor) {
     }
 
     async function rechazarReferido(id) {
-      const { error } = await supabase
+      const { error } = await supabaseClient
         .from('referidos')
         .delete()
         .eq('id', id);
