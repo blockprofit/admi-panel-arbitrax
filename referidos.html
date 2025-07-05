@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Referidos - Admi</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    body {
+      background-color: #111;
+      color: white;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+
+    h2 {
+      color: #00d4ff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: #fff;
+      color: #000;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #ccc;
+      text-align: left;
+    }
+
+    th {
+      background-color: #00a8ff;
+      color: white;
+    }
+
+    button {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button.aprobar {
+      background-color: #2ecc71;
+      color: white;
+    }
+
+    button.rechazar {
+      background-color: #e74c3c;
+      color: white;
+    }
+
+    .estado {
+      text-transform: capitalize;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h2>Lista de Referidos</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Correo del referido</th>
+        <th>Referido por (ID)</th>
+        <th>Fecha</th>
+        <th>Aprobado</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody id="tablaReferidos"></tbody>
+  </table>
+
+  <script>
+    const supabase = supabase.createClient(
+      'https://ovulezkcxwrjvyxlxsdv.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI'
+    );
+
+    async function cargarReferidos() {
+      const { data, error } = await supabase
+        .from('referidos')
+        .select('*')
+        .order('fecha', { ascending: false });
+
+      if (error) {
+        alert('Error al cargar referidos');
+        return;
+      }
+
+      const tabla = document.getElementById('tablaReferidos');
+      tabla.innerHTML = '';
+
+      data.forEach(ref => {
+        const fila = document.createElement('tr');
+        fila.innerHTML = `
+          <td>${ref.email}</td>
+          <td>${ref.referido_por}</td>
+          <td>${new Date(ref.fecha).toLocaleString()}</td>
+          <td class="estado">${ref.aprobado ? 'Sí' : 'No'}</td>
+          <td>
+            <button class="aprobar" onclick="aprobarReferido('${ref.id}', '${ref.referido_por}')">Aprobar</button>
+            <button class="rechazar" onclick="rechazarReferido('${ref.id}')">Rechazar</button>
+          </td>
+        `;
+        tabla.appendChild(fila);
+      });
+    }
+async function aprobarReferido(id, referidoPor) {
+      // 1. Marcar como aprobado
+      const { error } = await supabase
+        .from('referidos')
+        .update({ aprobado: true })
+        .eq('id', id);
+
+      if (error) return alert('Error al aprobar referido');
+
+      // 2. Verificar cuántos referidos aprobados tiene
+      const { data: aprobados, error: errContar } = await supabase
+        .from('referidos')
+        .select('*')
+        .eq('referido_por', referidoPor)
+        .eq('aprobado', true);
+
+      if (errContar || !aprobados) return alert('Error al contar referidos');
+
+      const total = aprobados.length;
+
+      // 3. Revisar metas alcanzadas
+      const metas = [
+        { cantidad: 5, recompensa: 20000 },
+        { cantidad: 10, recompensa: 80000 },
+        { cantidad: 20, recompensa: 100000 },
+        { cantidad: 50, recompensa: 250000 }
+      ];
+
+      for (const meta of metas) {
+        if (total >= meta.cantidad) {
+          const { data: existe } = await supabase
+            .from('recompensas')
+            .select('*')
+            .eq('usuario_id', referidoPor)
+            .eq('meta', meta.cantidad)
+            .single();
+
+          if (!existe) {
+            // 4. Insertar recompensa si no existe
+            await supabase.from('recompensas').insert({
+              usuario_id: referidoPor,
+              meta: meta.cantidad,
+              recompensa_ars: meta.recompensa,
+              fecha: new Date().toISOString()
+            });
+
+            // 5. Sumar al saldo en balances
+            const { data: balanceExistente } = await supabase
+              .from('balances')
+              .select('*')
+              .eq('usuario_id', referidoPor)
+              .single();
+
+            if (balanceExistente) {
+              const nuevoSaldo = (balanceExistente.saldo || 0) + meta.recompensa;
+              await supabase
+                .from('balances')
+                .update({ saldo: nuevoSaldo })
+                .eq('usuario_id', referidoPor);
+            } else {
+              await supabase
+                .from('balances')
+                .insert({ usuario_id: referidoPor, saldo: meta.recompensa });
+            }
+
+            alert(`Meta alcanzada: ${meta.cantidad} referidos. Se acreditaron $${meta.recompensa} ARS.`);
+          }
+        }
+      }
+
+      cargarReferidos();
+    }
+
+    async function rechazarReferido(id) {
+      const { error } = await supabase
+        .from('referidos')
+        .delete()
+        .eq('id', id);
+
+      if (error) return alert('Error al eliminar referido');
+      cargarReferidos();
+    }
+
+    cargarReferidos();
+  </script>
+</body>
+</html>
