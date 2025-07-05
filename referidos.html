@@ -13,11 +13,9 @@
       font-family: Arial, sans-serif;
       padding: 20px;
     }
-
     h2 {
       color: #00d4ff;
     }
-
     table {
       width: 100%;
       border-collapse: collapse;
@@ -27,18 +25,15 @@
       border-radius: 8px;
       overflow: hidden;
     }
-
     th, td {
       padding: 12px;
       border-bottom: 1px solid #ccc;
       text-align: left;
     }
-
     th {
       background-color: #00a8ff;
       color: white;
     }
-
     button {
       padding: 6px 12px;
       border: none;
@@ -46,17 +41,14 @@
       font-weight: bold;
       cursor: pointer;
     }
-
     button.aprobar {
       background-color: #2ecc71;
       color: white;
     }
-
     button.rechazar {
       background-color: #e74c3c;
       color: white;
     }
-
     .estado {
       text-transform: capitalize;
       font-weight: bold;
@@ -65,7 +57,6 @@
 </head>
 <body>
   <h2>Lista de Referidos</h2>
-
   <table>
     <thead>
       <tr>
@@ -78,7 +69,6 @@
     </thead>
     <tbody id="tablaReferidos"></tbody>
   </table>
-
   <script>
     const { createClient } = supabase;
     const supabaseClient = createClient(
@@ -93,6 +83,7 @@
         .order('fecha', { ascending: false });
 
       if (error) {
+        console.error(error);
         alert('Error al cargar referidos');
         return;
       }
@@ -117,25 +108,25 @@
     }
 async function aprobarReferido(id, referidoPor) {
       // 1. Marcar como aprobado
-      const { error } = await supabaseClient
+      const { error: errorAprobar } = await supabaseClient
         .from('referidos')
         .update({ aprobado: true })
         .eq('id', id);
 
-      if (error) return alert('Error al aprobar referido');
+      if (errorAprobar) return alert('Error al aprobar referido');
 
       // 2. Contar referidos aprobados
-      const { data: aprobados, error: errContar } = await supabaseClient
+      const { data: aprobados, error: errorContar } = await supabaseClient
         .from('referidos')
         .select('*')
         .eq('referido_por', referidoPor)
         .eq('aprobado', true);
 
-      if (errContar || !aprobados) return alert('Error al contar referidos');
+      if (errorContar || !aprobados) return alert('Error al contar referidos');
 
       const total = aprobados.length;
 
-      // 3. Metas y recompensas
+      // 3. Revisar metas alcanzadas
       const metas = [
         { cantidad: 5, recompensa: 20000 },
         { cantidad: 10, recompensa: 80000 },
@@ -145,16 +136,17 @@ async function aprobarReferido(id, referidoPor) {
 
       for (const meta of metas) {
         if (total >= meta.cantidad) {
-          // Verificar si ya se otorgó recompensa
-          const { data: yaExiste } = await supabaseClient
+          const { data: yaExiste, error: errYaExiste } = await supabaseClient
             .from('recompensas')
             .select('*')
             .eq('usuario_id', referidoPor)
             .eq('meta', meta.cantidad)
             .maybeSingle();
 
+          if (errYaExiste) continue;
+
           if (!yaExiste) {
-            // Insertar recompensa
+            // 4. Insertar recompensa
             await supabaseClient.from('recompensas').insert({
               usuario_id: referidoPor,
               meta: meta.cantidad,
@@ -162,12 +154,14 @@ async function aprobarReferido(id, referidoPor) {
               fecha: new Date().toISOString()
             });
 
-            // Sumar al saldo en balances
-            const { data: balance } = await supabaseClient
+            // 5. Actualizar o crear saldo
+            const { data: balance, error: errorBalance } = await supabaseClient
               .from('balances')
               .select('saldo')
               .eq('usuario_id', referidoPor)
               .maybeSingle();
+
+            if (errorBalance) continue;
 
             if (balance) {
               const nuevoSaldo = (balance.saldo || 0) + meta.recompensa;
@@ -181,7 +175,7 @@ async function aprobarReferido(id, referidoPor) {
                 .insert({ usuario_id: referidoPor, saldo: meta.recompensa });
             }
 
-            alert(`Se acreditaron $${meta.recompensa} ARS por ${meta.cantidad} referidos.`);
+            alert(`¡Meta alcanzada! ${meta.cantidad} referidos. Se acreditaron $${meta.recompensa} ARS.`);
           }
         }
       }
