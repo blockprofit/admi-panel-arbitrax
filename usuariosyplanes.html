@@ -35,6 +35,18 @@
       flex: 1;
     }
 
+    .busqueda {
+      margin-bottom: 20px;
+    }
+
+    .busqueda input {
+      padding: 10px;
+      width: 100%;
+      max-width: 400px;
+      border-radius: 6px;
+      border: none;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -108,6 +120,10 @@
     <div class="stat">6 meses: <span id="stat180">0</span></div>
   </div>
 
+  <div class="busqueda">
+    <input type="text" id="buscador" placeholder="Buscar por email o ID..." oninput="filtrarUsuarios()">
+  </div>
+
   <table id="tablaUsuarios">
     <thead>
       <tr>
@@ -123,31 +139,31 @@
     </thead>
     <tbody></tbody>
   </table>
-
-  <div class="plan-boxes" id="planesConfig">
+<div class="plan-boxes" id="planesConfig">
     <div class="plan-box">
       <label for="basicoPorcentaje">Básico (%)</label>
-      <input type="number" id="basicoPorcentaje" min="0" max="100" value="5" onchange="guardarPorcentaje('Basico', this.value)">
+      <input type="number" id="basicoPorcentaje" min="0" max="100" onchange="guardarPorcentaje('basico', this.value)">
     </div>
     <div class="plan-box">
       <label for="medioPorcentaje">Medio (%)</label>
-      <input type="number" id="medioPorcentaje" min="0" max="100" value="10" onchange="guardarPorcentaje('Medio', this.value)">
+      <input type="number" id="medioPorcentaje" min="0" max="100" onchange="guardarPorcentaje('medio', this.value)">
     </div>
     <div class="plan-box">
       <label for="avanzadoPorcentaje">Avanzado (%)</label>
-      <input type="number" id="avanzadoPorcentaje" min="0" max="100" value="15" onchange="guardarPorcentaje('Avanzado', this.value)">
+      <input type="number" id="avanzadoPorcentaje" min="0" max="100" onchange="guardarPorcentaje('avanzado', this.value)">
     </div>
     <div class="plan-box">
       <label for="avanzadoProPorcentaje">Avanzado Pro (%)</label>
-      <input type="number" id="avanzadoProPorcentaje" min="0" max="100" value="15" onchange="guardarPorcentaje('Avanzado Pro', this.value)">
+      <input type="number" id="avanzadoProPorcentaje" min="0" max="100" onchange="guardarPorcentaje('avanzadoPro', this.value)">
     </div>
   </div>
+
 <script>
   const ADMIN_EMAIL = 'arbitrax9@gmail.com';
-
   const supabaseUrl = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
   const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI';
-  const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+  const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+  let usuariosGlobal = [];
 
   async function verificarSesion() {
     const { data } = await supabase.auth.getSession();
@@ -164,11 +180,14 @@
       alert('Error al cargar usuarios');
       return;
     }
+    usuariosGlobal = data;
+    renderizarUsuarios(data);
+  }
 
+  function renderizarUsuarios(usuarios) {
     const tbody = document.querySelector('#tablaUsuarios tbody');
     tbody.innerHTML = '';
-
-    data.forEach(user => {
+    usuarios.forEach(user => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${user.nombre || ''}</td>
@@ -200,6 +219,15 @@
     });
   }
 
+  function filtrarUsuarios() {
+    const texto = document.getElementById('buscador').value.toLowerCase();
+    const filtrados = usuariosGlobal.filter(u =>
+      (u.email && u.email.toLowerCase().includes(texto)) ||
+      (u.id && u.id.toLowerCase().includes(texto))
+    );
+    renderizarUsuarios(filtrados);
+  }
+
   async function actualizarCampo(id, campo, valor) {
     const { error } = await supabase.from('profiles').update({ [campo]: valor }).eq('id', id);
     if (error) alert(`Error actualizando ${campo}`);
@@ -210,28 +238,16 @@
     cargarUsuarios();
   }
 
-  async function guardarPorcentaje(plan, valor) {
-    const planMap = {
-      'Basico': 'basico',
-      'Medio': 'medio',
-      'Avanzado': 'avanzado',
-      'Avanzado Pro': 'avanzadoPro'
-    };
-
-    const campo = planMap[plan];
-    if (!campo) {
-      alert('Plan inválido');
-      return;
-    }
-
+  async function guardarPorcentaje(campo, valor) {
     const { error } = await supabase
       .from('config_planes')
-      .upsert([{ id: 1, [campo]: parseInt(valor) }], { onConflict: ['id'] });
+      .update({ [campo]: parseInt(valor) })
+      .eq('id', 1);
 
     if (error) {
       alert('Error guardando porcentaje');
     } else {
-      alert(`Porcentaje de ${plan} actualizado a ${valor}%`);
+      alert(`Porcentaje de ${campo} actualizado a ${valor}%`);
     }
   }
 
