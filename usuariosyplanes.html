@@ -105,21 +105,6 @@
       background: #2980b9;
     }
 
-    .buscador {
-      margin-top: 20px;
-      margin-bottom: 10px;
-    }
-
-    .buscador input {
-      padding: 8px;
-      width: 250px;
-    }
-
-    .buscador button {
-      padding: 8px 12px;
-      margin-left: 5px;
-    }
-
     @media (max-width: 768px) {
       table, .stats {
         font-size: 14px;
@@ -138,12 +123,6 @@
     <div class="stat">6 meses: <span id="stat180">0</span></div>
   </div>
 
-  <div class="buscador">
-    <input type="text" id="buscarInput" placeholder="Buscar por email o ID">
-    <button onclick="buscarUsuario()">Buscar</button>
-    <button onclick="cargarUsuarios()">Ver todos</button>
-  </div>
-
   <table id="tablaUsuarios">
     <thead>
       <tr>
@@ -159,7 +138,8 @@
     </thead>
     <tbody></tbody>
   </table>
-<div class="plan-boxes" id="planesConfig">
+
+  <div class="plan-boxes" id="planesConfig">
     <div class="plan-box">
       <label for="basicoPorcentaje">Básico (%)</label>
       <input type="number" id="basicoPorcentaje" min="1" max="15" />
@@ -181,12 +161,11 @@
       <button onclick="guardarPorcentaje('Avanzado Pro')">Guardar</button>
     </div>
   </div>
-
 <script>
   const ADMIN_EMAIL = 'arbitrax9@gmail.com';
   const supabaseUrl = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
   const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI';
-  const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+  const supabase = supabasejs.createClient(supabaseUrl, supabaseKey);
 
   async function verificarSesion() {
     const { data } = await supabase.auth.getSession();
@@ -197,14 +176,11 @@
     }
   }
 
-  async function cargarUsuarios(filtro = null) {
-    let query = supabase.from('profiles').select('*').order('created_at', { ascending: false });
-
-    if (filtro) {
-      query = query.or(`email.ilike.%${filtro}%,id.eq.${filtro}`);
-    }
-
-    const { data, error } = await query;
+  async function cargarUsuarios() {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
 
     if (error) {
       alert('Error al cargar usuarios');
@@ -243,15 +219,6 @@
       `;
       tbody.appendChild(tr);
     });
-  }
-
-  function buscarUsuario() {
-    const filtro = document.getElementById('buscarInput').value.trim();
-    if (!filtro) {
-      cargarUsuarios();
-    } else {
-      cargarUsuarios(filtro);
-    }
   }
 
   async function actualizarCampo(id, campo, valor) {
