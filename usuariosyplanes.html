@@ -11,7 +11,7 @@
       font-family: Arial, sans-serif;
       margin: 0;
       padding: 20px;
-      background: rgba(0, 0, 0, 0.85);
+      background: rgba(0, 0, 0, 0.7);
       color: white;
     }
 
@@ -35,29 +35,25 @@
       flex: 1;
     }
 
-    .search-container {
-      margin-bottom: 20px;
+    .search-box {
+      margin: 20px 0;
     }
 
-    .search-container input {
+    .search-box input {
       padding: 8px;
       width: 250px;
-      border-radius: 6px;
+      border-radius: 4px;
       border: none;
-      margin-right: 10px;
     }
 
-    .search-container button {
-      padding: 8px 14px;
-      background-color: #2980b9;
+    .search-box button {
+      padding: 8px 12px;
+      margin-left: 5px;
+      background-color: #3498db;
       color: white;
       border: none;
-      border-radius: 6px;
+      border-radius: 4px;
       cursor: pointer;
-    }
-
-    .search-container button:hover {
-      background-color: #1f618d;
     }
 
     table {
@@ -94,14 +90,14 @@
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
-      margin-top: 30px;
+      margin-top: 20px;
     }
 
     .plan-box {
       background: #2c3e50;
       padding: 15px;
       border-radius: 6px;
-      min-width: 220px;
+      min-width: 200px;
     }
 
     .plan-box label {
@@ -148,9 +144,10 @@
     <div class="stat">6 meses: <span id="stat180">0</span></div>
   </div>
 
-  <div class="search-container">
-    <input type="text" id="searchInput" placeholder="Buscar por Email o ID..." />
+  <div class="search-box">
+    <input type="text" id="busquedaInput" placeholder="Buscar por email o ID..." />
     <button onclick="buscarUsuario()">Buscar</button>
+    <button onclick="cargarUsuarios()">Limpiar</button>
   </div>
 
   <table id="tablaUsuarios">
@@ -191,20 +188,18 @@
       <button onclick="guardarPorcentaje('Avanzado Pro')">Guardar</button>
     </div>
   </div>
-
 <script>
   const ADMIN_EMAIL = 'arbitrax9@gmail.com';
   const supabaseUrl = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
   const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI';
-  const supabase = supabase.createClient(supabaseUrl, supabaseKey);
-</script>
-<script>
+  const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
   async function verificarSesion() {
     const { data } = await supabase.auth.getSession();
     const user = data?.session?.user;
     if (!user || user.email !== ADMIN_EMAIL) {
       alert('Acceso denegado');
-      window.location.href = 'index.html';
+      window.location.href = 'login.html';
     }
   }
 
@@ -257,16 +252,14 @@
     });
   }
 
-  function buscarUsuario() {
-    const valor = document.getElementById('searchInput').value.trim();
-    cargarUsuarios(valor);
+  async function buscarUsuario() {
+    const input = document.getElementById('busquedaInput').value.trim();
+    cargarUsuarios(input);
   }
 
   async function actualizarCampo(id, campo, valor) {
     const { error } = await supabase.from('profiles').update({ [campo]: valor }).eq('id', id);
-    if (error) {
-      alert(`Error actualizando ${campo}: ${error.message}`);
-    }
+    if (error) alert(`Error actualizando ${campo}: ${error.message}`);
   }
 
   async function actualizarUsuario(id) {
@@ -287,13 +280,14 @@
     const valor = parseInt(input.value);
 
     if (!campo || isNaN(valor) || valor < 1 || valor > 15) {
-      alert('El porcentaje debe ser entre 1% y 15%.');
+      alert('Porcentaje inválido. Ingrese un valor entre 1 y 15');
       return;
     }
 
     const { error } = await supabase
       .from('config_planes')
-      .upsert([{ id: 1, [campo]: valor }], { onConflict: ['id'] });
+      .update({ [campo]: valor })
+      .eq('id', 1);
 
     if (error) {
       alert('Error guardando porcentaje: ' + error.message);
@@ -331,25 +325,20 @@
     };
 
     for (const [id, fecha] of Object.entries(rangos)) {
-      const { count, error } = await supabase
+      const { count } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', fecha.toISOString());
 
-      if (!error) {
-        document.getElementById(id).textContent = count ?? 0;
-      }
+      document.getElementById(id).textContent = count || 0;
     }
   }
 
-  async function iniciarPanel() {
-    await verificarSesion();
-    await cargarUsuarios();
-    await cargarEstadisticas();
-    await cargarPorcentajes();
-  }
-
-  iniciarPanel();
+  verificarSesion().then(() => {
+    cargarUsuarios();
+    cargarEstadisticas();
+    cargarPorcentajes();
+  });
 </script>
 </body>
 </html>
