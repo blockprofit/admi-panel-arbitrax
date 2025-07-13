@@ -11,7 +11,7 @@
       font-family: Arial, sans-serif;
       margin: 0;
       padding: 20px;
-      background: rgba(0, 0, 0, 0.85);
+      background: rgba(0, 0, 0, 0.7);
       color: white;
     }
 
@@ -33,31 +33,6 @@
       border-radius: 4px;
       min-width: 200px;
       flex: 1;
-    }
-
-    .search-container {
-      margin-bottom: 20px;
-    }
-
-    .search-container input {
-      padding: 8px;
-      width: 250px;
-      border-radius: 6px;
-      border: none;
-      margin-right: 10px;
-    }
-
-    .search-container button {
-      padding: 8px 14px;
-      background-color: #2980b9;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    .search-container button:hover {
-      background-color: #1f618d;
     }
 
     table {
@@ -94,14 +69,14 @@
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
-      margin-top: 30px;
+      margin-top: 20px;
     }
 
     .plan-box {
       background: #2c3e50;
       padding: 15px;
       border-radius: 6px;
-      min-width: 220px;
+      min-width: 200px;
     }
 
     .plan-box label {
@@ -130,6 +105,21 @@
       background: #2980b9;
     }
 
+    .buscador {
+      margin-top: 20px;
+      margin-bottom: 10px;
+    }
+
+    .buscador input {
+      padding: 8px;
+      width: 250px;
+    }
+
+    .buscador button {
+      padding: 8px 12px;
+      margin-left: 5px;
+    }
+
     @media (max-width: 768px) {
       table, .stats {
         font-size: 14px;
@@ -148,9 +138,10 @@
     <div class="stat">6 meses: <span id="stat180">0</span></div>
   </div>
 
-  <div class="search-container">
-    <input type="text" id="searchInput" placeholder="Buscar por Email o ID..." />
+  <div class="buscador">
+    <input type="text" id="buscarInput" placeholder="Buscar por email o ID">
     <button onclick="buscarUsuario()">Buscar</button>
+    <button onclick="cargarUsuarios()">Ver todos</button>
   </div>
 
   <table id="tablaUsuarios">
@@ -168,8 +159,7 @@
     </thead>
     <tbody></tbody>
   </table>
-
-  <div class="plan-boxes" id="planesConfig">
+<div class="plan-boxes" id="planesConfig">
     <div class="plan-box">
       <label for="basicoPorcentaje">Básico (%)</label>
       <input type="number" id="basicoPorcentaje" min="1" max="15" />
@@ -197,18 +187,17 @@
   const supabaseUrl = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
   const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI';
   const supabase = supabase.createClient(supabaseUrl, supabaseKey);
-</script>
-<script>
+
   async function verificarSesion() {
     const { data } = await supabase.auth.getSession();
     const user = data?.session?.user;
     if (!user || user.email !== ADMIN_EMAIL) {
       alert('Acceso denegado');
-      window.location.href = 'index.html';
+      window.location.href = 'login.html';
     }
   }
 
-  async function cargarUsuarios(filtro = '') {
+  async function cargarUsuarios(filtro = null) {
     let query = supabase.from('profiles').select('*').order('created_at', { ascending: false });
 
     if (filtro) {
@@ -245,7 +234,6 @@
             <option value="5" ${user.porcentaje == 5 ? 'selected' : ''}>5%</option>
             <option value="10" ${user.porcentaje == 10 ? 'selected' : ''}>10%</option>
             <option value="15" ${user.porcentaje == 15 ? 'selected' : ''}>15%</option>
-            <option value="20" ${user.porcentaje == 20 ? 'selected' : ''}>20%</option>
           </select>
         </td>
         <td>
@@ -258,8 +246,12 @@
   }
 
   function buscarUsuario() {
-    const valor = document.getElementById('searchInput').value.trim();
-    cargarUsuarios(valor);
+    const filtro = document.getElementById('buscarInput').value.trim();
+    if (!filtro) {
+      cargarUsuarios();
+    } else {
+      cargarUsuarios(filtro);
+    }
   }
 
   async function actualizarCampo(id, campo, valor) {
@@ -287,13 +279,14 @@
     const valor = parseInt(input.value);
 
     if (!campo || isNaN(valor) || valor < 1 || valor > 15) {
-      alert('El porcentaje debe ser entre 1% y 15%.');
+      alert('Porcentaje inválido. Ingrese un valor entre 1% y 15%.');
       return;
     }
 
     const { error } = await supabase
       .from('config_planes')
-      .upsert([{ id: 1, [campo]: valor }], { onConflict: ['id'] });
+      .update({ [campo]: valor })
+      .eq('id', 1);
 
     if (error) {
       alert('Error guardando porcentaje: ' + error.message);
@@ -315,9 +308,9 @@
     }
 
     document.getElementById('basicoPorcentaje').value = data.basico ?? 5;
-    document.getElementById('medioPorcentaje').value = data.medio ?? 10;
-    document.getElementById('avanzadoPorcentaje').value = data.avanzado ?? 15;
-    document.getElementById('avanzadoProPorcentaje').value = data.avanzadoPro ?? 15;
+    document.getElementById('medioPorcentaje').value = data.medio ?? 5;
+    document.getElementById('avanzadoPorcentaje').value = data.avanzado ?? 5;
+    document.getElementById('avanzadoProPorcentaje').value = data.avanzadoPro ?? 5;
   }
 
   async function cargarEstadisticas() {
@@ -342,14 +335,11 @@
     }
   }
 
-  async function iniciarPanel() {
-    await verificarSesion();
-    await cargarUsuarios();
-    await cargarEstadisticas();
-    await cargarPorcentajes();
-  }
-
-  iniciarPanel();
+  verificarSesion().then(() => {
+    cargarUsuarios();
+    cargarEstadisticas();
+    cargarPorcentajes();
+  });
 </script>
 </body>
 </html>
