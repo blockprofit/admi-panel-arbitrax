@@ -9,9 +9,10 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: rgba(0, 0, 0, 0.7);
-      color: white;
+      margin: 0;
       padding: 20px;
+      background: rgba(0, 0, 0, 0.85);
+      color: white;
     }
 
     h2 {
@@ -34,12 +35,29 @@
       flex: 1;
     }
 
-    input[type="text"] {
+    .search-container {
+      margin-bottom: 20px;
+    }
+
+    .search-container input {
       padding: 8px;
       width: 250px;
-      margin-bottom: 10px;
       border-radius: 6px;
       border: none;
+      margin-right: 10px;
+    }
+
+    .search-container button {
+      padding: 8px 14px;
+      background-color: #2980b9;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .search-container button:hover {
+      background-color: #1f618d;
     }
 
     table {
@@ -76,14 +94,14 @@
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
-      margin-top: 20px;
+      margin-top: 30px;
     }
 
     .plan-box {
       background: #2c3e50;
       padding: 15px;
       border-radius: 6px;
-      min-width: 200px;
+      min-width: 220px;
     }
 
     .plan-box label {
@@ -130,7 +148,10 @@
     <div class="stat">6 meses: <span id="stat180">0</span></div>
   </div>
 
-  <input type="text" id="buscador" placeholder="Buscar por email o ID..." oninput="filtrarUsuarios()"/>
+  <div class="search-container">
+    <input type="text" id="searchInput" placeholder="Buscar por Email o ID..." />
+    <button onclick="buscarUsuario()">Buscar</button>
+  </div>
 
   <table id="tablaUsuarios">
     <thead>
@@ -148,7 +169,7 @@
     <tbody></tbody>
   </table>
 
-  <div class="plan-boxes">
+  <div class="plan-boxes" id="planesConfig">
     <div class="plan-box">
       <label for="basicoPorcentaje">Básico (%)</label>
       <input type="number" id="basicoPorcentaje" min="1" max="15" />
@@ -170,39 +191,37 @@
       <button onclick="guardarPorcentaje('Avanzado Pro')">Guardar</button>
     </div>
   </div>
+
 <script>
   const ADMIN_EMAIL = 'arbitrax9@gmail.com';
   const supabaseUrl = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
-  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; // clave original respetada
+  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI';
   const supabase = supabase.createClient(supabaseUrl, supabaseKey);
-
-  let usuariosGlobal = [];
-
+</script>
+<script>
   async function verificarSesion() {
     const { data } = await supabase.auth.getSession();
     const user = data?.session?.user;
     if (!user || user.email !== ADMIN_EMAIL) {
       alert('Acceso denegado');
-      window.location.href = 'login.html';
+      window.location.href = 'index.html';
     }
   }
 
-  async function cargarUsuarios() {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
+  async function cargarUsuarios(filtro = '') {
+    let query = supabase.from('profiles').select('*').order('created_at', { ascending: false });
+
+    if (filtro) {
+      query = query.or(`email.ilike.%${filtro}%,id.eq.${filtro}`);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       alert('Error al cargar usuarios');
       return;
     }
 
-    usuariosGlobal = data;
-    renderizarTabla(data);
-  }
-
-  function renderizarTabla(data) {
     const tbody = document.querySelector('#tablaUsuarios tbody');
     tbody.innerHTML = '';
 
@@ -226,6 +245,7 @@
             <option value="5" ${user.porcentaje == 5 ? 'selected' : ''}>5%</option>
             <option value="10" ${user.porcentaje == 10 ? 'selected' : ''}>10%</option>
             <option value="15" ${user.porcentaje == 15 ? 'selected' : ''}>15%</option>
+            <option value="20" ${user.porcentaje == 20 ? 'selected' : ''}>20%</option>
           </select>
         </td>
         <td>
@@ -237,22 +257,21 @@
     });
   }
 
-  function filtrarUsuarios() {
-    const filtro = document.getElementById('buscador').value.toLowerCase();
-    const filtrados = usuariosGlobal.filter(u =>
-      u.email?.toLowerCase().includes(filtro) || u.id?.toLowerCase().includes(filtro)
-    );
-    renderizarTabla(filtrados);
+  function buscarUsuario() {
+    const valor = document.getElementById('searchInput').value.trim();
+    cargarUsuarios(valor);
   }
 
   async function actualizarCampo(id, campo, valor) {
     const { error } = await supabase.from('profiles').update({ [campo]: valor }).eq('id', id);
-    if (error) alert(`Error actualizando ${campo}: ${error.message}`);
+    if (error) {
+      alert(`Error actualizando ${campo}: ${error.message}`);
+    }
   }
 
   async function actualizarUsuario(id) {
     alert('Cambios guardados correctamente');
-    await cargarUsuarios();
+    cargarUsuarios();
   }
 
   async function guardarPorcentaje(plan) {
@@ -268,19 +287,18 @@
     const valor = parseInt(input.value);
 
     if (!campo || isNaN(valor) || valor < 1 || valor > 15) {
-      alert('Porcentaje inválido (1% a 15%)');
+      alert('El porcentaje debe ser entre 1% y 15%.');
       return;
     }
 
     const { error } = await supabase
       .from('config_planes')
-      .update({ [campo]: valor })
-      .eq('id', 1);
+      .upsert([{ id: 1, [campo]: valor }], { onConflict: ['id'] });
 
     if (error) {
       alert('Error guardando porcentaje: ' + error.message);
     } else {
-      alert(`Porcentaje del plan ${plan} actualizado a ${valor}%`);
+      alert(`Porcentaje de ${plan} actualizado a ${valor}%`);
     }
   }
 
@@ -296,10 +314,10 @@
       return;
     }
 
-    document.getElementById('basicoPorcentaje').value = data.basico ?? '';
-    document.getElementById('medioPorcentaje').value = data.medio ?? '';
-    document.getElementById('avanzadoPorcentaje').value = data.avanzado ?? '';
-    document.getElementById('avanzadoProPorcentaje').value = data.avanzadoPro ?? '';
+    document.getElementById('basicoPorcentaje').value = data.basico ?? 5;
+    document.getElementById('medioPorcentaje').value = data.medio ?? 10;
+    document.getElementById('avanzadoPorcentaje').value = data.avanzado ?? 15;
+    document.getElementById('avanzadoProPorcentaje').value = data.avanzadoPro ?? 15;
   }
 
   async function cargarEstadisticas() {
@@ -313,19 +331,25 @@
     };
 
     for (const [id, fecha] of Object.entries(rangos)) {
-      const { count } = await supabase
+      const { count, error } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', fecha.toISOString());
-      document.getElementById(id).textContent = count || 0;
+
+      if (!error) {
+        document.getElementById(id).textContent = count ?? 0;
+      }
     }
   }
 
-  verificarSesion().then(() => {
-    cargarUsuarios();
-    cargarPorcentajes();
-    cargarEstadisticas();
-  });
+  async function iniciarPanel() {
+    await verificarSesion();
+    await cargarUsuarios();
+    await cargarEstadisticas();
+    await cargarPorcentajes();
+  }
+
+  iniciarPanel();
 </script>
 </body>
 </html>
