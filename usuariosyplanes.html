@@ -9,9 +9,10 @@
   <style>
     body {
       font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
       background: rgba(0, 0, 0, 0.7);
       color: white;
-      padding: 20px;
     }
 
     h2 {
@@ -32,14 +33,6 @@
       border-radius: 4px;
       min-width: 200px;
       flex: 1;
-    }
-
-    input[type="text"] {
-      padding: 8px;
-      width: 250px;
-      margin-bottom: 10px;
-      border-radius: 6px;
-      border: none;
     }
 
     table {
@@ -130,8 +123,6 @@
     <div class="stat">6 meses: <span id="stat180">0</span></div>
   </div>
 
-  <input type="text" id="buscador" placeholder="Buscar por email o ID..." oninput="filtrarUsuarios()"/>
-
   <table id="tablaUsuarios">
     <thead>
       <tr>
@@ -148,184 +139,174 @@
     <tbody></tbody>
   </table>
 
-  <div class="plan-boxes">
+  <div class="plan-boxes" id="planesConfig">
     <div class="plan-box">
       <label for="basicoPorcentaje">Básico (%)</label>
-      <input type="number" id="basicoPorcentaje" min="1" max="15" />
+      <input type="number" id="basicoPorcentaje" min="0" max="100" />
       <button onclick="guardarPorcentaje('Basico')">Guardar</button>
     </div>
     <div class="plan-box">
       <label for="medioPorcentaje">Medio (%)</label>
-      <input type="number" id="medioPorcentaje" min="1" max="15" />
+      <input type="number" id="medioPorcentaje" min="0" max="100" />
       <button onclick="guardarPorcentaje('Medio')">Guardar</button>
     </div>
     <div class="plan-box">
       <label for="avanzadoPorcentaje">Avanzado (%)</label>
-      <input type="number" id="avanzadoPorcentaje" min="1" max="15" />
+      <input type="number" id="avanzadoPorcentaje" min="0" max="100" />
       <button onclick="guardarPorcentaje('Avanzado')">Guardar</button>
     </div>
     <div class="plan-box">
       <label for="avanzadoProPorcentaje">Avanzado Pro (%)</label>
-      <input type="number" id="avanzadoProPorcentaje" min="1" max="15" />
+      <input type="number" id="avanzadoProPorcentaje" min="0" max="100" />
       <button onclick="guardarPorcentaje('Avanzado Pro')">Guardar</button>
     </div>
   </div>
-<script>
-  const ADMIN_EMAIL = 'arbitrax9@gmail.com';
-  const supabaseUrl = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
-  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; // clave original respetada
-  const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-  let usuariosGlobal = [];
+  <script>
+    const ADMIN_EMAIL = 'arbitrax9@gmail.com';
 
-  async function verificarSesion() {
-    const { data } = await supabase.auth.getSession();
-    const user = data?.session?.user;
-    if (!user || user.email !== ADMIN_EMAIL) {
-      alert('Acceso denegado');
-      window.location.href = 'login.html';
-    }
-  }
-
-  async function cargarUsuarios() {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      alert('Error al cargar usuarios');
-      return;
+    const supabaseUrl = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI';
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+async function verificarSesion() {
+      const { data } = await supabase.auth.getSession();
+      const user = data?.session?.user;
+      if (!user || user.email !== ADMIN_EMAIL) {
+        alert('Acceso denegado');
+        window.location.href = 'login.html';
+      }
     }
 
-    usuariosGlobal = data;
-    renderizarTabla(data);
-  }
+    async function cargarUsuarios() {
+      const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+      if (error) {
+        alert('Error al cargar usuarios');
+        return;
+      }
 
-  function renderizarTabla(data) {
-    const tbody = document.querySelector('#tablaUsuarios tbody');
-    tbody.innerHTML = '';
+      const tbody = document.querySelector('#tablaUsuarios tbody');
+      tbody.innerHTML = '';
 
-    data.forEach(user => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${user.nombre || ''} ${user.apellido || ''}</td>
-        <td>${user.email || ''}</td>
-        <td>${user.celular || ''}</td>
-        <td>${user.cbu || ''}</td>
-        <td>
-          <select onchange="actualizarCampo('${user.id}', 'nivel', this.value)">
-            <option value="Basico" ${user.nivel === 'Basico' ? 'selected' : ''}>Básico</option>
-            <option value="Medio" ${user.nivel === 'Medio' ? 'selected' : ''}>Medio</option>
-            <option value="Avanzado" ${user.nivel === 'Avanzado' ? 'selected' : ''}>Avanzado</option>
-            <option value="Avanzado Pro" ${user.nivel === 'Avanzado Pro' ? 'selected' : ''}>Avanzado Pro</option>
-          </select>
-        </td>
-        <td>
-          <select onchange="actualizarCampo('${user.id}', 'porcentaje', this.value)">
-            <option value="5" ${user.porcentaje == 5 ? 'selected' : ''}>5%</option>
-            <option value="10" ${user.porcentaje == 10 ? 'selected' : ''}>10%</option>
-            <option value="15" ${user.porcentaje == 15 ? 'selected' : ''}>15%</option>
-          </select>
-        </td>
-        <td>
-          <input type="checkbox" ${user.recarga_confirmada ? 'checked' : ''} onchange="actualizarCampo('${user.id}', 'recarga_confirmada', this.checked)">
-        </td>
-        <td><button onclick="actualizarUsuario('${user.id}')">Guardar</button></td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
-
-  function filtrarUsuarios() {
-    const filtro = document.getElementById('buscador').value.toLowerCase();
-    const filtrados = usuariosGlobal.filter(u =>
-      u.email?.toLowerCase().includes(filtro) || u.id?.toLowerCase().includes(filtro)
-    );
-    renderizarTabla(filtrados);
-  }
-
-  async function actualizarCampo(id, campo, valor) {
-    const { error } = await supabase.from('profiles').update({ [campo]: valor }).eq('id', id);
-    if (error) alert(`Error actualizando ${campo}: ${error.message}`);
-  }
-
-  async function actualizarUsuario(id) {
-    alert('Cambios guardados correctamente');
-    await cargarUsuarios();
-  }
-
-  async function guardarPorcentaje(plan) {
-    const planMap = {
-      'Basico': 'basico',
-      'Medio': 'medio',
-      'Avanzado': 'avanzado',
-      'Avanzado Pro': 'avanzadoPro'
-    };
-
-    const campo = planMap[plan];
-    const input = document.getElementById(campo + 'Porcentaje');
-    const valor = parseInt(input.value);
-
-    if (!campo || isNaN(valor) || valor < 1 || valor > 15) {
-      alert('Porcentaje inválido (1% a 15%)');
-      return;
+      data.forEach(user => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${user.nombre || ''} ${user.apellido || ''}</td>
+          <td>${user.email || ''}</td>
+          <td>${user.celular || ''}</td>
+          <td>${user.cbu || ''}</td>
+          <td>
+            <select onchange="actualizarCampo('${user.id}', 'nivel', this.value)">
+              <option value="Basico" ${user.nivel === 'Basico' ? 'selected' : ''}>Básico</option>
+              <option value="Medio" ${user.nivel === 'Medio' ? 'selected' : ''}>Medio</option>
+              <option value="Avanzado" ${user.nivel === 'Avanzado' ? 'selected' : ''}>Avanzado</option>
+              <option value="Avanzado Pro" ${user.nivel === 'Avanzado Pro' ? 'selected' : ''}>Avanzado Pro</option>
+            </select>
+          </td>
+          <td>
+            <select onchange="actualizarCampo('${user.id}', 'porcentaje', this.value)">
+              <option value="5" ${user.porcentaje == 5 ? 'selected' : ''}>5%</option>
+              <option value="10" ${user.porcentaje == 10 ? 'selected' : ''}>10%</option>
+              <option value="15" ${user.porcentaje == 15 ? 'selected' : ''}>15%</option>
+              <option value="20" ${user.porcentaje == 20 ? 'selected' : ''}>20%</option>
+            </select>
+          </td>
+          <td>
+            <input type="checkbox" ${user.recarga_confirmada ? 'checked' : ''} onchange="actualizarCampo('${user.id}', 'recarga_confirmada', this.checked)">
+          </td>
+          <td><button onclick="actualizarUsuario('${user.id}')">Guardar</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
     }
 
-    const { error } = await supabase
-      .from('config_planes')
-      .update({ [campo]: valor })
-      .eq('id', 1);
-
-    if (error) {
-      alert('Error guardando porcentaje: ' + error.message);
-    } else {
-      alert(`Porcentaje del plan ${plan} actualizado a ${valor}%`);
-    }
-  }
-
-  async function cargarPorcentajes() {
-    const { data, error } = await supabase
-      .from('config_planes')
-      .select('*')
-      .eq('id', 1)
-      .single();
-
-    if (error || !data) {
-      alert('Error al cargar porcentajes');
-      return;
+    async function actualizarCampo(id, campo, valor) {
+      const update = { [campo]: valor };
+      const { error } = await supabase.from('profiles').update(update).eq('id', id);
+      if (error) {
+        alert(`Error actualizando ${campo}: ${error.message}`);
+      }
     }
 
-    document.getElementById('basicoPorcentaje').value = data.basico ?? '';
-    document.getElementById('medioPorcentaje').value = data.medio ?? '';
-    document.getElementById('avanzadoPorcentaje').value = data.avanzado ?? '';
-    document.getElementById('avanzadoProPorcentaje').value = data.avanzadoPro ?? '';
-  }
-
-  async function cargarEstadisticas() {
-    const hoy = new Date();
-    const rangos = {
-      stat15: new Date(hoy.getTime() - 15 * 60 * 1000),
-      stat24: new Date(hoy.getTime() - 24 * 60 * 60 * 1000),
-      stat7: new Date(hoy.getTime() - 7 * 24 * 60 * 60 * 1000),
-      stat30: new Date(hoy.getTime() - 30 * 24 * 60 * 60 * 1000),
-      stat180: new Date(hoy.getTime() - 180 * 24 * 60 * 60 * 1000)
-    };
-
-    for (const [id, fecha] of Object.entries(rangos)) {
-      const { count } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', fecha.toISOString());
-      document.getElementById(id).textContent = count || 0;
+    async function actualizarUsuario(id) {
+      alert('Cambios guardados correctamente');
+      cargarUsuarios();
     }
-  }
 
-  verificarSesion().then(() => {
-    cargarUsuarios();
-    cargarPorcentajes();
-    cargarEstadisticas();
-  });
-</script>
+    async function guardarPorcentaje(plan) {
+      const planMap = {
+        'Basico': 'basico',
+        'Medio': 'medio',
+        'Avanzado': 'avanzado',
+        'Avanzado Pro': 'avanzadoPro'
+      };
+
+      const campo = planMap[plan];
+      const input = document.getElementById(campo + 'Porcentaje');
+      const valor = parseInt(input.value);
+
+      if (!campo || isNaN(valor)) {
+        alert('Valor inválido');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('config_planes')
+        .upsert([{ id: 1, [campo]: valor }], { onConflict: ['id'] });
+
+      if (error) {
+        alert('Error guardando porcentaje: ' + error.message);
+      } else {
+        alert(`Porcentaje del plan ${plan} actualizado a ${valor}%`);
+      }
+    }
+
+    async function cargarPorcentajes() {
+      const { data, error } = await supabase
+        .from('config_planes')
+        .select('*')
+        .eq('id', 1)
+        .single();
+
+      if (error || !data) {
+        alert('Error al cargar porcentajes');
+        return;
+      }
+
+      document.getElementById('basicoPorcentaje').value = data.basico ?? 5;
+      document.getElementById('medioPorcentaje').value = data.medio ?? 10;
+      document.getElementById('avanzadoPorcentaje').value = data.avanzado ?? 15;
+      document.getElementById('avanzadoProPorcentaje').value = data.avanzadoPro ?? 15;
+    }
+
+    async function cargarEstadisticas() {
+      const hoy = new Date();
+      const rangos = {
+        stat15: new Date(hoy.getTime() - 15 * 60 * 1000),
+        stat24: new Date(hoy.getTime() - 24 * 60 * 60 * 1000),
+        stat7: new Date(hoy.getTime() - 7 * 24 * 60 * 60 * 1000),
+        stat30: new Date(hoy.getTime() - 30 * 24 * 60 * 60 * 1000),
+        stat180: new Date(hoy.getTime() - 180 * 24 * 60 * 60 * 1000)
+      };
+
+      for (const [id, fecha] of Object.entries(rangos)) {
+        const { count, error } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .gte('created_at', fecha.toISOString());
+
+        if (!error) {
+          document.getElementById(id).textContent = count ?? 0;
+        }
+      }
+    }
+
+    async function renderizarUsuarios() {
+      await cargarUsuarios();
+      await cargarEstadisticas();
+      await cargarPorcentajes();
+    }
+
+    verificarSesion().then(() => renderizarUsuarios());
+  </script>
 </body>
 </html>
