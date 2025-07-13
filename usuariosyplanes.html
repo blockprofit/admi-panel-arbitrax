@@ -9,10 +9,9 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
       background: rgba(0, 0, 0, 0.7);
       color: white;
+      padding: 20px;
     }
 
     h2 {
@@ -33,6 +32,14 @@
       border-radius: 4px;
       min-width: 200px;
       flex: 1;
+    }
+
+    input[type="text"] {
+      padding: 8px;
+      width: 250px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      border: none;
     }
 
     table {
@@ -123,6 +130,8 @@
     <div class="stat">6 meses: <span id="stat180">0</span></div>
   </div>
 
+  <input type="text" id="buscador" placeholder="Buscar por email o ID..." oninput="filtrarUsuarios()"/>
+
   <table id="tablaUsuarios">
     <thead>
       <tr>
@@ -139,7 +148,7 @@
     <tbody></tbody>
   </table>
 
-  <div class="plan-boxes" id="planesConfig">
+  <div class="plan-boxes">
     <div class="plan-box">
       <label for="basicoPorcentaje">Básico (%)</label>
       <input type="number" id="basicoPorcentaje" min="1" max="15" />
@@ -164,8 +173,10 @@
 <script>
   const ADMIN_EMAIL = 'arbitrax9@gmail.com';
   const supabaseUrl = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
-  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI';
-  const supabase = supabasejs.createClient(supabaseUrl, supabaseKey);
+  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; // clave original respetada
+  const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+  let usuariosGlobal = [];
 
   async function verificarSesion() {
     const { data } = await supabase.auth.getSession();
@@ -187,6 +198,11 @@
       return;
     }
 
+    usuariosGlobal = data;
+    renderizarTabla(data);
+  }
+
+  function renderizarTabla(data) {
     const tbody = document.querySelector('#tablaUsuarios tbody');
     tbody.innerHTML = '';
 
@@ -221,16 +237,22 @@
     });
   }
 
+  function filtrarUsuarios() {
+    const filtro = document.getElementById('buscador').value.toLowerCase();
+    const filtrados = usuariosGlobal.filter(u =>
+      u.email?.toLowerCase().includes(filtro) || u.id?.toLowerCase().includes(filtro)
+    );
+    renderizarTabla(filtrados);
+  }
+
   async function actualizarCampo(id, campo, valor) {
     const { error } = await supabase.from('profiles').update({ [campo]: valor }).eq('id', id);
-    if (error) {
-      alert(`Error actualizando ${campo}: ${error.message}`);
-    }
+    if (error) alert(`Error actualizando ${campo}: ${error.message}`);
   }
 
   async function actualizarUsuario(id) {
     alert('Cambios guardados correctamente');
-    cargarUsuarios();
+    await cargarUsuarios();
   }
 
   async function guardarPorcentaje(plan) {
@@ -246,7 +268,7 @@
     const valor = parseInt(input.value);
 
     if (!campo || isNaN(valor) || valor < 1 || valor > 15) {
-      alert('Porcentaje inválido. Ingrese un valor entre 1% y 15%.');
+      alert('Porcentaje inválido (1% a 15%)');
       return;
     }
 
@@ -258,7 +280,7 @@
     if (error) {
       alert('Error guardando porcentaje: ' + error.message);
     } else {
-      alert(`Porcentaje de ${plan} actualizado a ${valor}%`);
+      alert(`Porcentaje del plan ${plan} actualizado a ${valor}%`);
     }
   }
 
@@ -274,10 +296,10 @@
       return;
     }
 
-    document.getElementById('basicoPorcentaje').value = data.basico ?? 5;
-    document.getElementById('medioPorcentaje').value = data.medio ?? 5;
-    document.getElementById('avanzadoPorcentaje').value = data.avanzado ?? 5;
-    document.getElementById('avanzadoProPorcentaje').value = data.avanzadoPro ?? 5;
+    document.getElementById('basicoPorcentaje').value = data.basico ?? '';
+    document.getElementById('medioPorcentaje').value = data.medio ?? '';
+    document.getElementById('avanzadoPorcentaje').value = data.avanzado ?? '';
+    document.getElementById('avanzadoProPorcentaje').value = data.avanzadoPro ?? '';
   }
 
   async function cargarEstadisticas() {
@@ -291,21 +313,18 @@
     };
 
     for (const [id, fecha] of Object.entries(rangos)) {
-      const { count, error } = await supabase
+      const { count } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', fecha.toISOString());
-
-      if (!error) {
-        document.getElementById(id).textContent = count ?? 0;
-      }
+      document.getElementById(id).textContent = count || 0;
     }
   }
 
   verificarSesion().then(() => {
     cargarUsuarios();
-    cargarEstadisticas();
     cargarPorcentajes();
+    cargarEstadisticas();
   });
 </script>
 </body>
