@@ -35,6 +35,18 @@
       flex: 1;
     }
 
+    .busqueda {
+      margin-bottom: 20px;
+    }
+
+    .busqueda input {
+      padding: 10px;
+      width: 100%;
+      max-width: 400px;
+      border-radius: 6px;
+      border: none;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -90,21 +102,6 @@
       padding: 5px;
     }
 
-    .plan-box button {
-      margin-top: 10px;
-      width: 100%;
-      background: #3498db;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      padding: 8px;
-      cursor: pointer;
-    }
-
-    .plan-box button:hover {
-      background: #2980b9;
-    }
-
     @media (max-width: 768px) {
       table, .stats {
         font-size: 14px;
@@ -123,6 +120,10 @@
     <div class="stat">6 meses: <span id="stat180">0</span></div>
   </div>
 
+  <div class="busqueda">
+    <input type="text" id="buscador" placeholder="Buscar por email o ID..." oninput="filtrarUsuarios()">
+  </div>
+
   <table id="tablaUsuarios">
     <thead>
       <tr>
@@ -138,34 +139,31 @@
     </thead>
     <tbody></tbody>
   </table>
-
-  <div class="plan-boxes" id="planesConfig">
+<div class="plan-boxes" id="planesConfig">
     <div class="plan-box">
       <label for="basicoPorcentaje">Básico (%)</label>
-      <input type="number" id="basicoPorcentaje" min="1" max="15" />
-      <button onclick="guardarPorcentaje('Basico')">Guardar</button>
+      <input type="number" id="basicoPorcentaje" min="0" max="100" onchange="guardarPorcentaje('basico', this.value)">
     </div>
     <div class="plan-box">
       <label for="medioPorcentaje">Medio (%)</label>
-      <input type="number" id="medioPorcentaje" min="1" max="15" />
-      <button onclick="guardarPorcentaje('Medio')">Guardar</button>
+      <input type="number" id="medioPorcentaje" min="0" max="100" onchange="guardarPorcentaje('medio', this.value)">
     </div>
     <div class="plan-box">
       <label for="avanzadoPorcentaje">Avanzado (%)</label>
-      <input type="number" id="avanzadoPorcentaje" min="1" max="15" />
-      <button onclick="guardarPorcentaje('Avanzado')">Guardar</button>
+      <input type="number" id="avanzadoPorcentaje" min="0" max="100" onchange="guardarPorcentaje('avanzado', this.value)">
     </div>
     <div class="plan-box">
       <label for="avanzadoProPorcentaje">Avanzado Pro (%)</label>
-      <input type="number" id="avanzadoProPorcentaje" min="1" max="15" />
-      <button onclick="guardarPorcentaje('Avanzado Pro')">Guardar</button>
+      <input type="number" id="avanzadoProPorcentaje" min="0" max="100" onchange="guardarPorcentaje('avanzadoPro', this.value)">
     </div>
   </div>
+
 <script>
   const ADMIN_EMAIL = 'arbitrax9@gmail.com';
   const supabaseUrl = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
   const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI';
-  const supabase = supabasejs.createClient(supabaseUrl, supabaseKey);
+  const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+  let usuariosGlobal = [];
 
   async function verificarSesion() {
     const { data } = await supabase.auth.getSession();
@@ -177,23 +175,22 @@
   }
 
   async function cargarUsuarios() {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
-
+    const { data, error } = await supabase.from('profiles').select('*');
     if (error) {
       alert('Error al cargar usuarios');
       return;
     }
+    usuariosGlobal = data;
+    renderizarUsuarios(data);
+  }
 
+  function renderizarUsuarios(usuarios) {
     const tbody = document.querySelector('#tablaUsuarios tbody');
     tbody.innerHTML = '';
-
-    data.forEach(user => {
+    usuarios.forEach(user => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td>${user.nombre || ''} ${user.apellido || ''}</td>
+        <td>${user.nombre || ''}</td>
         <td>${user.email || ''}</td>
         <td>${user.celular || ''}</td>
         <td>${user.cbu || ''}</td>
@@ -210,6 +207,7 @@
             <option value="5" ${user.porcentaje == 5 ? 'selected' : ''}>5%</option>
             <option value="10" ${user.porcentaje == 10 ? 'selected' : ''}>10%</option>
             <option value="15" ${user.porcentaje == 15 ? 'selected' : ''}>15%</option>
+            <option value="20" ${user.porcentaje == 20 ? 'selected' : ''}>20%</option>
           </select>
         </td>
         <td>
@@ -221,11 +219,18 @@
     });
   }
 
+  function filtrarUsuarios() {
+    const texto = document.getElementById('buscador').value.toLowerCase();
+    const filtrados = usuariosGlobal.filter(u =>
+      (u.email && u.email.toLowerCase().includes(texto)) ||
+      (u.id && u.id.toLowerCase().includes(texto))
+    );
+    renderizarUsuarios(filtrados);
+  }
+
   async function actualizarCampo(id, campo, valor) {
     const { error } = await supabase.from('profiles').update({ [campo]: valor }).eq('id', id);
-    if (error) {
-      alert(`Error actualizando ${campo}: ${error.message}`);
-    }
+    if (error) alert(`Error actualizando ${campo}`);
   }
 
   async function actualizarUsuario(id) {
@@ -233,56 +238,35 @@
     cargarUsuarios();
   }
 
-  async function guardarPorcentaje(plan) {
-    const planMap = {
-      'Basico': 'basico',
-      'Medio': 'medio',
-      'Avanzado': 'avanzado',
-      'Avanzado Pro': 'avanzadoPro'
-    };
-
-    const campo = planMap[plan];
-    const input = document.getElementById(campo + 'Porcentaje');
-    const valor = parseInt(input.value);
-
-    if (!campo || isNaN(valor) || valor < 1 || valor > 15) {
-      alert('Porcentaje inválido. Ingrese un valor entre 1% y 15%.');
-      return;
-    }
-
+  async function guardarPorcentaje(campo, valor) {
     const { error } = await supabase
       .from('config_planes')
-      .update({ [campo]: valor })
+      .update({ [campo]: parseInt(valor) })
       .eq('id', 1);
 
     if (error) {
-      alert('Error guardando porcentaje: ' + error.message);
+      alert('Error guardando porcentaje');
     } else {
-      alert(`Porcentaje de ${plan} actualizado a ${valor}%`);
+      alert(`Porcentaje de ${campo} actualizado a ${valor}%`);
     }
   }
 
   async function cargarPorcentajes() {
-    const { data, error } = await supabase
-      .from('config_planes')
-      .select('*')
-      .eq('id', 1)
-      .single();
-
+    const { data, error } = await supabase.from('config_planes').select('*').eq('id', 1).single();
     if (error || !data) {
       alert('Error al cargar porcentajes');
       return;
     }
 
     document.getElementById('basicoPorcentaje').value = data.basico ?? 5;
-    document.getElementById('medioPorcentaje').value = data.medio ?? 5;
-    document.getElementById('avanzadoPorcentaje').value = data.avanzado ?? 5;
-    document.getElementById('avanzadoProPorcentaje').value = data.avanzadoPro ?? 5;
+    document.getElementById('medioPorcentaje').value = data.medio ?? 10;
+    document.getElementById('avanzadoPorcentaje').value = data.avanzado ?? 15;
+    document.getElementById('avanzadoProPorcentaje').value = data.avanzadoPro ?? 15;
   }
 
   async function cargarEstadisticas() {
     const hoy = new Date();
-    const rangos = {
+    const fechas = {
       stat15: new Date(hoy.getTime() - 15 * 60 * 1000),
       stat24: new Date(hoy.getTime() - 24 * 60 * 60 * 1000),
       stat7: new Date(hoy.getTime() - 7 * 24 * 60 * 60 * 1000),
@@ -290,15 +274,12 @@
       stat180: new Date(hoy.getTime() - 180 * 24 * 60 * 60 * 1000)
     };
 
-    for (const [id, fecha] of Object.entries(rangos)) {
-      const { count, error } = await supabase
+    for (const [id, fecha] of Object.entries(fechas)) {
+      const { count } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', fecha.toISOString());
-
-      if (!error) {
-        document.getElementById(id).textContent = count ?? 0;
-      }
+      document.getElementById(id).textContent = count || 0;
     }
   }
 
