@@ -11,7 +11,7 @@
       font-family: Arial, sans-serif;
       margin: 0;
       padding: 20px;
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, 0.85);
       color: white;
     }
 
@@ -35,16 +35,29 @@
       flex: 1;
     }
 
-    .busqueda {
+    .search-container {
       margin-bottom: 20px;
     }
 
-    .busqueda input {
-      padding: 10px;
-      width: 100%;
-      max-width: 400px;
+    .search-container input {
+      padding: 8px;
+      width: 250px;
       border-radius: 6px;
       border: none;
+      margin-right: 10px;
+    }
+
+    .search-container button {
+      padding: 8px 14px;
+      background-color: #2980b9;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .search-container button:hover {
+      background-color: #1f618d;
     }
 
     table {
@@ -81,14 +94,14 @@
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
-      margin-top: 20px;
+      margin-top: 30px;
     }
 
     .plan-box {
       background: #2c3e50;
       padding: 15px;
       border-radius: 6px;
-      min-width: 200px;
+      min-width: 220px;
     }
 
     .plan-box label {
@@ -100,6 +113,21 @@
     .plan-box input {
       width: 100%;
       padding: 5px;
+    }
+
+    .plan-box button {
+      margin-top: 10px;
+      width: 100%;
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 8px;
+      cursor: pointer;
+    }
+
+    .plan-box button:hover {
+      background: #2980b9;
     }
 
     @media (max-width: 768px) {
@@ -120,8 +148,9 @@
     <div class="stat">6 meses: <span id="stat180">0</span></div>
   </div>
 
-  <div class="busqueda">
-    <input type="text" id="buscador" placeholder="Buscar por email o ID..." oninput="filtrarUsuarios()">
+  <div class="search-container">
+    <input type="text" id="searchInput" placeholder="Buscar por Email o ID..." />
+    <button onclick="buscarUsuario()">Buscar</button>
   </div>
 
   <table id="tablaUsuarios">
@@ -139,22 +168,27 @@
     </thead>
     <tbody></tbody>
   </table>
-<div class="plan-boxes" id="planesConfig">
+
+  <div class="plan-boxes" id="planesConfig">
     <div class="plan-box">
       <label for="basicoPorcentaje">Básico (%)</label>
-      <input type="number" id="basicoPorcentaje" min="0" max="100" onchange="guardarPorcentaje('basico', this.value)">
+      <input type="number" id="basicoPorcentaje" min="1" max="15" />
+      <button onclick="guardarPorcentaje('Basico')">Guardar</button>
     </div>
     <div class="plan-box">
       <label for="medioPorcentaje">Medio (%)</label>
-      <input type="number" id="medioPorcentaje" min="0" max="100" onchange="guardarPorcentaje('medio', this.value)">
+      <input type="number" id="medioPorcentaje" min="1" max="15" />
+      <button onclick="guardarPorcentaje('Medio')">Guardar</button>
     </div>
     <div class="plan-box">
       <label for="avanzadoPorcentaje">Avanzado (%)</label>
-      <input type="number" id="avanzadoPorcentaje" min="0" max="100" onchange="guardarPorcentaje('avanzado', this.value)">
+      <input type="number" id="avanzadoPorcentaje" min="1" max="15" />
+      <button onclick="guardarPorcentaje('Avanzado')">Guardar</button>
     </div>
     <div class="plan-box">
       <label for="avanzadoProPorcentaje">Avanzado Pro (%)</label>
-      <input type="number" id="avanzadoProPorcentaje" min="0" max="100" onchange="guardarPorcentaje('avanzadoPro', this.value)">
+      <input type="number" id="avanzadoProPorcentaje" min="1" max="15" />
+      <button onclick="guardarPorcentaje('Avanzado Pro')">Guardar</button>
     </div>
   </div>
 
@@ -163,34 +197,38 @@
   const supabaseUrl = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
   const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI';
   const supabase = supabase.createClient(supabaseUrl, supabaseKey);
-  let usuariosGlobal = [];
-
+</script>
+<script>
   async function verificarSesion() {
     const { data } = await supabase.auth.getSession();
     const user = data?.session?.user;
     if (!user || user.email !== ADMIN_EMAIL) {
       alert('Acceso denegado');
-      window.location.href = 'login.html';
+      window.location.href = 'index.html';
     }
   }
 
-  async function cargarUsuarios() {
-    const { data, error } = await supabase.from('profiles').select('*');
+  async function cargarUsuarios(filtro = '') {
+    let query = supabase.from('profiles').select('*').order('created_at', { ascending: false });
+
+    if (filtro) {
+      query = query.or(`email.ilike.%${filtro}%,id.eq.${filtro}`);
+    }
+
+    const { data, error } = await query;
+
     if (error) {
       alert('Error al cargar usuarios');
       return;
     }
-    usuariosGlobal = data;
-    renderizarUsuarios(data);
-  }
 
-  function renderizarUsuarios(usuarios) {
     const tbody = document.querySelector('#tablaUsuarios tbody');
     tbody.innerHTML = '';
-    usuarios.forEach(user => {
+
+    data.forEach(user => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td>${user.nombre || ''}</td>
+        <td>${user.nombre || ''} ${user.apellido || ''}</td>
         <td>${user.email || ''}</td>
         <td>${user.celular || ''}</td>
         <td>${user.cbu || ''}</td>
@@ -219,18 +257,16 @@
     });
   }
 
-  function filtrarUsuarios() {
-    const texto = document.getElementById('buscador').value.toLowerCase();
-    const filtrados = usuariosGlobal.filter(u =>
-      (u.email && u.email.toLowerCase().includes(texto)) ||
-      (u.id && u.id.toLowerCase().includes(texto))
-    );
-    renderizarUsuarios(filtrados);
+  function buscarUsuario() {
+    const valor = document.getElementById('searchInput').value.trim();
+    cargarUsuarios(valor);
   }
 
   async function actualizarCampo(id, campo, valor) {
     const { error } = await supabase.from('profiles').update({ [campo]: valor }).eq('id', id);
-    if (error) alert(`Error actualizando ${campo}`);
+    if (error) {
+      alert(`Error actualizando ${campo}: ${error.message}`);
+    }
   }
 
   async function actualizarUsuario(id) {
@@ -238,21 +274,41 @@
     cargarUsuarios();
   }
 
-  async function guardarPorcentaje(campo, valor) {
+  async function guardarPorcentaje(plan) {
+    const planMap = {
+      'Basico': 'basico',
+      'Medio': 'medio',
+      'Avanzado': 'avanzado',
+      'Avanzado Pro': 'avanzadoPro'
+    };
+
+    const campo = planMap[plan];
+    const input = document.getElementById(campo + 'Porcentaje');
+    const valor = parseInt(input.value);
+
+    if (!campo || isNaN(valor) || valor < 1 || valor > 15) {
+      alert('El porcentaje debe ser entre 1% y 15%.');
+      return;
+    }
+
     const { error } = await supabase
       .from('config_planes')
-      .update({ [campo]: parseInt(valor) })
-      .eq('id', 1);
+      .upsert([{ id: 1, [campo]: valor }], { onConflict: ['id'] });
 
     if (error) {
-      alert('Error guardando porcentaje');
+      alert('Error guardando porcentaje: ' + error.message);
     } else {
-      alert(`Porcentaje de ${campo} actualizado a ${valor}%`);
+      alert(`Porcentaje de ${plan} actualizado a ${valor}%`);
     }
   }
 
   async function cargarPorcentajes() {
-    const { data, error } = await supabase.from('config_planes').select('*').eq('id', 1).single();
+    const { data, error } = await supabase
+      .from('config_planes')
+      .select('*')
+      .eq('id', 1)
+      .single();
+
     if (error || !data) {
       alert('Error al cargar porcentajes');
       return;
@@ -266,7 +322,7 @@
 
   async function cargarEstadisticas() {
     const hoy = new Date();
-    const fechas = {
+    const rangos = {
       stat15: new Date(hoy.getTime() - 15 * 60 * 1000),
       stat24: new Date(hoy.getTime() - 24 * 60 * 60 * 1000),
       stat7: new Date(hoy.getTime() - 7 * 24 * 60 * 60 * 1000),
@@ -274,20 +330,26 @@
       stat180: new Date(hoy.getTime() - 180 * 24 * 60 * 60 * 1000)
     };
 
-    for (const [id, fecha] of Object.entries(fechas)) {
-      const { count } = await supabase
+    for (const [id, fecha] of Object.entries(rangos)) {
+      const { count, error } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', fecha.toISOString());
-      document.getElementById(id).textContent = count || 0;
+
+      if (!error) {
+        document.getElementById(id).textContent = count ?? 0;
+      }
     }
   }
 
-  verificarSesion().then(() => {
-    cargarUsuarios();
-    cargarEstadisticas();
-    cargarPorcentajes();
-  });
+  async function iniciarPanel() {
+    await verificarSesion();
+    await cargarUsuarios();
+    await cargarEstadisticas();
+    await cargarPorcentajes();
+  }
+
+  iniciarPanel();
 </script>
 </body>
 </html>
