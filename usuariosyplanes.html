@@ -189,157 +189,181 @@
     </div>
   </div>
 <script>
-  const ADMIN_EMAIL = 'arbitrax9@gmail.com';
-  const supabaseUrl = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
-  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
-  const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+const ADMIN_EMAIL = 'arbitrax9@gmail.com';
+const supabaseUrl = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; // tu clave real
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-  async function verificarSesion() {
-    const { data } = await supabase.auth.getSession();
-    const user = data?.session?.user;
-    if (!user || user.email !== ADMIN_EMAIL) {
-      alert('Acceso denegado');
-      window.location.href = 'login.html';
-    }
+async function verificarSesion() {
+  const { data } = await supabase.auth.getSession();
+  const user = data?.session?.user;
+  if (!user || user.email !== ADMIN_EMAIL) {
+    alert('Acceso denegado');
+    window.location.href = 'login.html';
+  }
+}
+
+async function cargarUsuarios(filtro = '') {
+  let query = supabase.from('profiles').select('*').order('created_at', { ascending: false });
+  if (filtro) query = query.or(`email.ilike.%${filtro}%,id.eq.${filtro}`);
+  const { data, error } = await query;
+  if (error) return alert('Error al cargar usuarios');
+  const tbody = document.querySelector('#tablaUsuarios tbody');
+  tbody.innerHTML = '';
+  data.forEach(user => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${user.nombre || ''} ${user.apellido || ''}</td>
+      <td>${user.email || ''}</td>
+      <td>${user.celular || ''}</td>
+      <td>${user.cbu || ''}</td>
+      <td>
+        <select onchange="actualizarCampo('${user.id}', 'nivel', this.value)">
+          <option value="Basico" ${user.nivel === 'Basico' ? 'selected' : ''}>Básico</option>
+          <option value="Medio" ${user.nivel === 'Medio' ? 'selected' : ''}>Medio</option>
+          <option value="Avanzado" ${user.nivel === 'Avanzado' ? 'selected' : ''}>Avanzado</option>
+          <option value="Avanzado Pro" ${user.nivel === 'Avanzado Pro' ? 'selected' : ''}>Avanzado Pro</option>
+        </select>
+      </td>
+      <td>
+        <select onchange="actualizarCampo('${user.id}', 'porcentaje', this.value)">
+          <option value="5" ${user.porcentaje == 5 ? 'selected' : ''}>5%</option>
+          <option value="10" ${user.porcentaje == 10 ? 'selected' : ''}>10%</option>
+          <option value="15" ${user.porcentaje == 15 ? 'selected' : ''}>15%</option>
+          <option value="20" ${user.porcentaje == 20 ? 'selected' : ''}>20%</option>
+        </select>
+      </td>
+      <td>
+        <input type="checkbox" id="recarga-${user.id}" ${user.recarga_confirmada ? 'checked' : ''} onchange="actualizarCampo('${user.id}', 'recarga_confirmada', this.checked)">
+      </td>
+      <td><button onclick="activarPlan('${user.id}', '${user.nivel}')">Guardar</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+async function actualizarCampo(id, campo, valor) {
+  const { error } = await supabase.from('profiles').update({ [campo]: valor }).eq('id', id);
+  if (error) alert(`Error actualizando ${campo}: ${error.message}`);
+}
+
+async function activarPlan(userId, nivel) {
+  const recargaCheckbox = document.getElementById(`recarga-${userId}`);
+  if (!recargaCheckbox || !recargaCheckbox.checked) {
+    alert('El usuario debe tener la recarga confirmada antes de activar el plan.');
+    return;
   }
 
-  async function cargarUsuarios(filtro = '') {
-    let query = supabase.from('profiles').select('*').order('created_at', { ascending: false });
-    if (filtro) {
-      query = query.or(`email.ilike.%${filtro}%,id.eq.${filtro}`);
-    }
-    const { data, error } = await query;
-    if (error) return alert('Error al cargar usuarios');
+  const nivelMap = {
+    'Basico': 'basico',
+    'Medio': 'medio',
+    'Avanzado': 'avanzado',
+    'Avanzado Pro': 'avanzadoPro'
+  };
 
-    const tbody = document.querySelector('#tablaUsuarios tbody');
-    tbody.innerHTML = '';
-
-    data.forEach(user => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${user.nombre || ''} ${user.apellido || ''}</td>
-        <td>${user.email || ''}</td>
-        <td>${user.celular || ''}</td>
-        <td>${user.cbu || ''}</td>
-        <td>
-          <select onchange="actualizarCampo('${user.id}', 'nivel', this.value)">
-            <option value="Basico" ${user.nivel === 'Basico' ? 'selected' : ''}>Básico</option>
-            <option value="Medio" ${user.nivel === 'Medio' ? 'selected' : ''}>Medio</option>
-            <option value="Avanzado" ${user.nivel === 'Avanzado' ? 'selected' : ''}>Avanzado</option>
-            <option value="Avanzado Pro" ${user.nivel === 'Avanzado Pro' ? 'selected' : ''}>Avanzado Pro</option>
-          </select>
-        </td>
-        <td>
-          <select onchange="actualizarCampo('${user.id}', 'porcentaje', this.value)">
-            <option value="5" ${user.porcentaje == 5 ? 'selected' : ''}>5%</option>
-            <option value="10" ${user.porcentaje == 10 ? 'selected' : ''}>10%</option>
-            <option value="15" ${user.porcentaje == 15 ? 'selected' : ''}>15%</option>
-            <option value="20" ${user.porcentaje == 20 ? 'selected' : ''}>20%</option>
-          </select>
-        </td>
-        <td>
-          <input type="checkbox" ${user.recarga_confirmada ? 'checked' : ''} onchange="actualizarCampo('${user.id}', 'recarga_confirmada', this.checked)">
-        </td>
-        <td><button onclick="activarPlan('${user.id}', ${user.recarga_confirmada})">Guardar</button></td>
-      `;
-      tbody.appendChild(tr);
-    });
+  const campo = nivelMap[nivel];
+  if (!campo) {
+    alert('Nivel inválido');
+    return;
   }
 
-  async function buscarUsuario() {
-    const input = document.getElementById('busquedaInput').value.trim();
-    cargarUsuarios(input);
+  const { data, error } = await supabase.from('config_planes').select(campo).eq('id', 1).single();
+  if (error || !data) {
+    alert('Error obteniendo porcentaje del plan');
+    return;
   }
 
-  async function actualizarCampo(id, campo, valor) {
-    const { error } = await supabase.from('profiles').update({ [campo]: valor }).eq('id', id);
-    if (error) alert(`Error actualizando ${campo}: ${error.message}`);
+  const porcentaje = data[campo] ?? 5;
+  const { error: updateError } = await supabase
+    .from('profiles')
+    .update({ plan_activo: true, porcentaje: porcentaje })
+    .eq('id', userId);
+
+  if (updateError) {
+    alert('Error al activar plan: ' + updateError.message);
+  } else {
+    alert(`Plan activado con ${porcentaje}%`);
+    cargarUsuarios();
+  }
+}
+
+async function guardarPorcentaje(plan) {
+  const planMap = {
+    'Basico': 'basico',
+    'Medio': 'medio',
+    'Avanzado': 'avanzado',
+    'Avanzado Pro': 'avanzadoPro'
+  };
+
+  const campo = planMap[plan];
+  const input = document.getElementById(campo + 'Porcentaje');
+  const valor = parseInt(input.value);
+
+  if (!campo || isNaN(valor) || valor < 1 || valor > 15) {
+    alert('Porcentaje inválido. Ingrese un valor entre 1 y 15');
+    return;
   }
 
-  async function activarPlan(id, recargaConfirmada) {
-    if (!recargaConfirmada) {
-      alert('Debe marcarse la recarga para activar el plan');
-      return;
-    }
-    const { error } = await supabase.from('profiles').update({ plan_activo: true }).eq('id', id);
-    if (error) {
-      alert('Error activando plan');
-    } else {
-      alert('Plan activado correctamente');
-      cargarUsuarios();
-    }
-  }
-
-  async function guardarPorcentaje(plan) {
-    const planMap = {
-      'Basico': 'basico',
-      'Medio': 'medio',
-      'Avanzado': 'avanzado',
-      'Avanzado Pro': 'avanzadoPro'
-    };
-
-    const campo = planMap[plan];
-    const input = document.getElementById(campo + 'Porcentaje');
-    const valor = parseInt(input.value);
-
-    if (!campo || isNaN(valor) || valor < 1 || valor > 15) {
-      alert('Porcentaje inválido. Ingrese un valor entre 1 y 15');
-      return;
-    }
-
-    const { error: error1 } = await supabase
-      .from('config_planes')
-      .update({ [campo]: valor })
-      .eq('id', 1);
-
-    const { error: error2 } = await supabase
+  const { error } = await supabase.from('config_planes').update({ [campo]: valor }).eq('id', 1);
+  if (error) {
+    alert('Error guardando porcentaje: ' + error.message);
+  } else {
+    // además de actualizar config_planes, se actualizan usuarios con ese nivel
+    const nivel = plan;
+    const { error: errorUsuarios } = await supabase
       .from('profiles')
       .update({ porcentaje: valor })
-      .eq('nivel', plan)
-      .eq('plan_activo', false);
-
-    if (error1 || error2) {
-      alert('Error guardando porcentaje');
+      .eq('nivel', nivel);
+    if (errorUsuarios) {
+      alert('Error actualizando usuarios: ' + errorUsuarios.message);
     } else {
-      alert(`Porcentaje de ${plan} actualizado a ${valor}% y aplicado a usuarios`);
+      alert(`Porcentaje de ${plan} actualizado a ${valor}% y aplicado a usuarios con ese plan.`);
       cargarUsuarios();
     }
   }
+}
 
-  async function cargarPorcentajes() {
-    const { data, error } = await supabase.from('config_planes').select('*').eq('id', 1).single();
-    if (error || !data) return alert('Error al cargar porcentajes');
-    document.getElementById('basicoPorcentaje').value = data.basico ?? 5;
-    document.getElementById('medioPorcentaje').value = data.medio ?? 10;
-    document.getElementById('avanzadoPorcentaje').value = data.avanzado ?? 15;
-    document.getElementById('avanzadoProPorcentaje').value = data.avanzadoPro ?? 15;
+async function buscarUsuario() {
+  const input = document.getElementById('busquedaInput').value.trim();
+  cargarUsuarios(input);
+}
+
+async function cargarPorcentajes() {
+  const { data, error } = await supabase.from('config_planes').select('*').eq('id', 1).single();
+  if (error || !data) {
+    alert('Error al cargar porcentajes');
+    return;
   }
+  document.getElementById('basicoPorcentaje').value = data.basico ?? 5;
+  document.getElementById('medioPorcentaje').value = data.medio ?? 10;
+  document.getElementById('avanzadoPorcentaje').value = data.avanzado ?? 15;
+  document.getElementById('avanzadoProPorcentaje').value = data.avanzadoPro ?? 15;
+}
 
-  async function cargarEstadisticas() {
-    const hoy = new Date();
-    const rangos = {
-      stat15: new Date(hoy.getTime() - 15 * 60 * 1000),
-      stat24: new Date(hoy.getTime() - 24 * 60 * 60 * 1000),
-      stat7: new Date(hoy.getTime() - 7 * 24 * 60 * 60 * 1000),
-      stat30: new Date(hoy.getTime() - 30 * 24 * 60 * 60 * 1000),
-      stat180: new Date(hoy.getTime() - 180 * 24 * 60 * 60 * 1000)
-    };
+async function cargarEstadisticas() {
+  const hoy = new Date();
+  const rangos = {
+    stat15: new Date(hoy.getTime() - 15 * 60 * 1000),
+    stat24: new Date(hoy.getTime() - 24 * 60 * 60 * 1000),
+    stat7: new Date(hoy.getTime() - 7 * 24 * 60 * 60 * 1000),
+    stat30: new Date(hoy.getTime() - 30 * 24 * 60 * 60 * 1000),
+    stat180: new Date(hoy.getTime() - 180 * 24 * 60 * 60 * 1000)
+  };
 
-    for (const [id, fecha] of Object.entries(rangos)) {
-      const { count } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .gte('created_at', fecha.toISOString());
-
-      document.getElementById(id).textContent = count || 0;
-    }
+  for (const [id, fecha] of Object.entries(rangos)) {
+    const { count } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', fecha.toISOString());
+    document.getElementById(id).textContent = count || 0;
   }
+}
 
-  verificarSesion().then(() => {
-    cargarUsuarios();
-    cargarEstadisticas();
-    cargarPorcentajes();
-  });
+verificarSesion().then(() => {
+  cargarUsuarios();
+  cargarEstadisticas();
+  cargarPorcentajes();
+});
 </script>
 </body>
 </html>
