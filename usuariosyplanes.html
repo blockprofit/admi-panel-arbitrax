@@ -188,8 +188,9 @@
       <button onclick="guardarPorcentaje('Avanzado Pro')">Guardar</button>
     </div>
   </div>
+
 <script>
-  const ADMIN_EMAIL = 'arbitrax9@gmail.com';
+const ADMIN_EMAIL = 'arbitrax9@gmail.com';
   const supabaseUrl = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
   const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI';
   const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
@@ -205,21 +206,16 @@
 
   async function cargarUsuarios(filtro = '') {
     let query = supabase.from('profiles').select('*').order('created_at', { ascending: false });
-
     if (filtro) {
       query = query.or(`email.ilike.%${filtro}%,id.eq.${filtro}`);
     }
-
     const { data, error } = await query;
-
     if (error) {
       alert('Error al cargar usuarios');
       return;
     }
-
     const tbody = document.querySelector('#tablaUsuarios tbody');
     tbody.innerHTML = '';
-
     data.forEach(user => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
@@ -246,15 +242,10 @@
         <td>
           <input type="checkbox" ${user.recarga_confirmada ? 'checked' : ''} onchange="actualizarCampo('${user.id}', 'recarga_confirmada', this.checked)">
         </td>
-        <td><button onclick="actualizarUsuario('${user.id}')">Guardar</button></td>
+        <td><button onclick="activarPlan('${user.id}', '${user.nivel}')">Guardar</button></td>
       `;
       tbody.appendChild(tr);
     });
-  }
-
-  async function buscarUsuario() {
-    const input = document.getElementById('busquedaInput').value.trim();
-    cargarUsuarios(input);
   }
 
   async function actualizarCampo(id, campo, valor) {
@@ -262,9 +253,34 @@
     if (error) alert(`Error actualizando ${campo}: ${error.message}`);
   }
 
-  async function actualizarUsuario(id) {
-    alert('Cambios guardados correctamente');
-    cargarUsuarios();
+  async function activarPlan(userId, nivel) {
+    const nivelMap = {
+      'Basico': 'basico',
+      'Medio': 'medio',
+      'Avanzado': 'avanzado',
+      'Avanzado Pro': 'avanzadoPro'
+    };
+    const campo = nivelMap[nivel];
+    if (!campo) {
+      alert('Nivel inválido');
+      return;
+    }
+    const { data, error } = await supabase.from('config_planes').select(campo).eq('id', 1).single();
+    if (error || !data) {
+      alert('Error obteniendo porcentaje del plan');
+      return;
+    }
+    const porcentaje = data[campo] ?? 5;
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ plan_activo: true, porcentaje: porcentaje })
+      .eq('id', userId);
+    if (updateError) {
+      alert('Error al activar plan: ' + updateError.message);
+    } else {
+      alert(`Plan activado con ${porcentaje}%`);
+      cargarUsuarios();
+    }
   }
 
   async function guardarPorcentaje(plan) {
@@ -274,21 +290,14 @@
       'Avanzado': 'avanzado',
       'Avanzado Pro': 'avanzadoPro'
     };
-
     const campo = planMap[plan];
     const input = document.getElementById(campo + 'Porcentaje');
     const valor = parseInt(input.value);
-
     if (!campo || isNaN(valor) || valor < 1 || valor > 15) {
       alert('Porcentaje inválido. Ingrese un valor entre 1 y 15');
       return;
     }
-
-    const { error } = await supabase
-      .from('config_planes')
-      .update({ [campo]: valor })
-      .eq('id', 1);
-
+    const { error } = await supabase.from('config_planes').update({ [campo]: valor }).eq('id', 1);
     if (error) {
       alert('Error guardando porcentaje: ' + error.message);
     } else {
@@ -296,18 +305,17 @@
     }
   }
 
-  async function cargarPorcentajes() {
-    const { data, error } = await supabase
-      .from('config_planes')
-      .select('*')
-      .eq('id', 1)
-      .single();
+  async function buscarUsuario() {
+    const input = document.getElementById('busquedaInput').value.trim();
+    cargarUsuarios(input);
+  }
 
+  async function cargarPorcentajes() {
+    const { data, error } = await supabase.from('config_planes').select('*').eq('id', 1).single();
     if (error || !data) {
       alert('Error al cargar porcentajes');
       return;
     }
-
     document.getElementById('basicoPorcentaje').value = data.basico ?? 5;
     document.getElementById('medioPorcentaje').value = data.medio ?? 10;
     document.getElementById('avanzadoPorcentaje').value = data.avanzado ?? 15;
@@ -323,13 +331,11 @@
       stat30: new Date(hoy.getTime() - 30 * 24 * 60 * 60 * 1000),
       stat180: new Date(hoy.getTime() - 180 * 24 * 60 * 60 * 1000)
     };
-
     for (const [id, fecha] of Object.entries(rangos)) {
       const { count } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
         .gte('created_at', fecha.toISOString());
-
       document.getElementById(id).textContent = count || 0;
     }
   }
