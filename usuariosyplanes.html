@@ -308,8 +308,15 @@ async function guardarPorcentaje(plan) {
   if (error) {
     alert('Error guardando porcentaje: ' + error.message);
   } else {
+    // aplicar a usuarios que todavía NO tienen plan activo
+    await supabase
+      .from('profiles')
+      .update({ porcentaje: valor })
+      .eq('nivel', plan)
+      .eq('plan_activo', false);
+
     alert(`Porcentaje de ${plan} actualizado a ${valor}%`);
-    cargarUsuarios(); // Para actualizar también en la tabla de usuarios
+    cargarUsuarios();
   }
 }
 
