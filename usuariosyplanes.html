@@ -77,9 +77,8 @@
       color: white;
     }
 
-    select, button {
+    select, button, input[type='number'] {
       padding: 5px 10px;
-      margin: 0;
     }
 
     input[type='checkbox'] {
@@ -158,14 +157,17 @@
         <th>Teléfono</th>
         <th>CBU</th>
         <th>Nivel</th>
+        <th>Monto</th>
         <th>Porcentaje</th>
         <th>Recarga</th>
+        <th>Plan Activo</th>
         <th>Acciones</th>
       </tr>
     </thead>
     <tbody></tbody>
   </table>
-<div class="plan-boxes" id="planesConfig">
+
+  <div class="plan-boxes" id="planesConfig">
     <div class="plan-box">
       <label for="basicoPorcentaje">Básico (%)</label>
       <input type="number" id="basicoPorcentaje" min="1" max="15" />
@@ -187,7 +189,6 @@
       <button onclick="guardarPorcentaje('Avanzado Pro')">Guardar</button>
     </div>
   </div>
-
 <script>
 const ADMIN_EMAIL = 'arbitrax9@gmail.com';
 const supabaseUrl = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
@@ -206,12 +207,12 @@ async function verificarSesion() {
 async function cargarUsuarios(filtro = '') {
   let query = supabase.from('profiles').select('*').order('created_at', { ascending: false });
   if (filtro) {
-    const likeFiltro = `%${filtro}%`;
     query = supabase
       .from('profiles')
       .select('*')
-      .or(`email.ilike.${likeFiltro},id.eq.${filtro}`);
+      .or(`email.ilike.%${filtro}%,id.eq.${filtro}`);
   }
+
   const { data, error } = await query;
   if (error) {
     alert('Error al cargar usuarios');
@@ -235,10 +236,12 @@ async function cargarUsuarios(filtro = '') {
           <option value="Avanzado Pro" ${user.nivel === 'Avanzado Pro' ? 'selected' : ''}>Avanzado Pro</option>
         </select>
       </td>
+      <td><input type="number" value="${user.monto_confirmado || ''}" onchange="actualizarCampo('${user.id}', 'monto_confirmado', this.value)" /></td>
       <td><span>${user.porcentaje || 0}%</span></td>
       <td>
         <input type="checkbox" ${user.recarga_confirmada ? 'checked' : ''} onchange="actualizarCampo('${user.id}', 'recarga_confirmada', this.checked)">
       </td>
+      <td>${user.plan_activo ? 'Sí' : 'No'}</td>
       <td><button onclick="activarPlan('${user.id}', '${user.nivel}', ${user.recarga_confirmada})">Guardar</button></td>
     `;
     tbody.appendChild(tr);
@@ -306,13 +309,12 @@ async function guardarPorcentaje(plan) {
   if (error) {
     alert('Error guardando porcentaje: ' + error.message);
   } else {
+    // Aplica el nuevo porcentaje a todos los usuarios del mismo nivel (activos o no)
     await supabase
       .from('profiles')
       .update({ porcentaje: valor })
-      .eq('nivel', plan)
-      .eq('plan_activo', false);
-
-    alert(`Porcentaje de ${plan} actualizado a ${valor}%`);
+      .eq('nivel', plan);
+    alert(`Porcentaje de ${plan} actualizado a ${valor}% para todos`);
     cargarUsuarios();
   }
 }
