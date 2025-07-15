@@ -188,6 +188,7 @@
       <button onclick="guardarPorcentaje('Avanzado Pro')">Guardar</button>
     </div>
   </div>
+
 <script>
 const ADMIN_EMAIL = 'arbitrax9@gmail.com';
 const supabaseUrl = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
@@ -230,14 +231,7 @@ async function cargarUsuarios(filtro = '') {
           <option value="Avanzado Pro" ${user.nivel === 'Avanzado Pro' ? 'selected' : ''}>Avanzado Pro</option>
         </select>
       </td>
-      <td>
-        <select onchange="actualizarCampo('${user.id}', 'porcentaje', this.value)">
-          <option value="5" ${user.porcentaje == 5 ? 'selected' : ''}>5%</option>
-          <option value="10" ${user.porcentaje == 10 ? 'selected' : ''}>10%</option>
-          <option value="15" ${user.porcentaje == 15 ? 'selected' : ''}>15%</option>
-          <option value="20" ${user.porcentaje == 20 ? 'selected' : ''}>20%</option>
-        </select>
-      </td>
+      <td><span>${user.porcentaje || 0}%</span></td>
       <td>
         <input type="checkbox" ${user.recarga_confirmada ? 'checked' : ''} onchange="actualizarCampo('${user.id}', 'recarga_confirmada', this.checked)">
       </td>
@@ -246,7 +240,6 @@ async function cargarUsuarios(filtro = '') {
     tbody.appendChild(tr);
   });
 }
-
 async function actualizarCampo(id, campo, valor) {
   const { error } = await supabase.from('profiles').update({ [campo]: valor }).eq('id', id);
   if (error) alert(`Error actualizando ${campo}: ${error.message}`);
@@ -308,7 +301,6 @@ async function guardarPorcentaje(plan) {
   if (error) {
     alert('Error guardando porcentaje: ' + error.message);
   } else {
-    // aplicar a usuarios que todavía NO tienen plan activo
     await supabase
       .from('profiles')
       .update({ porcentaje: valor })
