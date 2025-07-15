@@ -188,7 +188,6 @@
       <button onclick="guardarPorcentaje('Avanzado Pro')">Guardar</button>
     </div>
   </div>
-
 <script>
 const ADMIN_EMAIL = 'arbitrax9@gmail.com';
 const supabaseUrl = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
@@ -240,6 +239,7 @@ async function cargarUsuarios(filtro = '') {
     tbody.appendChild(tr);
   });
 }
+
 async function actualizarCampo(id, campo, valor) {
   const { error } = await supabase.from('profiles').update({ [campo]: valor }).eq('id', id);
   if (error) alert(`Error actualizando ${campo}: ${error.message}`);
