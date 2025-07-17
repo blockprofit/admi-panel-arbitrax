@@ -124,13 +124,19 @@
       });
     }
 
-    function filtrarReferidos() {
-      const query = document.getElementById('buscador').value.toLowerCase();
-      const filtrados = referidosData.filter(ref =>
-        ref.email.toLowerCase().includes(query)
-      );
-      mostrarReferidos(filtrados);
-    }
+ function filtrarReferidos() {
+  const query = document.getElementById('buscador').value.toLowerCase();
+  console.log('Buscando:', query);
+
+  const filtrados = referidosData.filter(ref => {
+    const email = (ref.email || '').toLowerCase();
+    const match = email.includes(query);
+    if (match) console.log('Coincidencia:', email);
+    return match;
+  });
+
+  mostrarReferidos(filtrados);
+}
 
     async function aprobarReferido(id, referidoPor) {
       // 1. Marcar como aprobado
