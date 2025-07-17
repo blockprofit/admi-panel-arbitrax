@@ -66,7 +66,7 @@
 </head>
 <body>
   <h2>Lista de Referidos</h2>
-  <input type="text" id="buscador" placeholder="Buscar por correo..." oninput="filtrarReferidos()" />
+  <input type="text" id="buscador" placeholder="Buscar por correo, ID o referido por..." oninput="filtrarReferidos()" />
   <table>
     <thead>
       <tr>
@@ -101,12 +101,17 @@
       }
 
       referidosData = data;
-      mostrarReferidos(data);
+      mostrarReferidos(referidosData);
     }
 
     function mostrarReferidos(data) {
       const tabla = document.getElementById('tablaReferidos');
       tabla.innerHTML = '';
+
+      if (!data || data.length === 0) {
+        tabla.innerHTML = '<tr><td colspan="5">No se encontraron referidos.</td></tr>';
+        return;
+      }
 
       data.forEach(ref => {
         const fila = document.createElement('tr');
@@ -124,28 +129,21 @@
       });
     }
 
-function filtrarReferidos() {
-  const query = document.getElementById('buscador').value.toLowerCase();
-  console.log('Buscando:', query);
+    function filtrarReferidos() {
+      const query = document.getElementById('buscador').value.toLowerCase();
 
-  const filtrados = referidosData.filter(ref => {
-    const email = (ref.email || '').toLowerCase();
-    const referidoPor = (ref.referido_por || '').toLowerCase();
-    const id = (ref.id || '').toLowerCase();
+      const filtrados = referidosData.filter(ref => {
+        const email = (ref.email || '').toLowerCase();
+        const referidoPor = (ref.referido_por || '').toLowerCase();
+        const id = (ref.id || '').toLowerCase();
 
-    const match = email.includes(query) || referidoPor.includes(query) || id.includes(query);
-    if (match) console.log('Coincidencia:', {email, referidoPor, id});
-    return match;
-  });
+        return email.includes(query) || referidoPor.includes(query) || id.includes(query);
+      });
 
-  mostrarReferidos(filtrados);
-}
-
-  mostrarReferidos(filtrados);
-}
+      mostrarReferidos(filtrados);
+    }
 
     async function aprobarReferido(id, referidoPor) {
-      // 1. Marcar como aprobado
       const { error: errorAprobar } = await supabaseClient
         .from('referidos')
         .update({ aprobado: true })
@@ -153,7 +151,6 @@ function filtrarReferidos() {
 
       if (errorAprobar) return alert('Error al aprobar referido');
 
-      // 2. Contar referidos aprobados
       const { data: aprobados, error: errorContar } = await supabaseClient
         .from('referidos')
         .select('*')
@@ -161,10 +158,8 @@ function filtrarReferidos() {
         .eq('aprobado', true);
 
       if (errorContar || !aprobados) return alert('Error al contar referidos');
-
       const total = aprobados.length;
 
-      // 3. Revisar metas alcanzadas
       const metas = [
         { cantidad: 5, recompensa: 20000 },
         { cantidad: 10, recompensa: 80000 },
@@ -184,7 +179,6 @@ function filtrarReferidos() {
           if (errYaExiste) continue;
 
           if (!yaExiste) {
-            // 4. Insertar recompensa
             await supabaseClient.from('recompensas').insert({
               usuario_id: referidoPor,
               meta: meta.cantidad,
@@ -192,7 +186,6 @@ function filtrarReferidos() {
               fecha: new Date().toISOString()
             });
 
-            // 5. Actualizar o crear saldo
             const { data: balance, error: errorBalance } = await supabaseClient
               .from('balances')
               .select('saldo')
