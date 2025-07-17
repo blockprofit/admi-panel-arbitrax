@@ -16,10 +16,19 @@
     h2 {
       color: #00d4ff;
     }
+    input[type="text"] {
+      padding: 10px;
+      margin-bottom: 15px;
+      width: 100%;
+      max-width: 400px;
+      border-radius: 4px;
+      border: none;
+      font-size: 16px;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 20px;
+      margin-top: 10px;
       background: #fff;
       color: #000;
       border-radius: 8px;
@@ -57,6 +66,7 @@
 </head>
 <body>
   <h2>Lista de Referidos</h2>
+  <input type="text" id="buscador" placeholder="Buscar por correo..." oninput="filtrarReferidos()" />
   <table>
     <thead>
       <tr>
@@ -76,6 +86,8 @@
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI'
     );
 
+    let referidosData = [];
+
     async function cargarReferidos() {
       const { data, error } = await supabaseClient
         .from('referidos')
@@ -88,6 +100,11 @@
         return;
       }
 
+      referidosData = data;
+      mostrarReferidos(data);
+    }
+
+    function mostrarReferidos(data) {
       const tabla = document.getElementById('tablaReferidos');
       tabla.innerHTML = '';
 
@@ -106,7 +123,16 @@
         tabla.appendChild(fila);
       });
     }
-async function aprobarReferido(id, referidoPor) {
+
+    function filtrarReferidos() {
+      const query = document.getElementById('buscador').value.toLowerCase();
+      const filtrados = referidosData.filter(ref =>
+        ref.email.toLowerCase().includes(query)
+      );
+      mostrarReferidos(filtrados);
+    }
+
+    async function aprobarReferido(id, referidoPor) {
       // 1. Marcar como aprobado
       const { error: errorAprobar } = await supabaseClient
         .from('referidos')
