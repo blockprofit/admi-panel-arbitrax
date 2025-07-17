@@ -66,7 +66,7 @@
 </head>
 <body>
   <h2>Lista de Referidos</h2>
-  <input type="text" id="buscador" placeholder="Buscar por correo, ID o referido por..." oninput="filtrarReferidos()" />
+  <input type="text" id="buscador" placeholder="Buscar por correo..." oninput="filtrarReferidos()" />
   <table>
     <thead>
       <tr>
@@ -79,261 +79,159 @@
     </thead>
     <tbody id="tablaReferidos"></tbody>
   </table>
+  <script>
+    const { createClient } = supabase;
+    const supabaseClient = createClient(
+      'https://ovulezkcxwrjvyxlxsdv.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI'
+    );
 
-  <!-- 🔽 BLOQUE: Metas y recompensas -->
-  <div id="metasRecompensas" style="display:none; margin-top: 20px;">
-    <h3>Metas de Referidos y Recompensas</h3>
-    <div id="metasLista"></div>
-  </div>
-<script>
-  // Instancia supabase
-  const supabase = supabase.createClient(
-    'https://ovulezkcxwrjvyxlxsdv.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI'
-  );
+    let referidosData = [];
 
-  const metas = [
-    { cantidad: 5, recompensa: 20000 },
-    { cantidad: 10, recompensa: 80000 },
-    { cantidad: 20, recompensa: 100000 },
-    { cantidad: 50, recompensa: 250000 },
-  ];
+    async function cargarReferidos() {
+      const { data, error } = await supabaseClient
+        .from('referidos')
+        .select('*')
+        .order('fecha', { ascending: false });
 
-  // Mostrar metas y recompensas para usuario
-  async function mostrarMetasYRecompensas(usuario) {
-    const usuario_id = usuario.id;
-    document.getElementById("metasRecompensas").style.display = "block";
+      if (error) {
+        console.error(error);
+        alert('Error al cargar referidos');
+        return;
+      }
 
-    // Obtener referidos activos
-    const { data: referidos, error: errorReferidos } = await supabase
-      .from("referidos")
-      .select("*")
-      .eq("referido_por", usuario_id)
-      .eq("recarga_confirmada", true);
-
-    if (errorReferidos) {
-      console.error(errorReferidos);
-      return;
+      referidosData = data;
+      mostrarReferidos(data);
     }
 
-    const cantidadReferidos = referidos.length;
+    function mostrarReferidos(data) {
+      const tabla = document.getElementById('tablaReferidos');
+      tabla.innerHTML = '';
 
-    // Obtener recompensas ya pagadas
-    const { data: recompensasPagadas } = await supabase
-      .from("recompensas")
-      .select("*")
-      .eq("usuario_id", usuario_id);
-
-    const metasHTML = metas.map(meta => {
-      const yaPagada = recompensasPagadas?.some(r => r.meta === meta.cantidad);
-      const cumplida = cantidadReferidos >= meta.cantidad;
-
-      return `
-        <div style="border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 8px;">
-          <strong>Meta: ${meta.cantidad} referidos</strong><br/>
-          Recompensa: ${meta.recompensa.toLocaleString()} ARS<br/>
-          Estado: ${
-            yaPagada ? "✅ Ya fue pagada" :
-            cumplida ? `<button onclick="liberarRecompensa('${usuario_id}', ${meta.cantidad}, ${meta.recompensa})">Liberar recompensa</button>` :
-            `⏳ Aún no alcanzada`
-          }
-        </div>
-      `;
-    }).join("");
-
-    document.getElementById("metasLista").innerHTML = metasHTML;
-  }
-
-  // Liberar recompensa
-  async function liberarRecompensa(usuario_id, meta, monto) {
-    // Verificar existencia para evitar duplicados
-    const { data: existente } = await supabase
-      .from("recompensas")
-      .select("*")
-      .eq("usuario_id", usuario_id)
-      .eq("meta", meta)
-      .maybeSingle();
-
-    if (existente) {
-      alert("La recompensa ya fue registrada.");
-      return;
-    }
-
-    // Insertar recompensa
-    const { error: errorInsert } = await supabase
-      .from("recompensas")
-      .insert({
-        usuario_id,
-        meta,
-        fecha: new Date().toISOString(),
-        monto,
-        moneda: "ARS",
-        aprobado: true
+      data.forEach(ref => {
+        const fila = document.createElement('tr');
+        fila.innerHTML = `
+          <td>${ref.email}</td>
+          <td>${ref.referido_por}</td>
+          <td>${new Date(ref.fecha).toLocaleString()}</td>
+          <td class="estado">${ref.aprobado ? 'Sí' : 'No'}</td>
+          <td>
+            <button class="aprobar" onclick="aprobarReferido('${ref.id}', '${ref.referido_por}')">Aprobar</button>
+            <button class="rechazar" onclick="rechazarReferido('${ref.id}')">Rechazar</button>
+          </td>
+        `;
+        tabla.appendChild(fila);
       });
-
-    if (errorInsert) {
-      console.error(errorInsert);
-      alert("Error al guardar recompensa.");
-      return;
     }
 
-    // Actualizar saldo en profiles
-    const { data: perfil } = await supabase
-      .from("profiles")
-      .select("saldo")
-      .eq("id", usuario_id)
-      .maybeSingle();
+function filtrarReferidos() {
+  const query = document.getElementById('buscador').value.toLowerCase();
+  console.log('Buscando:', query);
 
-    const nuevoSaldo = (perfil?.saldo || 0) + monto;
+  const filtrados = referidosData.filter(ref => {
+    const email = (ref.email || '').toLowerCase();
+    const referidoPor = (ref.referido_por || '').toLowerCase();
+    const id = (ref.id || '').toLowerCase();
 
-    const { error: errorUpdate } = await supabase
-      .from("profiles")
-      .update({ saldo: nuevoSaldo })
-      .eq("id", usuario_id);
+    const match = email.includes(query) || referidoPor.includes(query) || id.includes(query);
+    if (match) console.log('Coincidencia:', {email, referidoPor, id});
+    return match;
+  });
 
-    if (errorUpdate) {
-      console.error(errorUpdate);
-      alert("Error al actualizar el saldo.");
-      return;
-    }
+  mostrarReferidos(filtrados);
+}
 
-    alert("Recompensa liberada y saldo actualizado.");
-    mostrarMetasYRecompensas({ id: usuario_id });
-  }
+  mostrarReferidos(filtrados);
+}
 
-  let referidosData = [];
+    async function aprobarReferido(id, referidoPor) {
+      // 1. Marcar como aprobado
+      const { error: errorAprobar } = await supabaseClient
+        .from('referidos')
+        .update({ aprobado: true })
+        .eq('id', id);
 
-  async function cargarReferidos() {
-    const { data, error } = await supabase
-      .from('referidos')
-      .select('*')
-      .order('fecha', { ascending: false });
+      if (errorAprobar) return alert('Error al aprobar referido');
 
-    if (error) {
-      console.error(error);
-      alert('Error al cargar referidos');
-      return;
-    }
+      // 2. Contar referidos aprobados
+      const { data: aprobados, error: errorContar } = await supabaseClient
+        .from('referidos')
+        .select('*')
+        .eq('referido_por', referidoPor)
+        .eq('aprobado', true);
 
-    referidosData = data;
-    mostrarReferidos(referidosData);
-  }
+      if (errorContar || !aprobados) return alert('Error al contar referidos');
 
-  function mostrarReferidos(data) {
-    const tabla = document.getElementById('tablaReferidos');
-    tabla.innerHTML = '';
+      const total = aprobados.length;
 
-    if (!data || data.length === 0) {
-      tabla.innerHTML = '<tr><td colspan="5">No se encontraron referidos.</td></tr>';
-      return;
-    }
+      // 3. Revisar metas alcanzadas
+      const metas = [
+        { cantidad: 5, recompensa: 20000 },
+        { cantidad: 10, recompensa: 80000 },
+        { cantidad: 20, recompensa: 100000 },
+        { cantidad: 50, recompensa: 250000 }
+      ];
 
-    data.forEach(ref => {
-      const fila = document.createElement('tr');
-      fila.innerHTML = `
-        <td>${ref.email}</td>
-        <td>${ref.referido_por}</td>
-        <td>${new Date(ref.fecha).toLocaleString()}</td>
-        <td class="estado">${ref.aprobado ? 'Sí' : 'No'}</td>
-        <td>
-          <button class="aprobar" onclick="aprobarReferido('${ref.id}', '${ref.referido_por}')">Aprobar</button>
-          <button class="rechazar" onclick="rechazarReferido('${ref.id}')">Rechazar</button>
-        </td>
-      `;
-      tabla.appendChild(fila);
-    });
-  }
-
-  function filtrarReferidos() {
-    const query = document.getElementById('buscador').value.toLowerCase();
-
-    const filtrados = referidosData.filter(ref => {
-      const email = (ref.email || '').toLowerCase();
-      const referidoPor = (ref.referido_por || '').toLowerCase();
-      const id = (ref.id || '').toLowerCase();
-
-      return email.includes(query) || referidoPor.includes(query) || id.includes(query);
-    });
-
-    mostrarReferidos(filtrados);
-  }
-
-  async function aprobarReferido(id, referidoPor) {
-    const { error: errorAprobar } = await supabase
-      .from('referidos')
-      .update({ aprobado: true })
-      .eq('id', id);
-
-    if (errorAprobar) return alert('Error al aprobar referido');
-
-    const { data: aprobados, error: errorContar } = await supabase
-      .from('referidos')
-      .select('*')
-      .eq('referido_por', referidoPor)
-      .eq('aprobado', true);
-
-    if (errorContar || !aprobados) return alert('Error al contar referidos');
-    const total = aprobados.length;
-
-    for (const meta of metas) {
-      if (total >= meta.cantidad) {
-        const { data: yaExiste, error: errYaExiste } = await supabase
-          .from('recompensas')
-          .select('*')
-          .eq('usuario_id', referidoPor)
-          .eq('meta', meta.cantidad)
-          .maybeSingle();
-
-        if (errYaExiste) continue;
-
-        if (!yaExiste) {
-          await supabase.from('recompensas').insert({
-            usuario_id: referidoPor,
-            meta: meta.cantidad,
-            recompensa_ars: meta.recompensa,
-            fecha: new Date().toISOString()
-          });
-
-          const { data: balance, error: errorBalance } = await supabase
-            .from('balances')
-            .select('saldo')
+      for (const meta of metas) {
+        if (total >= meta.cantidad) {
+          const { data: yaExiste, error: errYaExiste } = await supabaseClient
+            .from('recompensas')
+            .select('*')
             .eq('usuario_id', referidoPor)
+            .eq('meta', meta.cantidad)
             .maybeSingle();
 
-          if (errorBalance) continue;
+          if (errYaExiste) continue;
 
-          if (balance) {
-            const nuevoSaldo = (balance.saldo || 0) + meta.recompensa;
-            await supabase
+          if (!yaExiste) {
+            // 4. Insertar recompensa
+            await supabaseClient.from('recompensas').insert({
+              usuario_id: referidoPor,
+              meta: meta.cantidad,
+              recompensa_ars: meta.recompensa,
+              fecha: new Date().toISOString()
+            });
+
+            // 5. Actualizar o crear saldo
+            const { data: balance, error: errorBalance } = await supabaseClient
               .from('balances')
-              .update({ saldo: nuevoSaldo })
-              .eq('usuario_id', referidoPor);
-          } else {
-            await supabase
-              .from('balances')
-              .insert({ usuario_id: referidoPor, saldo: meta.recompensa });
+              .select('saldo')
+              .eq('usuario_id', referidoPor)
+              .maybeSingle();
+
+            if (errorBalance) continue;
+
+            if (balance) {
+              const nuevoSaldo = (balance.saldo || 0) + meta.recompensa;
+              await supabaseClient
+                .from('balances')
+                .update({ saldo: nuevoSaldo })
+                .eq('usuario_id', referidoPor);
+            } else {
+              await supabaseClient
+                .from('balances')
+                .insert({ usuario_id: referidoPor, saldo: meta.recompensa });
+            }
+
+            alert(`¡Meta alcanzada! ${meta.cantidad} referidos. Se acreditaron $${meta.recompensa} ARS.`);
           }
-
-          alert(`¡Meta alcanzada! ${meta.cantidad} referidos. Se acreditaron $${meta.recompensa} ARS.`);
         }
       }
+
+      cargarReferidos();
+    }
+
+    async function rechazarReferido(id) {
+      const { error } = await supabaseClient
+        .from('referidos')
+        .delete()
+        .eq('id', id);
+
+      if (error) return alert('Error al eliminar referido');
+      cargarReferidos();
     }
 
     cargarReferidos();
-  }
-
-  async function rechazarReferido(id) {
-    const { error } = await supabase
-      .from('referidos')
-      .delete()
-      .eq('id', id);
-
-    if (error) return alert('Error al eliminar referido');
-    cargarReferidos();
-  }
-
-  // Inicializar carga
-  cargarReferidos();
-</script>
+  </script>
 </body>
 </html>
