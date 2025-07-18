@@ -140,7 +140,8 @@
       </tbody>
     </table>
   </section>
-<script>
+
+  <script>
     const { createClient } = supabase;
     const supabaseClient = createClient(
       'https://ovulezkcxwrjvyxlxsdv.supabase.co',
@@ -203,8 +204,7 @@
 
       mostrarReferidos(filtrados);
     }
-
-    async function aprobarReferido(id, referidoPor) {
+async function aprobarReferido(id, referidoPor) {
       const { error: errorAprobar } = await supabaseClient
         .from('referidos')
         .update({ aprobado: true })
@@ -244,7 +244,8 @@
               usuario_id: referidoPor,
               meta: meta.cantidad,
               recompensa_ars: meta.recompensa,
-              fecha: new Date().toISOString()
+              fecha: new Date().toISOString(),
+              aprobado: false
             });
 
             const { data: balance, error: errorBalance } = await supabaseClient
