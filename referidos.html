@@ -368,7 +368,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const tablaCuerpo = document.getElementById("cuerpo-recompensas");
 
   async function cargarRecompensas() {
-    const { data: perfiles, error } = await supabase.from('profiles').select('id, email');
+    const { data: perfiles, error } = await supabaseClient.from('profiles').select('id, email');
 
     if (error) {
       console.error('Error al obtener usuarios:', error);
@@ -378,7 +378,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     tablaCuerpo.innerHTML = "";
 
     for (const perfil of perfiles) {
-      const { data: referidosConfirmados } = await supabase
+      const { data: referidosConfirmados } = await supabaseClient
         .from('referidos')
         .select('*')
         .eq('referido_por', perfil.id)
@@ -391,8 +391,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       let siguienteMeta = metas.find(m => m > cantidad) || null;
       let progreso = siguienteMeta ? `${cantidad}/${siguienteMeta}` : `${cantidad}/✓`;
 
-      // Buscar si ya tiene recompensa aprobada
-      const { data: recompensaExistente } = await supabase
+      const { data: recompensaExistente } = await supabaseClient
         .from('recompensas')
         .select('*')
         .eq('user_id', perfil.id)
@@ -418,7 +417,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   window.aprobarRecompensa = async (userId, meta, btn) => {
-    const { error } = await supabase.from('recompensas').insert([{ user_id: userId, meta, aprobado: true }]);
+    const { error } = await supabaseClient.from('recompensas').insert([{ user_id: userId, meta, aprobado: true }]);
 
     if (error) {
       alert("Error al aprobar recompensa");
