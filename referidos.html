@@ -140,8 +140,7 @@
       </tbody>
     </table>
   </section>
-
-  <script>
+<script>
     const { createClient } = supabase;
     const supabaseClient = createClient(
       'https://ovulezkcxwrjvyxlxsdv.supabase.co',
@@ -204,7 +203,8 @@
 
       mostrarReferidos(filtrados);
     }
-async function aprobarReferido(id, referidoPor) {
+
+    async function aprobarReferido(id, referidoPor) {
       const { error: errorAprobar } = await supabaseClient
         .from('referidos')
         .update({ aprobado: true })
@@ -244,8 +244,7 @@ async function aprobarReferido(id, referidoPor) {
               usuario_id: referidoPor,
               meta: meta.cantidad,
               recompensa_ars: meta.recompensa,
-              fecha: new Date().toISOString(),
-              aprobado: false
+              fecha: new Date().toISOString()
             });
 
             const { data: balance, error: errorBalance } = await supabaseClient
@@ -362,6 +361,78 @@ async function aprobarReferido(id, referidoPor) {
     // Inicializar carga de datos
     cargarReferidos();
     cargarRecompensasReferidos();
-  </script>
+  <script>
+    
+document.addEventListener("DOMContentLoaded", async () => {
+  const tablaCuerpo = document.getElementById("cuerpo-recompensas");
+
+  async function cargarRecompensas() {
+    const { data: perfiles, error } = await supabase.from('profiles').select('id, email');
+
+    if (error) {
+      console.error('Error al obtener usuarios:', error);
+      return;
+    }
+
+    tablaCuerpo.innerHTML = "";
+
+    for (const perfil of perfiles) {
+      const { data: referidosConfirmados } = await supabase
+        .from('referidos')
+        .select('*')
+        .eq('referido_por', perfil.id)
+        .eq('aprobado', true);
+
+      const cantidad = referidosConfirmados.length;
+
+      const metas = [5, 10, 20, 50];
+      let metaAlcanzada = metas.find(m => cantidad >= m) || 0;
+      let siguienteMeta = metas.find(m => m > cantidad) || null;
+      let progreso = siguienteMeta ? `${cantidad}/${siguienteMeta}` : `${cantidad}/✓`;
+
+      // Buscar si ya tiene recompensa aprobada
+      const { data: recompensaExistente } = await supabase
+        .from('recompensas')
+        .select('*')
+        .eq('user_id', perfil.id)
+        .eq('meta', metaAlcanzada)
+        .maybeSingle();
+
+      const yaAprobado = recompensaExistente?.aprobado === true;
+
+      const tr = document.createElement("tr");
+
+      tr.innerHTML = `
+        <td>${perfil.email}</td>
+        <td>${cantidad}</td>
+        <td>${progreso}</td>
+        <td>${yaAprobado ? "✅" : "❌"}</td>
+        <td>
+          ${(!yaAprobado && metaAlcanzada > 0) ? `<button onclick="aprobarRecompensa('${perfil.id}', ${metaAlcanzada}, this)">Pagar recompensa</button>` : ""}
+        </td>
+      `;
+
+      tablaCuerpo.appendChild(tr);
+    }
+  }
+
+  window.aprobarRecompensa = async (userId, meta, btn) => {
+    const { error } = await supabase.from('recompensas').insert([{ user_id: userId, meta, aprobado: true }]);
+
+    if (error) {
+      alert("Error al aprobar recompensa");
+      console.error(error);
+      return;
+    }
+
+    btn.parentElement.previousElementSibling.innerHTML = "✅";
+    btn.remove();
+    alert("Recompensa registrada exitosamente");
+  };
+
+  await cargarRecompensas();
+});
+  
+</script> 
 </body>
 </html>
