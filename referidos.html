@@ -62,6 +62,48 @@
       text-transform: capitalize;
       font-weight: bold;
     }
+
+    /* Estilo para la sección admin recompensas */
+    #admin-recompensas {
+      display: none;
+      padding: 20px;
+      background-color: rgba(255,255,255,0.9);
+      border-radius: 10px;
+      margin-top: 20px;
+      color: black;
+    }
+    #admin-recompensas h2 {
+      color: #0077cc;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    #admin-recompensas table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      background: #fff;
+      color: #000;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    #admin-recompensas th, #admin-recompensas td {
+      padding: 12px;
+      border-bottom: 1px solid #ccc;
+      text-align: center;
+    }
+    #admin-recompensas th {
+      background-color: #00a8ff;
+      color: white;
+    }
+    #admin-recompensas button {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+      background-color: #2ecc71;
+      color: white;
+    }
   </style>
 </head>
 <body>
@@ -79,7 +121,26 @@
     </thead>
     <tbody id="tablaReferidos"></tbody>
   </table>
-  <script>
+
+  <!-- SECCIÓN ADMIN - GESTIÓN DE RECOMPENSAS POR REFERIDOS -->
+  <section id="admin-recompensas">
+    <h2>Gestión de Recompensas por Referidos</h2>
+    <table id="tabla-recompensas" border="1">
+      <thead>
+        <tr>
+          <th>Email del Usuario</th>
+          <th>Cantidad de Referidos Confirmados</th>
+          <th>Meta Alcanzada</th>
+          <th>Recompensa Aprobada</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody id="cuerpo-recompensas">
+        <!-- Se insertarán las filas dinámicamente con JS -->
+      </tbody>
+    </table>
+  </section>
+<script>
     const { createClient } = supabase;
     const supabaseClient = createClient(
       'https://ovulezkcxwrjvyxlxsdv.supabase.co',
@@ -212,6 +273,7 @@
       }
 
       cargarReferidos();
+      cargarRecompensasReferidos();
     }
 
     async function rechazarReferido(id) {
@@ -222,9 +284,83 @@
 
       if (error) return alert('Error al eliminar referido');
       cargarReferidos();
+      cargarRecompensasReferidos();
     }
 
+    async function cargarRecompensasReferidos() {
+      const { data: referidos, error: errorReferidos } = await supabaseClient
+        .from('referidos')
+        .select('referido_por')
+        .eq('aprobado', true);
+
+      if (errorReferidos) {
+        console.error('Error al cargar referidos:', errorReferidos.message);
+        return;
+      }
+
+      const conteo = {};
+
+      referidos.forEach(r => {
+        if (!conteo[r.referido_por]) conteo[r.referido_por] = 0;
+        conteo[r.referido_por]++;
+      });
+
+      const cuerpo = document.getElementById('cuerpo-recompensas');
+      cuerpo.innerHTML = '';
+
+      for (const id in conteo) {
+        const cantidad = conteo[id];
+
+        const { data: perfil, error: errorPerfil } = await supabaseClient
+          .from('profiles')
+          .select('email, recompensa_aprobada')
+          .eq('id', id)
+          .single();
+
+        if (errorPerfil) {
+          console.error(`Error al cargar perfil para ID ${id}:`, errorPerfil.message);
+          continue;
+        }
+
+        // Determinar la meta alcanzada
+        let meta = 'Sin recompensa';
+        if (cantidad >= 50) meta = '50 referidos';
+        else if (cantidad >= 20) meta = '20 referidos';
+        else if (cantidad >= 10) meta = '10 referidos';
+        else if (cantidad >= 5) meta = '5 referidos';
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${perfil.email}</td>
+          <td style="text-align:center;">${cantidad}</td>
+          <td style="text-align:center;">${meta}</td>
+          <td style="text-align:center;">${perfil.recompensa_aprobada ? '✅' : '❌'}</td>
+          <td style="text-align:center;">
+            ${!perfil.recompensa_aprobada && meta !== 'Sin recompensa' ? `<button onclick="aprobarRecompensa('${id}')">Aprobar</button>` : ''}
+          </td>
+        `;
+        cuerpo.appendChild(tr);
+      }
+    }
+
+    async function aprobarRecompensa(userId) {
+      const { error } = await supabaseClient
+        .from('profiles')
+        .update({ recompensa_aprobada: true })
+        .eq('id', userId);
+
+      if (error) {
+        alert('Error al aprobar recompensa');
+        console.error(error);
+      } else {
+        alert('Recompensa aprobada correctamente');
+        cargarRecompensasReferidos();
+      }
+    }
+
+    // Inicializar carga de datos
     cargarReferidos();
+    cargarRecompensasReferidos();
   </script>
 </body>
 </html>
