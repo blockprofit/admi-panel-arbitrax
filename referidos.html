@@ -108,6 +108,11 @@
 </head>
 <body>
   <h2>Lista de Referidos</h2>
+  <div id="progresoReferidos" style="background: #222; color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+  <h3>Progreso Visual por Usuario</h3>
+  <div id="barrasProgreso"></div>
+</div>
+  
   <input type="text" id="buscador" placeholder="Buscar por correo, ID o referido por..." oninput="filtrarReferidos()" />
   <table>
     <thead>
@@ -362,6 +367,49 @@
     cargarReferidos();
     cargarRecompensasReferidos();
   </script>
+
+async function mostrarProgresoVisual() {
+  const contenedor = document.getElementById("barrasProgreso");
+  contenedor.innerHTML = "";
+
+  const { data: perfiles, error: errorPerfiles } = await supabaseClient
+    .from("profiles")
+    .select("id, email");
+
+  if (errorPerfiles) {
+    console.error("Error al obtener perfiles:", errorPerfiles.message);
+    return;
+  }
+
+  for (const perfil of perfiles) {
+    const { data: referidos, error } = await supabaseClient
+      .from("referidos")
+      .select("id")
+      .eq("referido_por", perfil.id)
+      .eq("aprobado", true);
+
+    if (error) continue;
+
+    const cantidad = referidos.length;
+    const metas = [5, 10, 20, 50];
+    const siguienteMeta = metas.find(m => m > cantidad);
+    const metaActual = metas.filter(m => cantidad >= m).slice(-1)[0] || 0;
+    const progreso = siguienteMeta ? (cantidad / siguienteMeta) * 100 : 100;
+
+    const barra = document.createElement("div");
+    barra.style.marginBottom = "15px";
+
+    barra.innerHTML = `
+      <div><strong>${perfil.email}</strong> - ${cantidad} referidos confirmados</div>
+      <div style="background: #555; border-radius: 6px; overflow: hidden;">
+        <div style="width: ${progreso}%; background: #00d4ff; height: 20px;"></div>
+      </div>
+      <small>Meta actual: ${metaActual} / Próxima meta: ${siguienteMeta || "✓ completadas"}</small>
+    `;
+
+    contenedor.appendChild(barra);
+  }
+}
   
 <script>
 document.addEventListener("DOMContentLoaded", async () => {
