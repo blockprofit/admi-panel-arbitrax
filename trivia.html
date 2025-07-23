@@ -147,12 +147,12 @@
       <tbody id="premios-trivia"></tbody>
     </table>
   </div>
-
-  <script>
+<script>
     const supabaseUrl = "https://ovulezkcxwrjvyxlxsdv.supabase.co";
     const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI";
     const supabase = supabase.createClient(supabaseUrl, supabaseKey);
-async function cargarPreguntas(nivel) {
+
+    async function cargarPreguntas(nivel) {
       const { data, error } = await supabase
         .from("preguntas_trivia")
         .select("*")
@@ -198,24 +198,28 @@ async function cargarPreguntas(nivel) {
         .from("ranking_trivia")
         .select("usuario_id, puntaje")
         .order("puntaje", { ascending: false });
-      const tabla = document.getElementById("ranking-trivia");
-      tabla.innerHTML = "";
+
+      const tbody = document.getElementById("ranking-trivia");
+      tbody.innerHTML = "";
+
       if (error) {
         const tr = document.createElement("tr");
         tr.innerHTML = `<td colspan="2">Error cargando ranking: ${error.message}</td>`;
-        tabla.appendChild(tr);
+        tbody.appendChild(tr);
         return;
       }
+
       if (data.length === 0) {
         const tr = document.createElement("tr");
         tr.innerHTML = `<td colspan="2">No hay datos en ranking</td>`;
-        tabla.appendChild(tr);
+        tbody.appendChild(tr);
         return;
       }
+
       data.forEach(({ usuario_id, puntaje }) => {
         const tr = document.createElement("tr");
         tr.innerHTML = `<td>${usuario_id}</td><td>${puntaje}</td>`;
-        tabla.appendChild(tr);
+        tbody.appendChild(tr);
       });
     }
 
@@ -225,30 +229,34 @@ async function cargarPreguntas(nivel) {
         .select("*")
         .eq("tipo", "trivia")
         .order("fecha", { ascending: false });
-      const tabla = document.getElementById("premios-trivia");
-      tabla.innerHTML = "";
+
+      const tbody = document.getElementById("premios-trivia");
+      tbody.innerHTML = "";
+
       if (error) {
         const tr = document.createElement("tr");
         tr.innerHTML = `<td colspan="5">Error cargando premios: ${error.message}</td>`;
-        tabla.appendChild(tr);
+        tbody.appendChild(tr);
         return;
       }
+
       if (data.length === 0) {
         const tr = document.createElement("tr");
         tr.innerHTML = `<td colspan="5">No hay premios registrados</td>`;
-        tabla.appendChild(tr);
+        tbody.appendChild(tr);
         return;
       }
-      data.forEach(p => {
+
+      data.forEach(premio => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${p.usuario_id}</td>
-          <td>${p.monto}</td>
-          <td>${p.moneda}</td>
-          <td>${new Date(p.fecha).toLocaleDateString()}</td>
-          <td>${p.aprobado ? "✅" : "❌"}</td>
+          <td>${premio.usuario_id}</td>
+          <td>${premio.monto}</td>
+          <td>${premio.moneda}</td>
+          <td>${new Date(premio.fecha).toLocaleDateString()}</td>
+          <td>${premio.aprobado ? "✅" : "❌"}</td>
         `;
-        tabla.appendChild(tr);
+        tbody.appendChild(tr);
       });
     }
 
@@ -256,7 +264,7 @@ async function cargarPreguntas(nivel) {
       const nivel = document.getElementById("nivel-select").value;
       const precio = parseInt(document.getElementById("nuevo-precio").value);
       if (!nivel || isNaN(precio)) {
-        alert("Completa todos los campos");
+        alert("Completa todos los campos para guardar el precio.");
         return;
       }
       const { error } = await supabase.from("niveles_trivia").upsert([{ nivel, precio }]);
@@ -264,7 +272,8 @@ async function cargarPreguntas(nivel) {
         alert("Error al guardar precio: " + error.message);
         return;
       }
-      alert("Precio actualizado");
+      alert("Precio actualizado correctamente.");
+      document.getElementById("nuevo-precio").value = "";
       cargarPrecios();
     });
 
@@ -274,32 +283,44 @@ async function cargarPreguntas(nivel) {
       const op1 = document.getElementById("op1").value.trim();
       const op2 = document.getElementById("op2").value.trim();
       const op3 = document.getElementById("op3").value.trim();
-      const correcta = parseInt(document.getElementById("correcta").value);
-      if (!nivel || !texto || !op1 || !op2 || !op3 || isNaN(correcta)) {
-        alert("Completa todos los campos");
+      const correctaInput = parseInt(document.getElementById("correcta").value);
+
+      // Ajustamos correcta para que sea 0,1,2 según el input 1,2,3
+      const correcta = correctaInput - 1;
+
+      if (!nivel || !texto || !op1 || !op2 || !op3 || isNaN(correcta) || correcta < 0 || correcta > 2) {
+        alert("Completa todos los campos correctamente. La opción correcta debe ser 1, 2 o 3.");
         return;
       }
+
       const opciones = [op1, op2, op3];
+
       const { error } = await supabase.from("preguntas_trivia").insert([
         { nivel, texto, opciones, correcta }
       ]);
+
       if (error) {
         alert("Error al guardar la pregunta: " + error.message);
         return;
       }
-      alert("Pregunta guardada");
+
+      alert("Pregunta guardada correctamente.");
+      // Limpiar inputs
       document.getElementById("texto-pregunta").value = "";
       document.getElementById("op1").value = "";
       document.getElementById("op2").value = "";
       document.getElementById("op3").value = "";
       document.getElementById("correcta").value = "";
+
       cargarPreguntas(nivel);
     });
 
+    // Cargar preguntas al cambiar nivel
     document.getElementById("nivel-pregunta").addEventListener("change", (e) => {
       cargarPreguntas(e.target.value);
     });
 
+    // Inicializar cargas
     cargarPrecios();
     cargarRanking();
     cargarPremios();
