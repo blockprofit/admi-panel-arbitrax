@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Panel Admin Trivia</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background: #f5f5f5;
+  }
+  h2 {
+    margin-top: 40px;
+    color: #333;
+  }
+  .level-section {
+    background: white;
+    padding: 15px;
+    margin-bottom: 30px;
+    border-radius: 8px;
+    box-shadow: 0 0 8px #ddd;
+  }
+  label {
+    display: block;
+    margin: 8px 0 4px;
+  }
+  input[type="text"], input[type="number"] {
+    width: 300px;
+    padding: 6px 8px;
+    font-size: 14px;
+  }
+  .option-input {
+    width: 280px;
+    margin-right: 10px;
+  }
+  button {
+    margin-top: 10px;
+    padding: 8px 15px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    margin-top: 20px;
+    box-shadow: 0 0 5px #ccc;
+  }
+  th, td {
+    border: 1px solid #ccc;
+    padding: 8px 12px;
+    text-align: center;
+  }
+  th {
+    background: #007bff;
+    color: white;
+  }
+</style>
+</head>
+<body>
+
+<h1>Panel de Administración - Trivia</h1>
+
+<!-- Precios -->
+<div class="level-section">
+  <h2>Configurar precios por nivel</h2>
+  <label for="precio-basico">Nivel Básico (10 preguntas):</label>
+  <input type="number" id="precio-basico" min="0" step="100" value="2000" />
+  
+  <label for="precio-medio">Nivel Medio (12 preguntas):</label>
+  <input type="number" id="precio-medio" min="0" step="100" value="5000" />
+  
+  <label for="precio-avanzado">Nivel Avanzado (15 preguntas):</label>
+  <input type="number" id="precio-avanzado" min="0" step="100" value="10000" />
+  
+  <button onclick="guardarPrecios()">Guardar precios</button>
+</div>
+
+<!-- Preguntas por nivel -->
+<div class="level-section">
+  <h2>Agregar preguntas Nivel Básico (máx 10)</h2>
+  <div id="preguntas-basico"></div>
+  <button onclick="agregarPregunta('basico', 10)">Agregar pregunta</button>
+</div>
+
+<div class="level-section">
+  <h2>Agregar preguntas Nivel Medio (máx 12)</h2>
+  <div id="preguntas-medio"></div>
+  <button onclick="agregarPregunta('medio', 12)">Agregar pregunta</button>
+</div>
+
+<div class="level-section">
+  <h2>Agregar preguntas Nivel Avanzado (máx 15)</h2>
+  <div id="preguntas-avanzado"></div>
+  <button onclick="agregarPregunta('avanzado', 15)">Agregar pregunta</button>
+</div>
+
+<!-- Ranking -->
+<div class="level-section">
+  <h2>Ranking de jugadores</h2>
+  <table id="ranking-table">
+    <thead>
+      <tr>
+        <th>Posición</th>
+        <th>Usuario</th>
+        <th>Preguntas Acertadas</th>
+        <th>Tiempo (seg)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Se llena dinámicamente -->
+    </tbody>
+  </table>
+</div>
+
+<script>
+  // Guardar precios localmente (puedes reemplazar con tu backend)
+  function guardarPrecios() {
+    const basico = document.getElementById('precio-basico').value;
+    const medio = document.getElementById('precio-medio').value;
+    const avanzado = document.getElementById('precio-avanzado').value;
+    
+    // Aquí guardarías a backend o supabase
+    alert(`Precios guardados:\nNivel Básico: $${basico}\nNivel Medio: $${medio}\nNivel Avanzado: $${avanzado}`);
+    
+    // ejemplo localStorage
+    localStorage.setItem('precioBasico', basico);
+    localStorage.setItem('precioMedio', medio);
+    localStorage.setItem('precioAvanzado', avanzado);
+  }
+  
+  // Datos preguntas almacenadas en memoria (puedes persistir en backend)
+  const preguntas = {
+    basico: [],
+    medio: [],
+    avanzado: []
+  };
+  
+  // Agrega un formulario para nueva pregunta
+  function agregarPregunta(nivel, maxPreguntas) {
+    if(preguntas[nivel].length >= maxPreguntas){
+      alert(`Ya alcanzaste el máximo de preguntas para nivel ${nivel}`);
+      return;
+    }
+    
+    const container = document.getElementById('preguntas-' + nivel);
+    const index = preguntas[nivel].length;
+    
+    // Crear div con inputs para pregunta y respuestas
+    const div = document.createElement('div');
+    div.style.border = '1px solid #ccc';
+    div.style.margin = '10px 0';
+    div.style.padding = '10px';
+    div.id = `${nivel}-pregunta-${index}`;
+    
+    div.innerHTML = `
+      <label>Pregunta #${index + 1}:</label><br />
+      <input type="text" placeholder="Escribe la pregunta" id="${nivel}-q-${index}" style="width:90%;" required /><br />
+      <label>Opciones (selecciona la correcta):</label><br />
+      <input type="radio" name="${nivel}-correcta-${index}" value="0" required /> <input type="text" id="${nivel}-q${index}-opt0" class="option-input" placeholder="Opción 1" required />
+      <input type="radio" name="${nivel}-correcta-${index}" value="1" /> <input type="text" id="${nivel}-q${index}-opt1" class="option-input" placeholder="Opción 2" required />
+      <input type="radio" name="${nivel}-correcta-${index}" value="2" /> <input type="text" id="${nivel}-q${index}-opt2" class="option-input" placeholder="Opción 3" required />
+      <br />
+      <button type="button" onclick="guardarPregunta('${nivel}', ${index})">Guardar pregunta</button>
+      <button type="button" onclick="eliminarPregunta('${nivel}', ${index})" style="color:red;">Eliminar</button>
+    `;
+    
+    container.appendChild(div);
+    
+    // Inicializar pregunta vacía
+    preguntas[nivel].push(null);
+  }
+  
+  // Guardar pregunta y sus respuestas
+  function guardarPregunta(nivel, index) {
+    const preguntaText = document.getElementById(`${nivel}-q-${index}`).value.trim();
+    const opts = [];
+    for(let i=0; i<3; i++){
+      const optVal = document.getElementById(`${nivel}-q${index}-opt${i}`).value.trim();
+      opts.push(optVal);
+    }
+    const radios = document.getElementsByName(`${nivel}-correcta-${index}`);
+    let correcta = null;
+    radios.forEach(r => { if(r.checked) correcta = parseInt(r.value) });
+    
+    if(!preguntaText || opts.some(o => o === '') || correcta === null){
+      alert('Completa la pregunta, todas las opciones y selecciona la respuesta correcta');
+      return;
+    }
+    
+    preguntas[nivel][index] = {
+      pregunta: preguntaText,
+      opciones: opts,
+      correcta: correcta
+    };
+    
+    alert(`Pregunta #${index + 1} guardada en nivel ${nivel}`);
+  }
+  
+  // Eliminar pregunta
+  function eliminarPregunta(nivel, index) {
+    if(!confirm('¿Eliminar esta pregunta?')){
+      return;
+    }
+    preguntas[nivel].splice(index, 1);
+    
+    // Re-renderizar preguntas de ese nivel para actualizar indices
+    const container = document.getElementById('preguntas-' + nivel);
+    container.innerHTML = '';
+    preguntas[nivel].forEach((p, i) => {
+      agregarPreguntaConDatos(nivel, i, p);
+    });
+  }
+  
+  // Agrega una pregunta con datos para re-renderizar
+  function agregarPreguntaConDatos(nivel, index, datos) {
+    const container = document.getElementById('preguntas-' + nivel);
+    const div = document.createElement('div');
+    div.style.border = '1px solid #ccc';
+    div.style.margin = '10px 0';
+    div.style.padding = '10px';
+    div.id = `${nivel}-pregunta-${index}`;
+    
+    div.innerHTML = `
+      <label>Pregunta #${index + 1}:</label><br />
+      <input type="text" placeholder="Escribe la pregunta" id="${nivel}-q-${index}" style="width:90%;" value="${datos ? escapeHtml(datos.pregunta) : ''}" required /><br />
+      <label>Opciones (selecciona la correcta):</label><br />
+      <input type="radio" name="${nivel}-correcta-${index}" value="0" ${datos && datos.correcta === 0 ? 'checked' : ''} required /> <input type="text" id="${nivel}-q${index}-opt0" class="option-input" placeholder="Opción 1" value="${datos ? escapeHtml(datos.opciones[0]) : ''}" required />
+      <input type="radio" name="${nivel}-correcta-${index}" value="1" ${datos && datos.correcta === 1 ? 'checked' : ''} /> <input type="text" id="${nivel}-q${index}-opt1" class="option-input" placeholder="Opción 2" value="${datos ? escapeHtml(datos.opciones[1]) : ''}" required />
+      <input type="radio" name="${nivel}-correcta-${index}" value="2" ${datos && datos.correcta === 2 ? 'checked' : ''} /> <input type="text" id="${nivel}-q${index}-opt2" class="option-input" placeholder="Opción 3" value="${datos ? escapeHtml(datos.opciones[2]) : ''}" required />
+      <br />
+      <button type="button" onclick="guardarPregunta('${nivel}', ${index})">Guardar pregunta</button>
+      <button type="button" onclick="eliminarPregunta('${nivel}', ${index})" style="color:red;">Eliminar</button>
+    `;
+    
+    container.appendChild(div);
+    
+    preguntas[nivel][index] = datos;
+  }
+  
+  // Escapar texto para evitar inyección HTML
+  function escapeHtml(text) {
+    return text.replace(/[&<>"']/g, function(m) {
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+    });
+  }
+  
+  // Ejemplo de ranking (esto lo deberías cargar de tu backend o base de datos)
+  const ranking = [
+    { usuario: 'juan123', acertadas: 30, tiempo: 120 },
+    { usuario: 'maria87', acertadas: 28, tiempo: 110 },
+    { usuario: 'carlos', acertadas: 30, tiempo: 130 },
+    { usuario: 'ana', acertadas: 25, tiempo: 105 },
+  ];
+  
+  function mostrarRanking() {
+    // Ordenar primero por acertadas desc y luego por tiempo asc
+    ranking.sort((a,b) => {
+      if(b.acertadas !== a.acertadas) return b.acertadas - a.acertadas;
+      return a.tiempo - b.tiempo;
+    });
+    
+    const tbody = document.querySelector('#ranking-table tbody');
+    tbody.innerHTML = '';
+    
+    ranking.forEach((r, i) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${i + 1}</td>
+        <td>${escapeHtml(r.usuario)}</td>
+        <td>${r.acertadas}</td>
+        <td>${r.tiempo}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+  
+  // Al iniciar mostrar ranking
+  mostrarRanking();
+</script>
+
+</body>
+</html>
