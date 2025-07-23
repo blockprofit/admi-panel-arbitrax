@@ -3,285 +3,326 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Trivia - Admin</title>
+  <title>Trivia</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #0d1117;
-      color: #c9d1d9;
-      padding: 20px;
+      background-color: #f8f8f8;
+      margin: 0;
+      padding: 0;
     }
-    h1 {
+
+    .container {
+      max-width: 700px;
+      margin: auto;
+      padding: 20px;
+      background: #fff;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      margin-top: 30px;
+      border-radius: 8px;
+    }
+
+    h2 {
       text-align: center;
-      color: #58a6ff;
     }
-    .seccion {
-      border: 1px solid #30363d;
-      border-radius: 10px;
-      padding: 20px;
-      margin-bottom: 30px;
-      background-color: #161b22;
-    }
+
     label {
       display: block;
-      margin-top: 10px;
+      margin: 10px 0 5px;
     }
-    input, select, button {
+
+    input[type="text"], input[type="number"], select, textarea {
       width: 100%;
-      padding: 8px;
-      margin-top: 5px;
-      border-radius: 5px;
-      border: none;
-      background-color: #21262d;
-      color: #c9d1d9;
-    }
-    button {
-      background-color: #238636;
-      cursor: pointer;
-      margin-top: 15px;
-    }
-    button:hover {
-      background-color: #2ea043;
-    }
-    .pregunta {
-      margin-bottom: 15px;
       padding: 10px;
-      border: 1px solid #30363d;
+      margin-bottom: 10px;
       border-radius: 5px;
-      background-color: #0d1117;
+      border: 1px solid #ccc;
+    }
+
+    textarea {
+      resize: vertical;
+    }
+
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      margin-top: 10px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    .ranking {
+      margin-top: 30px;
+    }
+
+    .ranking h3 {
+      margin-bottom: 10px;
+    }
+
+    .ranking ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .ranking li {
+      padding: 8px;
+      background: #f1f1f1;
+      margin-bottom: 5px;
+      border-radius: 5px;
+    }
+
+    .success-message {
+      color: green;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
-
-  <h1>Administrar Trivia</h1>
-
-  <div class="seccion">
-    <h2>Agregar Pregunta</h2>
-    <label for="nivel-pregunta">Nivel</label>
-    <select id="nivel-pregunta">
-      <option value="basico">Básico</option>
+  <div class="container">
+    <h2>Agregar pregunta de trivia</h2>
+    <label for="nivel">Nivel</label>
+    <select id="nivel">
+      <option value="básico">Básico</option>
       <option value="medio">Medio</option>
       <option value="avanzado">Avanzado</option>
+      <option value="avanzado_pro">Avanzado Pro</option>
     </select>
 
-    <label for="texto-pregunta">Texto de la pregunta</label>
-    <input type="text" id="texto-pregunta" />
+    <label for="pregunta">Pregunta</label>
+    <textarea id="pregunta" rows="3"></textarea>
 
-    <label for="op1">Opción 1</label>
-    <input type="text" id="op1" />
+    <label for="opciones">Opciones (separadas por coma)</label>
+    <input type="text" id="opciones" placeholder="Ej: opción 1, opción 2, opción 3, opción 4"/>
 
-    <label for="op2">Opción 2</label>
-    <input type="text" id="op2" />
+    <label for="correcta">Índice de respuesta correcta (0 a 3)</label>
+    <input type="number" id="correcta" min="0" max="3" />
 
-    <label for="op3">Opción 3</label>
-    <input type="text" id="op3" />
+    <button onclick="guardarPregunta()">Guardar pregunta</button>
+    <p class="success-message" id="mensaje"></p>
 
-    <label for="correcta">Número de opción correcta (1, 2 o 3)</label>
-    <input type="number" id="correcta" min="1" max="3" />
-
-    <button id="guardar-pregunta">Guardar Pregunta</button>
-
-    <h3>Preguntas guardadas</h3>
-    <div id="lista-preguntas"></div>
-  </div>
-
-  <div class="seccion">
-    <h2>Precios por Nivel</h2>
-
-    <label for="nivel-select">Nivel</label>
-    <select id="nivel-select">
-      <option value="basico">Básico</option>
-      <option value="medio">Medio</option>
-      <option value="avanzado">Avanzado</option>
-    </select>
-
-    <label for="nuevo-precio">Nuevo precio</label>
-    <input type="number" id="nuevo-precio" />
-
-    <button id="guardar-nivel">Guardar Precio</button>
-
-    <h3>Precios actuales</h3>
-    <div id="lista-precios"></div>
+    <div class="ranking">
+      <h3>Ranking de Recompensas</h3>
+      <ul id="ranking-lista"></ul>
+    </div>
   </div>
 
   <script>
+    // Inicializar Supabase una sola vez al comienzo
     const supabaseUrl = "https://ovulezkcxwrjvyxlxsdv.supabase.co";
     const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI";
     const supabase = supabase.createClient(supabaseUrl, supabaseKey);
-  </script>
-</select>
-        <button id="guardar-nivel">Guardar precio</button>
-      </div>
 
-      <div class="seccion">
-        <h3>Agregar pregunta</h3>
-        <select id="nivel-pregunta">
-          <option value="facil">Fácil</option>
-          <option value="intermedio">Intermedio</option>
-          <option value="dificil">Difícil</option>
-        </select><br><br>
-        <textarea id="texto-pregunta" placeholder="Escribe la pregunta..."></textarea><br>
-        <input type="text" id="op1" placeholder="Opción 1" />
-        <input type="text" id="op2" placeholder="Opción 2" />
-        <input type="text" id="op3" placeholder="Opción 3" />
-        <input type="number" id="correcta" placeholder="Índice correcta (0,1,2)" min="0" max="2" />
-        <button id="guardar-pregunta">Guardar pregunta</button>
-      </div>
+    async function guardarPregunta() {
+      const nivel = document.getElementById("nivel").value;
+      const pregunta = document.getElementById("pregunta").value;
+      const opcionesTexto = document.getElementById("opciones").value;
+      const correcta = parseInt(document.getElementById("correcta").value);
 
-      <div class="seccion">
-        <h3>Preguntas cargadas</h3>
-        <ul id="lista-preguntas"></ul>
-      </div>
+      const opcionesArray = opcionesTexto.split(",").map(o => o.trim());
 
-      <div class="seccion">
-        <h3>Ranking</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Usuario</th>
-              <th>Puntaje</th>
-            </tr>
-          </thead>
-          <tbody id="ranking-trivia"></tbody>
-        </table>
-      </div>
+      const { data, error } = await supabase.from("preguntas_trivia").insert([{
+        nivel: nivel,
+        texto: pregunta,
+        opciones: opcionesArray,
+        correcta: correcta
+      }]);
 
-      <div class="seccion">
-        <h3>Premios trivia</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Usuario</th>
-              <th>Monto</th>
-              <th>Moneda</th>
-              <th>Fecha</th>
-              <th>Aprobado</th>
-            </tr>
-          </thead>
-          <tbody id="premios-trivia"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <script>
-      const supabaseUrl = "https://ovulezkcxwrjvyxlxsdv.supabase.co";
-      const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI";
-      const supabase = supabase.createClient(supabaseUrl, supabaseKey);
-
-      async function cargarPrecios() {
-        const { data } = await supabase.from("niveles_trivia").select("*");
-        const lista = document.getElementById("lista-precios");
-        lista.innerHTML = "";
-        data.forEach(({ nivel, precio }) => {
-          const item = document.createElement("li");
-          item.textContent = `${nivel}: $${precio}`;
-          lista.appendChild(item);
-        });
-      }
-
-      document.getElementById("guardar-nivel").addEventListener("click", async () => {
-        const nivel = document.getElementById("nivel-select").value;
-        const precio = parseInt(document.getElementById("nuevo-precio").value);
-        if (!nivel || isNaN(precio)) {
-          alert("Completa todos los campos");
-          return;
-        }
-        const { error } = await supabase.from("niveles_trivia").upsert([{ nivel, precio }]);
-        if (error) {
-          alert("Error al guardar precio");
-          return;
-        }
-        alert("Precio actualizado");
-        cargarPrecios();
-      });
-
-      document.getElementById("guardar-pregunta").addEventListener("click", async () => {
-        const nivel = document.getElementById("nivel-pregunta").value;
-        const texto = document.getElementById("texto-pregunta").value.trim();
-        const op1 = document.getElementById("op1").value.trim();
-        const op2 = document.getElementById("op2").value.trim();
-        const op3 = document.getElementById("op3").value.trim();
-        const correcta = parseInt(document.getElementById("correcta").value);
-        if (!nivel || !texto || !op1 || !op2 || !op3 || isNaN(correcta)) {
-          alert("Completa todos los campos");
-          return;
-        }
-        const opciones = [op1, op2, op3];
-        const { error } = await supabase.from("preguntas_trivia").insert([
-          { nivel, texto, opciones, correcta }
-        ]);
-        if (error) {
-          alert("Error al guardar la pregunta");
-          return;
-        }
-        alert("Pregunta guardada");
-        document.getElementById("texto-pregunta").value = "";
-        document.getElementById("op1").value = "";
-        document.getElementById("op2").value = "";
-        document.getElementById("op3").value = "";
+      if (error) {
+        console.error("Error al guardar la pregunta:", error.message);
+        document.getElementById("mensaje").textContent = "Error al guardar la pregunta.";
+        document.getElementById("mensaje").style.color = "red";
+      } else {
+        document.getElementById("mensaje").textContent = "Pregunta guardada exitosamente.";
+        document.getElementById("mensaje").style.color = "green";
+        document.getElementById("pregunta").value = "";
+        document.getElementById("opciones").value = "";
         document.getElementById("correcta").value = "";
-        cargarPreguntas(nivel);
+      }
+    }
+
+    async function cargarRanking() {
+      const { data, error } = await supabase
+        .from("recompensas")
+        .select("usuario_id, meta, monto, moneda, aprobado")
+        .order("meta", { ascending: false });
+
+      if (error) {
+        console.error("Error al cargar ranking:", error.message);
+        return;
+      }
+
+      const lista = document.getElementById("ranking-lista");
+      lista.innerHTML = "";
+
+      data.forEach(item => {
+        const li = document.createElement("li");
+        li.textContent = `Usuario: ${item.usuario_id.slice(0, 6)}... | Meta: ${item.meta} | Monto: ${item.monto} ${item.moneda} | ${item.aprobado ? "Aprobado" : "Pendiente"}`;
+        lista.appendChild(li);
       });
+    }
 
-      async function cargarPreguntas(nivel) {
-        const { data } = await supabase
-          .from("preguntas_trivia")
-          .select("*")
-          .eq("nivel", nivel);
-        const lista = document.getElementById("lista-preguntas");
-        lista.innerHTML = "";
-        data.forEach(p => {
-          const li = document.createElement("li");
-          li.textContent = `${p.texto} (${p.opciones.join(", ")}) [Correcta: ${p.correcta}]`;
-          lista.appendChild(li);
-        });
+    cargarRanking();
+  </script>
+<script>
+  // --- Manejo de precios de niveles ---
+
+  async function cargarPrecios() {
+    const { data, error } = await supabase.from("niveles_trivia").select("*");
+    if (error) {
+      console.error("Error cargando precios:", error.message);
+      return;
+    }
+    data.forEach(nivel => {
+      if (nivel.nivel === "basico") document.getElementById("precio-basico").value = nivel.precio;
+      if (nivel.nivel === "medio") document.getElementById("precio-medio").value = nivel.precio;
+      if (nivel.nivel === "avanzado") document.getElementById("precio-avanzado").value = nivel.precio;
+    });
+  }
+
+  async function guardarPrecios() {
+    const precios = {
+      basico: parseInt(document.getElementById("precio-basico").value),
+      medio: parseInt(document.getElementById("precio-medio").value),
+      avanzado: parseInt(document.getElementById("precio-avanzado").value),
+    };
+    let errores = [];
+    for (const nivel in precios) {
+      const { error } = await supabase
+        .from("niveles_trivia")
+        .upsert([{ nivel: nivel, precio: precios[nivel] }], { onConflict: ["nivel"] });
+      if (error) errores.push(`${nivel}: ${error.message}`);
+    }
+    const msg = document.getElementById("precios-mensaje");
+    if (errores.length === 0) {
+      msg.textContent = "Precios guardados correctamente.";
+      msg.className = "success-message";
+    } else {
+      msg.textContent = "Error al guardar precios: " + errores.join(", ");
+      msg.className = "error";
+    }
+  }
+
+  document.querySelector("button[onclick='guardarPrecios()']").addEventListener("click", guardarPrecios);
+
+  // --- Manejo preguntas trivia ---
+
+  // Lista preguntas por nivel para edición
+  async function cargarPreguntas(nivel) {
+    const { data, error } = await supabase
+      .from("preguntas_trivia")
+      .select("*")
+      .eq("nivel", nivel)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      console.error("Error al cargar preguntas:", error.message);
+      return;
+    }
+    // Puedes agregar función para renderizar preguntas y editarlas
+    console.log(`Preguntas nivel ${nivel}:`, data);
+  }
+
+  // Ejemplo de borrar pregunta por id
+  async function eliminarPregunta(id) {
+    const confirmDelete = confirm("¿Seguro que deseas eliminar esta pregunta?");
+    if (!confirmDelete) return;
+
+    const { error } = await supabase.from("preguntas_trivia").delete().eq("id", id);
+
+    if (error) {
+      alert("Error al eliminar pregunta: " + error.message);
+      return;
+    }
+
+    alert("Pregunta eliminada");
+    // Actualizar listado preguntas si tienes UI
+  }
+
+  // --- Manejo recompensas ---
+
+  // Carga lista de recompensas para administración
+  async function cargarRecompensas() {
+    const { data, error } = await supabase.from("recompensas").select("*").order("fecha", { ascending: false });
+
+    if (error) {
+      console.error("Error cargando recompensas:", error.message);
+      return;
+    }
+
+    // Suponiendo que tengas una tabla o listado para mostrar las recompensas
+    // Aquí ejemplo básico:
+    const container = document.getElementById("lista-recompensas");
+    if (!container) return;
+    container.innerHTML = "";
+
+    data.forEach(item => {
+      const div = document.createElement("div");
+      div.style.border = "1px solid #ddd";
+      div.style.padding = "10px";
+      div.style.marginBottom = "5px";
+
+      div.innerHTML = `
+        <strong>Usuario:</strong> ${item.usuario_id.slice(0,6)}...<br/>
+        <strong>Meta:</strong> ${item.meta} <br/>
+        <strong>Monto:</strong> ${item.monto} ${item.moneda} <br/>
+        <strong>Fecha:</strong> ${new Date(item.fecha).toLocaleString()} <br/>
+        <strong>Aprobado:</strong> ${item.aprobado ? "Sí" : "No"} <br/>
+        <button onclick="aprobarRecompensa('${item.id}')">Aprobar premio</button>
+      `;
+
+      container.appendChild(div);
+    });
+  }
+
+  // Aprobar premio y dar opción a editar monto
+  async function aprobarRecompensa(id) {
+    const nuevoMonto = prompt("Ingrese el nuevo monto para el premio (dejar vacío para no modificar):");
+
+    if (nuevoMonto !== null && nuevoMonto !== "") {
+      const montoNum = Number(nuevoMonto);
+      if (isNaN(montoNum) || montoNum < 0) {
+        alert("Monto inválido");
+        return;
       }
-
-      document.getElementById("nivel-pregunta").addEventListener("change", (e) => {
-        cargarPreguntas(e.target.value);
-      });
-
-      async function cargarRanking() {
-        const { data } = await supabase
-          .from("ranking_trivia")
-          .select("usuario_id, puntaje")
-          .order("puntaje", { ascending: false });
-        const tabla = document.getElementById("ranking-trivia");
-        tabla.innerHTML = "";
-        data.forEach(({ usuario_id, puntaje }) => {
-          const fila = document.createElement("tr");
-          fila.innerHTML = `<td>${usuario_id}</td><td>${puntaje}</td>`;
-          tabla.appendChild(fila);
-        });
+      const { error } = await supabase.from("recompensas").update({ monto: montoNum, aprobado: true }).eq("id", id);
+      if (error) {
+        alert("Error al actualizar monto y aprobar: " + error.message);
+        return;
       }
-
-      async function cargarPremios() {
-        const { data } = await supabase
-          .from("recompensas")
-          .select("*")
-          .eq("tipo", "trivia")
-          .order("fecha", { ascending: false });
-        const tabla = document.getElementById("premios-trivia");
-        tabla.innerHTML = "";
-        data.forEach(p => {
-          const fila = document.createElement("tr");
-          fila.innerHTML = `
-            <td>${p.usuario_id}</td>
-            <td>${p.monto}</td>
-            <td>${p.moneda}</td>
-            <td>${new Date(p.fecha).toLocaleDateString()}</td>
-            <td>${p.aprobado ? "✅" : "❌"}</td>
-          `;
-          tabla.appendChild(fila);
-        });
+    } else {
+      // Solo aprobar sin cambiar monto
+      const { error } = await supabase.from("recompensas").update({ aprobado: true }).eq("id", id);
+      if (error) {
+        alert("Error al aprobar premio: " + error.message);
+        return;
       }
+    }
+    alert("Premio aprobado exitosamente.");
+    cargarRecompensas();
+  }
 
-      cargarPrecios();
-      cargarRanking();
-      cargarPremios();
-      cargarPreguntas(document.getElementById("nivel-pregunta").value);
-    </script>
-  </body>
+  // Carga inicial
+  cargarPrecios();
+  cargarRanking();
+  cargarRecompensas();
+
+</script>
+
+<!-- Contenedor para lista de recompensas -->
+<div class="container" style="margin-top:20px;">
+  <h2>Administrar Recompensas</h2>
+  <div id="lista-recompensas" style="max-height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px;">
+    <!-- Aquí se mostrarán las recompensas cargadas -->
+  </div>
+</div>
+
+</body>
 </html>
