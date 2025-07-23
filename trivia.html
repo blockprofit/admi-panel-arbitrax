@@ -151,7 +151,7 @@
 <script>
   const supabaseUrl = "https://ovulezkcxwrjvyxlxsdv.supabase.co";
   const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI";
-  const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+  const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
   // Guarda el rol para reutilizar
   let rolUsuario = null;
@@ -161,7 +161,7 @@
       const {
         data: authData,
         error: authError
-      } = await supabase.auth.getUser();
+      } = await supabaseClient.auth.getUser();
       if (authError || !authData.user) {
         alert("No estás autenticado. Por favor inicia sesión.");
         throw new Error("No autenticado");
@@ -171,7 +171,7 @@
       const {
         data: perfilData,
         error: perfilError
-      } = await supabase
+      } = await supabaseClient
         .from("profiles")
         .select("rol")
         .eq("id", userId)
@@ -191,7 +191,7 @@
   }
 
   async function cargarPreguntas(nivel) {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from("preguntas_trivia")
       .select("*")
       .eq("nivel", nivel);
@@ -217,7 +217,7 @@
   }
 
   async function cargarPrecios() {
-    const { data, error } = await supabase.from("niveles_trivia").select("*");
+    const { data, error } = await supabaseClient.from("niveles_trivia").select("*");
     const lista = document.getElementById("lista-precios");
     lista.innerHTML = "";
     if (error) {
@@ -232,7 +232,7 @@
   }
 
   async function cargarRanking() {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from("ranking_trivia")
       .select("usuario_id, puntaje")
       .order("puntaje", { ascending: false });
@@ -262,7 +262,7 @@
   }
 
   async function cargarPremios() {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from("recompensas")
       .select("*")
       .eq("tipo", "trivia")
@@ -305,7 +305,7 @@
       alert("Completa todos los campos para guardar el precio.");
       return;
     }
-    const { error } = await supabase.from("niveles_trivia").upsert([{ nivel, precio }]);
+    const { error } = await supabaseClient.from("niveles_trivia").upsert([{ nivel, precio }]);
     if (error) {
       alert("Error al guardar precio: " + error.message);
       return;
@@ -347,7 +347,7 @@
     const opciones = [op1, op2, op3];
 
     try {
-      const { error } = await supabase.from("preguntas_trivia").insert([
+      const { error } = await supabaseClient.from("preguntas_trivia").insert([
         { nivel, texto, opciones, correcta }
       ]);
       if (error) {
