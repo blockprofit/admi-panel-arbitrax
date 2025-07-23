@@ -1,284 +1,248 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Panel Admin Trivia</title>
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    margin: 20px;
-    background: #f5f5f5;
-  }
-  h2 {
-    margin-top: 40px;
-    color: #333;
-  }
-  .level-section {
-    background: white;
-    padding: 15px;
-    margin-bottom: 30px;
-    border-radius: 8px;
-    box-shadow: 0 0 8px #ddd;
-  }
-  label {
-    display: block;
-    margin: 8px 0 4px;
-  }
-  input[type="text"], input[type="number"] {
-    width: 300px;
-    padding: 6px 8px;
-    font-size: 14px;
-  }
-  .option-input {
-    width: 280px;
-    margin-right: 10px;
-  }
-  button {
-    margin-top: 10px;
-    padding: 8px 15px;
-    font-size: 14px;
-    cursor: pointer;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    background: white;
-    margin-top: 20px;
-    box-shadow: 0 0 5px #ccc;
-  }
-  th, td {
-    border: 1px solid #ccc;
-    padding: 8px 12px;
-    text-align: center;
-  }
-  th {
-    background: #007bff;
-    color: white;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin - Trivia</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f6f6f6;
+      padding: 20px;
+    }
+    h2 {
+      margin-top: 40px;
+    }
+    .nivel-container {
+      margin-bottom: 20px;
+      padding: 15px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+    }
+    label {
+      font-weight: bold;
+    }
+    input, select, button, textarea {
+      display: block;
+      margin: 10px 0 20px;
+      padding: 8px;
+      width: 100%;
+      max-width: 500px;
+    }
+    .pregunta-form {
+      margin-top: 10px;
+      padding: 10px;
+      border-top: 1px solid #ccc;
+    }
+    .success {
+      color: green;
+      font-weight: bold;
+    }
+    .error {
+      color: red;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
+  <h1>Panel Administrador - Trivia</h1>
 
-<h1>Panel de Administración - Trivia</h1>
+  <section>
+    <h2>Editar Precios de Niveles</h2>
+    <div id="niveles-container">
+      <div class="nivel-container">
+        <label for="precio-basico">Nivel Básico (ARS):</label>
+        <input type="number" id="precio-basico" />
+      </div>
+      <div class="nivel-container">
+        <label for="precio-medio">Nivel Medio (ARS):</label>
+        <input type="number" id="precio-medio" />
+      </div>
+      <div class="nivel-container">
+        <label for="precio-avanzado">Nivel Avanzado (ARS):</label>
+        <input type="number" id="precio-avanzado" />
+      </div>
+      <button onclick="guardarPrecios()">Guardar Precios</button>
+      <p id="precios-mensaje"></p>
+    </div>
+  </section>
 
-<!-- Precios -->
-<div class="level-section">
-  <h2>Configurar precios por nivel</h2>
-  <label for="precio-basico">Nivel Básico (10 preguntas):</label>
-  <input type="number" id="precio-basico" min="0" step="100" value="2000" />
-  
-  <label for="precio-medio">Nivel Medio (12 preguntas):</label>
-  <input type="number" id="precio-medio" min="0" step="100" value="5000" />
-  
-  <label for="precio-avanzado">Nivel Avanzado (15 preguntas):</label>
-  <input type="number" id="precio-avanzado" min="0" step="100" value="10000" />
-  
-  <button onclick="guardarPrecios()">Guardar precios</button>
-</div>
+  <section>
+    <h2>Agregar Preguntas</h2>
+    <form id="formulario-pregunta">
+      <label for="nivel">Nivel:</label>
+      <select id="nivel">
+        <option value="basico">Básico</option>
+        <option value="medio">Medio</option>
+        <option value="avanzado">Avanzado</option>
+      </select>
 
-<!-- Preguntas por nivel -->
-<div class="level-section">
-  <h2>Agregar preguntas Nivel Básico (máx 10)</h2>
-  <div id="preguntas-basico"></div>
-  <button onclick="agregarPregunta('basico', 10)">Agregar pregunta</button>
-</div>
+      <label for="texto-pregunta">Texto de la pregunta:</label>
+      <textarea id="texto-pregunta" rows="3" required></textarea>
 
-<div class="level-section">
-  <h2>Agregar preguntas Nivel Medio (máx 12)</h2>
-  <div id="preguntas-medio"></div>
-  <button onclick="agregarPregunta('medio', 12)">Agregar pregunta</button>
-</div>
+      <label>Opciones (3):</label>
+      <input type="text" id="opcion1" placeholder="Opción 1" required />
+      <input type="text" id="opcion2" placeholder="Opción 2" required />
+      <input type="text" id="opcion3" placeholder="Opción 3" required />
 
-<div class="level-section">
-  <h2>Agregar preguntas Nivel Avanzado (máx 15)</h2>
-  <div id="preguntas-avanzado"></div>
-  <button onclick="agregarPregunta('avanzado', 15)">Agregar pregunta</button>
-</div>
+      <label for="respuesta-correcta">Respuesta correcta (0, 1 o 2):</label>
+      <select id="respuesta-correcta">
+        <option value="0">Opción 1</option>
+        <option value="1">Opción 2</option>
+        <option value="2">Opción 3</option>
+      </select>
 
-<!-- Ranking -->
-<div class="level-section">
-  <h2>Ranking de jugadores</h2>
-  <table id="ranking-table">
-    <thead>
-      <tr>
-        <th>Posición</th>
-        <th>Usuario</th>
-        <th>Preguntas Acertadas</th>
-        <th>Tiempo (seg)</th>
-      </tr>
-    </thead>
-    <tbody>
-      <!-- Se llena dinámicamente -->
-    </tbody>
-  </table>
-</div>
+      <button type="submit">Agregar Pregunta</button>
+      <p id="pregunta-mensaje"></p>
+    </form>
+  </section>
 
-<script>
-  // Guardar precios localmente (puedes reemplazar con tu backend)
-  function guardarPrecios() {
-    const basico = document.getElementById('precio-basico').value;
-    const medio = document.getElementById('precio-medio').value;
-    const avanzado = document.getElementById('precio-avanzado').value;
-    
-    // Aquí guardarías a backend o supabase
-    alert(`Precios guardados:\nNivel Básico: $${basico}\nNivel Medio: $${medio}\nNivel Avanzado: $${avanzado}`);
-    
-    // ejemplo localStorage
-    localStorage.setItem('precioBasico', basico);
-    localStorage.setItem('precioMedio', medio);
-    localStorage.setItem('precioAvanzado', avanzado);
-  }
-  
-  // Datos preguntas almacenadas en memoria (puedes persistir en backend)
-  const preguntas = {
-    basico: [],
-    medio: [],
-    avanzado: []
-  };
-  
-  // Agrega un formulario para nueva pregunta
-  function agregarPregunta(nivel, maxPreguntas) {
-    if(preguntas[nivel].length >= maxPreguntas){
-      alert(`Ya alcanzaste el máximo de preguntas para nivel ${nivel}`);
-      return;
+  <script>
+    const supabaseUrl = "https://ovulezkcxwrjvyxlxsdv.supabase.co";
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI";
+    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+    async function cargarPrecios() {
+      const { data, error } = await supabase.from('niveles_trivia').select('*');
+      if (data) {
+        data.forEach(nivel => {
+          if (nivel.nivel === 'basico') document.getElementById('precio-basico').value = nivel.precio;
+          if (nivel.nivel === 'medio') document.getElementById('precio-medio').value = nivel.precio;
+          if (nivel.nivel === 'avanzado') document.getElementById('precio-avanzado').value = nivel.precio;
+        });
+      }
     }
-    
-    const container = document.getElementById('preguntas-' + nivel);
-    const index = preguntas[nivel].length;
-    
-    // Crear div con inputs para pregunta y respuestas
-    const div = document.createElement('div');
-    div.style.border = '1px solid #ccc';
-    div.style.margin = '10px 0';
-    div.style.padding = '10px';
-    div.id = `${nivel}-pregunta-${index}`;
-    
-    div.innerHTML = `
-      <label>Pregunta #${index + 1}:</label><br />
-      <input type="text" placeholder="Escribe la pregunta" id="${nivel}-q-${index}" style="width:90%;" required /><br />
-      <label>Opciones (selecciona la correcta):</label><br />
-      <input type="radio" name="${nivel}-correcta-${index}" value="0" required /> <input type="text" id="${nivel}-q${index}-opt0" class="option-input" placeholder="Opción 1" required />
-      <input type="radio" name="${nivel}-correcta-${index}" value="1" /> <input type="text" id="${nivel}-q${index}-opt1" class="option-input" placeholder="Opción 2" required />
-      <input type="radio" name="${nivel}-correcta-${index}" value="2" /> <input type="text" id="${nivel}-q${index}-opt2" class="option-input" placeholder="Opción 3" required />
-      <br />
-      <button type="button" onclick="guardarPregunta('${nivel}', ${index})">Guardar pregunta</button>
-      <button type="button" onclick="eliminarPregunta('${nivel}', ${index})" style="color:red;">Eliminar</button>
-    `;
-    
-    container.appendChild(div);
-    
-    // Inicializar pregunta vacía
-    preguntas[nivel].push(null);
-  }
-  
-  // Guardar pregunta y sus respuestas
-  function guardarPregunta(nivel, index) {
-    const preguntaText = document.getElementById(`${nivel}-q-${index}`).value.trim();
-    const opts = [];
-    for(let i=0; i<3; i++){
-      const optVal = document.getElementById(`${nivel}-q${index}-opt${i}`).value.trim();
-      opts.push(optVal);
-    }
-    const radios = document.getElementsByName(`${nivel}-correcta-${index}`);
-    let correcta = null;
-    radios.forEach(r => { if(r.checked) correcta = parseInt(r.value) });
-    
-    if(!preguntaText || opts.some(o => o === '') || correcta === null){
-      alert('Completa la pregunta, todas las opciones y selecciona la respuesta correcta');
-      return;
-    }
-    
-    preguntas[nivel][index] = {
-      pregunta: preguntaText,
-      opciones: opts,
-      correcta: correcta
-    };
-    
-    alert(`Pregunta #${index + 1} guardada en nivel ${nivel}`);
-  }
-  
-  // Eliminar pregunta
-  function eliminarPregunta(nivel, index) {
-    if(!confirm('¿Eliminar esta pregunta?')){
-      return;
-    }
-    preguntas[nivel].splice(index, 1);
-    
-    // Re-renderizar preguntas de ese nivel para actualizar indices
-    const container = document.getElementById('preguntas-' + nivel);
-    container.innerHTML = '';
-    preguntas[nivel].forEach((p, i) => {
-      agregarPreguntaConDatos(nivel, i, p);
-    });
-  }
-  
-  // Agrega una pregunta con datos para re-renderizar
-  function agregarPreguntaConDatos(nivel, index, datos) {
-    const container = document.getElementById('preguntas-' + nivel);
-    const div = document.createElement('div');
-    div.style.border = '1px solid #ccc';
-    div.style.margin = '10px 0';
-    div.style.padding = '10px';
-    div.id = `${nivel}-pregunta-${index}`;
-    
-    div.innerHTML = `
-      <label>Pregunta #${index + 1}:</label><br />
-      <input type="text" placeholder="Escribe la pregunta" id="${nivel}-q-${index}" style="width:90%;" value="${datos ? escapeHtml(datos.pregunta) : ''}" required /><br />
-      <label>Opciones (selecciona la correcta):</label><br />
-      <input type="radio" name="${nivel}-correcta-${index}" value="0" ${datos && datos.correcta === 0 ? 'checked' : ''} required /> <input type="text" id="${nivel}-q${index}-opt0" class="option-input" placeholder="Opción 1" value="${datos ? escapeHtml(datos.opciones[0]) : ''}" required />
-      <input type="radio" name="${nivel}-correcta-${index}" value="1" ${datos && datos.correcta === 1 ? 'checked' : ''} /> <input type="text" id="${nivel}-q${index}-opt1" class="option-input" placeholder="Opción 2" value="${datos ? escapeHtml(datos.opciones[1]) : ''}" required />
-      <input type="radio" name="${nivel}-correcta-${index}" value="2" ${datos && datos.correcta === 2 ? 'checked' : ''} /> <input type="text" id="${nivel}-q${index}-opt2" class="option-input" placeholder="Opción 3" value="${datos ? escapeHtml(datos.opciones[2]) : ''}" required />
-      <br />
-      <button type="button" onclick="guardarPregunta('${nivel}', ${index})">Guardar pregunta</button>
-      <button type="button" onclick="eliminarPregunta('${nivel}', ${index})" style="color:red;">Eliminar</button>
-    `;
-    
-    container.appendChild(div);
-    
-    preguntas[nivel][index] = datos;
-  }
-  
-  // Escapar texto para evitar inyección HTML
-  function escapeHtml(text) {
-    return text.replace(/[&<>"']/g, function(m) {
-      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
-    });
-  }
-  
-  // Ejemplo de ranking (esto lo deberías cargar de tu backend o base de datos)
-  const ranking = [
-    { usuario: 'juan123', acertadas: 30, tiempo: 120 },
-    { usuario: 'maria87', acertadas: 28, tiempo: 110 },
-    { usuario: 'carlos', acertadas: 30, tiempo: 130 },
-    { usuario: 'ana', acertadas: 25, tiempo: 105 },
-  ];
-  
-  function mostrarRanking() {
-    // Ordenar primero por acertadas desc y luego por tiempo asc
-    ranking.sort((a,b) => {
-      if(b.acertadas !== a.acertadas) return b.acertadas - a.acertadas;
-      return a.tiempo - b.tiempo;
-    });
-    
-    const tbody = document.querySelector('#ranking-table tbody');
-    tbody.innerHTML = '';
-    
-    ranking.forEach((r, i) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${i + 1}</td>
-        <td>${escapeHtml(r.usuario)}</td>
-        <td>${r.acertadas}</td>
-        <td>${r.tiempo}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
-  
-  // Al iniciar mostrar ranking
-  mostrarRanking();
-</script>
 
+    async function guardarPrecios() {
+      const precios = {
+        basico: parseInt(document.getElementById('precio-basico').value),
+        medio: parseInt(document.getElementById('precio-medio').value),
+        avanzado: parseInt(document.getElementById('precio-avanzado').value)
+      };
+
+      let errores = [];
+
+      for (const nivel in precios) {
+        const { error } = await supabase
+          .from('niveles_trivia')
+          .upsert([{ nivel: nivel, precio: precios[nivel] }], { onConflict: ['nivel'] });
+
+        if (error) errores.push(`${nivel}: ${error.message}`);
+      }
+
+      const msg = document.getElementById('precios-mensaje');
+      if (errores.length === 0) {
+        msg.textContent = "Precios guardados correctamente.";
+        msg.className = "success";
+      } else {
+        msg.textContent = "Error al guardar: " + errores.join(", ");
+        msg.className = "error";
+      }
+    }
+
+    document.getElementById("formulario-pregunta").addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const nivel = document.getElementById("nivel").value;
+      const texto = document.getElementById("texto-pregunta").value;
+      const opciones = [
+        document.getElementById("opcion1").value,
+        document.getElementById("opcion2").value,
+        document.getElementById("opcion3").value
+      ];
+      const correcta = parseInt(document.getElementById("respuesta-correcta").value);
+
+      const { error } = await supabase.from("preguntas_trivia").insert({
+        nivel, texto, opciones, correcta
+      });
+
+      const msg = document.getElementById("pregunta-mensaje");
+      if (error) {
+        msg.textContent = "Error al guardar pregunta: " + error.message;
+        msg.className = "error";
+      } else {
+        msg.textContent = "Pregunta guardada exitosamente.";
+        msg.className = "success";
+        document.getElementById("formulario-pregunta").reset();
+      }
+    });
+
+    cargarPrecios();
+  </script>
+}
+        });
+
+        document.getElementById("guardar-nivel").addEventListener("click", async () => {
+          const nivel = document.getElementById("nivel-select").value;
+          const precio = parseInt(document.getElementById("nuevo-precio").value);
+
+          if (!nivel || isNaN(precio)) {
+            alert("Completa todos los campos");
+            return;
+          }
+
+          const { data, error } = await supabase
+            .from("niveles_trivia")
+            .upsert([{ nivel, precio }]);
+
+          if (error) {
+            alert("Error al guardar precio");
+            return;
+          }
+
+          alert("Precio actualizado");
+          cargarPrecios();
+        });
+
+        document.getElementById("guardar-pregunta").addEventListener("click", async () => {
+          const nivel = document.getElementById("nivel-pregunta").value;
+          const texto = document.getElementById("texto-pregunta").value.trim();
+          const op1 = document.getElementById("op1").value.trim();
+          const op2 = document.getElementById("op2").value.trim();
+          const op3 = document.getElementById("op3").value.trim();
+          const correcta = parseInt(document.getElementById("correcta").value);
+
+          if (!nivel || !texto || !op1 || !op2 || !op3 || isNaN(correcta)) {
+            alert("Completa todos los campos");
+            return;
+          }
+
+          const opciones = [op1, op2, op3];
+
+          const { error } = await supabase.from("preguntas_trivia").insert([
+            {
+              nivel,
+              texto,
+              opciones,
+              correcta,
+            },
+          ]);
+
+          if (error) {
+            alert("Error al guardar la pregunta");
+            return;
+          }
+
+          alert("Pregunta guardada");
+          document.getElementById("texto-pregunta").value = "";
+          document.getElementById("op1").value = "";
+          document.getElementById("op2").value = "";
+          document.getElementById("op3").value = "";
+          document.getElementById("correcta").value = "";
+          cargarPreguntas(nivel);
+        });
+
+        document.getElementById("nivel-pregunta").addEventListener("change", (e) => {
+          cargarPreguntas(e.target.value);
+        });
+
+        cargarPrecios();
+        cargarRanking();
+        cargarPremios();
+      </script>
+    </div>
+  </div>
 </body>
 </html>
