@@ -210,29 +210,24 @@
 </script>
 
 <script>
+  // Instancia única de Supabase
   const supabaseUrl = "https://ovulezkcxwrjvyxlxsdv.supabase.co";
   const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI";
-  const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+  const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
   // Guarda el rol para reutilizar
   let rolUsuario = null;
 
   async function obtenerRolUsuario() {
     try {
-      const {
-        data: authData,
-        error: authError
-      } = await supabaseClient.auth.getUser();
+      const { data: authData, error: authError } = await supabase.auth.getUser();
       if (authError || !authData.user) {
         alert("No estás autenticado. Por favor inicia sesión.");
         throw new Error("No autenticado");
       }
       const userId = authData.user.id;
 
-      const {
-        data: perfilData,
-        error: perfilError
-      } = await supabaseClient
+      const { data: perfilData, error: perfilError } = await supabase
         .from("profiles")
         .select("rol")
         .eq("id", userId)
@@ -252,7 +247,7 @@
   }
 
   async function cargarPreguntas(nivel) {
-    const { data, error } = await supabaseClient
+    const { data, error } = await supabase
       .from("preguntas_trivia")
       .select("*")
       .eq("nivel", nivel);
@@ -278,7 +273,7 @@
   }
 
   async function cargarPrecios() {
-    const { data, error } = await supabaseClient.from("niveles_trivia").select("*");
+    const { data, error } = await supabase.from("niveles_trivia").select("*");
     const lista = document.getElementById("lista-precios");
     lista.innerHTML = "";
     if (error) {
@@ -293,7 +288,7 @@
   }
 
   async function cargarRanking() {
-    const { data, error } = await supabaseClient
+    const { data, error } = await supabase
       .from("ranking_trivia")
       .select("usuario_id, puntaje")
       .order("puntaje", { ascending: false });
@@ -323,7 +318,7 @@
   }
 
   async function cargarPremios() {
-    const { data, error } = await supabaseClient
+    const { data, error } = await supabase
       .from("recompensas")
       .select("*")
       .eq("tipo", "trivia")
@@ -366,7 +361,7 @@
       alert("Completa todos los campos para guardar el precio.");
       return;
     }
-    const { error } = await supabaseClient.from("niveles_trivia").upsert([{ nivel, precio }]);
+    const { error } = await supabase.from("niveles_trivia").upsert([{ nivel, precio }]);
     if (error) {
       alert("Error al guardar precio: " + error.message);
       return;
@@ -375,6 +370,48 @@
     document.getElementById("nuevo-precio").value = "";
     cargarPrecios();
   });
+
+  // Esta es la función corregida y usando la misma instancia supabase:
+  async function guardarPregunta() {
+    const nivel = document.getElementById('nivel').value.trim();
+    const texto = document.getElementById('pregunta').value.trim();
+    const correcta = parseInt(document.getElementById('correcta').value);
+
+    const opciones = [
+      document.getElementById('opcion1').value.trim(),
+      document.getElementById('opcion2').value.trim(),
+      document.getElementById('opcion3').value.trim(),
+      document.getElementById('opcion4').value.trim()
+    ];
+
+    if (!nivel || !texto || opciones.some(op => !op) || isNaN(correcta)) {
+      alert('Completa todos los campos correctamente.');
+      return;
+    }
+
+    try {
+      // Validar rol antes de insertar
+      const rol = await obtenerRolUsuario();
+      if (rol !== "admi") {
+        alert("No tienes permisos para guardar preguntas.");
+        return;
+      }
+
+      const { data, error } = await supabase.from('preguntas_trivia').insert([
+        { nivel, texto, opciones, correcta }
+      ]);
+      if (error) {
+        alert("Error al guardar la pregunta: " + error.message);
+        return;
+      }
+      alert('Pregunta guardada con éxito ✅');
+      document.getElementById('form-trivia').reset();
+      cargarPreguntas(nivel);
+    } catch(e) {
+      alert("Error inesperado: " + e.message);
+      console.error(e);
+    }
+  }
 
   document.getElementById("guardar-pregunta").addEventListener("click", async () => {
     const nivel = document.getElementById("nivel-pregunta").value;
@@ -392,7 +429,6 @@
       return;
     }
 
-    // Verificar rol antes de insertar
     try {
       const rol = await obtenerRolUsuario();
       if (rol !== "admi") {
@@ -408,7 +444,7 @@
     const opciones = [op1, op2, op3];
 
     try {
-      const { error } = await supabaseClient.from("preguntas_trivia").insert([
+      const { error } = await supabase.from("preguntas_trivia").insert([
         { nivel, texto, opciones, correcta }
       ]);
       if (error) {
