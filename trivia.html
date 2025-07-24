@@ -196,37 +196,6 @@
   const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI";
   const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
-  // Guarda el rol para reutilizar
-  let rolUsuario = null;
-
-  async function obtenerRolUsuario() {
-    try {
-      const { data: authData, error: authError } = await supabaseClient.auth.getUser();
-      if (authError || !authData.user) {
-        alert("No estás autenticado. Por favor inicia sesión.");
-        throw new Error("No autenticado");
-      }
-      const userId = authData.user.id;
-
-      const { data: perfilData, error: perfilError } = await supabaseClient
-        .from("profiles")
-        .select("rol")
-        .eq("id", userId)
-        .single();
-
-      if (perfilError || !perfilData) {
-        alert("Error obteniendo perfil de usuario.");
-        throw new Error("Error perfil");
-      }
-
-      rolUsuario = perfilData.rol;
-      return rolUsuario;
-    } catch (e) {
-      console.error(e);
-      return null;
-    }
-  }
-
   async function cargarPreguntas(nivel) {
     const { data, error } = await supabaseClient
       .from("preguntas_trivia")
@@ -352,7 +321,7 @@
     cargarPrecios();
   });
 
-  // Función corregida para guardar pregunta desde formulario alternativo
+  // Función simplificada para guardar pregunta desde formulario alternativo
   async function guardarPregunta() {
     const nivel = document.getElementById('nivel').value.trim();
     const texto = document.getElementById('pregunta').value.trim();
@@ -371,12 +340,6 @@
     }
 
     try {
-      const rol = await obtenerRolUsuario();
-      if (rol !== "admi") {
-        alert("No tienes permisos para guardar preguntas.");
-        return;
-      }
-
       const { data, error } = await supabaseClient.from('preguntas_trivia').insert([
         { nivel, texto, opciones, correcta }
       ]);
@@ -409,18 +372,6 @@
       return;
     }
 
-    try {
-      const rol = await obtenerRolUsuario();
-      if (rol !== "admi") {
-        alert("No tienes permisos para guardar preguntas.");
-        return;
-      }
-    } catch (error) {
-      alert("Error verificando permisos.");
-      console.error(error);
-      return;
-    }
-
     const opciones = [op1, op2, op3];
 
     try {
@@ -450,9 +401,8 @@
     cargarPreguntas(e.target.value);
   });
 
-  // Inicializar cargas
+  // Inicializar cargas (sin verificación de rol)
   (async () => {
-    await obtenerRolUsuario();
     cargarPrecios();
     cargarRanking();
     cargarPremios();
