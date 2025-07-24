@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Minipools - Admin</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #0d1117;
+      color: #c9d1d9;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #58a6ff;
+    }
+    h2 {
+      color: #58a6ff;
+      margin-bottom: 15px;
+    }
+    .seccion {
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 30px;
+      background-color: #161b22;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: 600;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border-radius: 5px;
+      border: none;
+      background-color: #21262d;
+      color: #c9d1d9;
+    }
+    button {
+      background-color: #238636;
+      cursor: pointer;
+      margin-top: 15px;
+      font-weight: 600;
+    }
+    button:hover {
+      background-color: #2ea043;
+    }
+    .btn-warning {
+      background-color: #d1242f;
+    }
+    .btn-warning:hover {
+      background-color: #f85149;
+    }
+    .btn-secondary {
+      background-color: #6e7681;
+    }
+    .btn-secondary:hover {
+      background-color: #8b949e;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #30363d;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #21262d;
+      color: #58a6ff;
+      font-weight: 600;
+    }
+    tr:hover {
+      background-color: #0d1117;
+    }
+    .status {
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .status-pending {
+      background-color: #fff3cd;
+      color: #856404;
+    }
+    .status-paid {
+      background-color: #d1ecf1;
+      color: #0c5460;
+    }
+    .status-expired {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+    .controls-row {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .control-group {
+      flex: 1;
+      min-width: 200px;
+    }
+    .week-nav {
+      background-color: #58a6ff;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1.2rem;
+      margin: 0 5px;
+    }
+    .week-nav:hover {
+      background-color: #4493f8;
+    }
+    .current-week {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #58a6ff;
+      padding: 8px 15px;
+      background-color: #21262d;
+      border-radius: 5px;
+      margin: 0 10px;
+    }
+    .week-selector {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background-color: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 15px;
+      text-align: center;
+    }
+    .stat-card h3 {
+      color: #58a6ff;
+      font-size: 1.8rem;
+      margin-bottom: 5px;
+    }
+    .stat-card p {
+      color: #8b949e;
+      font-size: 0.9rem;
+    }
+    .pool-header {
+      background-color: #238636;
+      color: white;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .pool-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .pool-actions button {
+      width: auto;
+      padding: 6px 12px;
+      margin: 0;
+      font-size: 0.8rem;
+    }
+    .action-buttons {
+      display: flex;
+      gap: 5px;
+    }
+    .action-buttons button {
+      width: auto;
+      padding: 4px 8px;
+      margin: 0;
+      font-size: 0.7rem;
+    }
+    @media (max-width: 768px) {
+      .controls-row {
+        flex-direction: column;
+      }
+      .pool-header {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+      }
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Administrar Minipools</h1>
+
+  <!-- Selector de Semana -->
+  <div class="seccion">
+    <div class="week-selector">
+      <button class="week-nav" onclick="changeWeek(-1)">‹</button>
+      <div class="current-week" id="currentWeek">Semana del 21/07/2025 al 27/07/2025</div>
+      <button class="week-nav" onclick="changeWeek(1)">›</button>
+    </div>
+  </div>
+
+  <!-- Estadísticas -->
+  <div class="seccion">
+    <h2>📊 Estadísticas de la Semana</h2>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h3 id="totalParticipants">247</h3>
+        <p>Total Participantes</p>
+      </div>
+      <div class="stat-card">
+        <h3 id="totalInvested">$2,470,000</h3>
+        <p>Total Invertido (ARS)</p>
+      </div>
+      <div class="stat-card">
+        <h3 id="pendingPayments">$1,950,000</h3>
+        <p>Pagos Pendientes</p>
+      </div>
+      <div class="stat-card">
+        <h3 id="weekProfit">$520,000</h3>
+        <p>Ganancia Semana</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Controles de Búsqueda y Filtros -->
+  <div class="seccion">
+    <h2>🔍 Filtros y Búsqueda</h2>
+    <div class="controls-row">
+      <div class="control-group">
+        <label for="searchInput">Buscar por Email o ID:</label>
+        <input type="text" id="searchInput" placeholder="Ingresa email o ID..." onkeyup="filterParticipants()">
+      </div>
+      
+      <div class="control-group">
+        <label for="statusFilter">Filtrar por Estado:</label>
+        <select id="statusFilter" onchange="filterParticipants()">
+          <option value="">Todos los estados</option>
+          <option value="pending">Pendiente</option>
+          <option value="paid">Pagado</option>
+          <option value="expired">Vencido</option>
+        </select>
+      </div>
+    </div>
+    
+    <button onclick="processAllPayments()">💰 Procesar Todos los Pagos</button>
+  </div>
+
+  <!-- Crear Nuevo Pool -->
+  <div class="seccion">
+    <h2>➕ Crear Nuevo Pool</h2>
+    
+    <label for="poolName">Nombre del Pool:</label>
+    <input type="text" id="poolName" placeholder="Ej: Minipool Gamma">
+    
+    <label for="poolPrice">Precio de Entrada (ARS):</label>
+    <input type="number" id="poolPrice" placeholder="10000">
+    
+    <label for="poolReturn">Porcentaje de Retorno (%):</label>
+    <input type="number" id="poolReturn" placeholder="100" value="100">
+    
+    <button onclick="createNewPool()">🏊‍♂️ Crear Pool</button>
+  </div>
+
+  <!-- Pool Alpha -->
+  <div class="seccion">
+    <div class="pool-header">
+      <div>
+        <h3>🏊‍♂️ Minipool Alpha - $10,000 ARS</h3>
+        <p>Participantes: 89 | Estado: Activo | Retorno: 100%</p>
+      </div>
+      <div class="pool-actions">
+        <button class="btn-warning" onclick="closePool('alpha')">Cerrar Pool</button>
+        <button onclick="payAllPool('alpha')">Pagar Todos</button>
+      </div>
+    </div>
+    
+    <table>
+      <thead>
+          <tr>
+          <th>ID Usuario</th>
+          <th>Email</th>
+          <th>Monto Invertido</th>
+          <th>Fecha Inversión</th>
+          <th>Monto a Devolver</th>
+          <th>Fecha Vencimiento</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="participantsTableAlpha">
+        <tr data-email="juan.perez@email.com" data-id="USER001" data-status="pending">
+          <td>USER001</td>
+          <td>juan.perez@email.com</td>
+          <td>$10,000</td>
+          <td>21/07/2025 14:32</td>
+          <td>$20,000</td>
+          <td>28/07/2025 23:59</td>
+          <td><span class="status status-pending">Pendiente</span></td>
+          <td>
+            <div class="action-buttons">
+              <button onclick="markAsPaid('USER001')">✅ Pagar</button>
+              <button class="btn-secondary" onclick="viewDetails('USER001')">👁️ Ver</button>
+            </div>
+          </td>
+        </tr>
+        <tr data-email="maria.lopez@gmail.com" data-id="USER002" data-status="paid">
+          <td>USER002</td>
+          <td>maria.lopez@gmail.com</td>
+          <td>$10,000</td>
+          <td>21/07/2025 09:15</td>
+          <td>$20,000</td>
+          <td>28/07/2025 23:59</td>
+          <td><span class="status status-paid">Pagado</span></td>
+          <td>
+            <div class="action-buttons">
+              <button class="btn-secondary" onclick="viewDetails('USER002')">👁️ Ver</button>
+            </div>
+          </td>
+        </tr>
+        <tr data-email="carlos.rodriguez@hotmail.com" data-id="USER003" data-status="pending">
+          <td>USER003</td>
+          <td>carlos.rodriguez@hotmail.com</td>
+          <td>$10,000</td>
+          <td>22/07/2025 16:45</td>
+          <td>$20,000</td>
+          <td>28/07/2025 23:59</td>
+          <td><span class="status status-pending">Pendiente</span></td>
+          <td>
+            <div class="action-buttons">
+              <button onclick="markAsPaid('USER003')">✅ Pagar</button>
+              <button class="btn-secondary" onclick="viewDetails('USER003')">👁️ Ver</button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pool Beta -->
+  <div class="seccion">
+    <div class="pool-header">
+      <div>
+        <h3>🏊‍♂️ Minipool Beta - $25,000 ARS</h3>
+        <p>Participantes: 45 | Estado: Activo | Retorno: 100%</p>
+      </div>
+      <div class="pool-actions">
+        <button class="btn-warning" onclick="closePool('beta')">Cerrar Pool</button>
+        <button onclick="payAllPool('beta')">Pagar Todos</button>
+      </div>
+    </div>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>ID Usuario</th>
+          <th>Email</th>
+          <th>Monto Invertido</th>
+          <th>Fecha Inversión</th>
+          <th>Monto a Devolver</th>
+          <th>Fecha Vencimiento</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="participantsTableBeta">
+        <tr data-email="ana.garcia@yahoo.com" data-id="USER004" data-status="pending">
+          <td>USER004</td>
+          <td>ana.garcia@yahoo.com</td>
+          <td>$25,000</td>
+          <td>23/07/2025 11:20</td>
+          <td>$50,000</td>
+          <td>28/07/2025 23:59</td>
+          <td><span class="status status-pending">Pendiente</span></td>
+          <td>
+            <div class="action-buttons">
+              <button onclick="markAsPaid('USER004')">✅ Pagar</button>
+              <button class="btn-secondary" onclick="viewDetails('USER004')">👁️ Ver</button>
+            </div>
+          </td>
+        </tr>
+        <tr data-email="diego.martinez@outlook.com" data-id="USER005" data-status="expired">
+          <td>USER005</td>
+          <td>diego.martinez@outlook.com</td>
+          <td>$25,000</td>
+          <td>20/07/2025 22:10</td>
+          <td>$50,000</td>
+          <td>28/07/2025 23:59</td>
+          <td><span class="status status-expired">Vencido</span></td>
+          <td>
+            <div class="action-buttons">
+              <button onclick="markAsPaid('USER005')">✅ Pagar</button>
+              <button class="btn-secondary" onclick="viewDetails('USER005')">👁️ Ver</button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Historial de Transacciones -->
+  <div class="seccion">
+    <h2>📋 Historial de Transacciones</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Usuario</th>
+          <th>Pool</th>
+          <th>Monto</th>
+          <th>Tipo</th>
+          <th>Fecha</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody id="transactionHistory">
+        <!-- Las transacciones se cargarán aquí -->
+      </tbody>
+    </table>
+  </div>
+
+<script>
+  const supabaseUrl = "https://ovulezkcxwrjvyxlxsdv.supabase.co";
+  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI";
+  const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+  // Variables globales
+  let rolUsuario = null;
+  let currentWeekOffset = 0;
+
+  // Datos de ejemplo para diferentes semanas
+  const weeklyData = {
+    0: { // Semana actual
+      week: "21/07/2025 al 27/07/2025",
+      stats: {
+        participants: 247,
+        invested: "$2,470,000",
+        pending: "$1,950,000",
+        profit: "$520,000"
+      }
+    },
+    1: { // Semana siguiente
+      week: "28/07/2025 al 03/08/2025",
+      stats: {
+        participants: 189,
+        invested: "$1,890,000",
+        pending: "$1,890,000",
+        profit: "$0"
+      }
+    },
+    "-1": { // Semana anterior
+      week: "14/07/2025 al 20/07/2025",
+      stats: {
+        participants: 312,
+        invested: "$3,120,000",
+        pending: "$0",
+        profit: "$1,560,000"
+      }
+    }
+  };
+
+  async function obtenerRolUsuario() {
+    try {
+      const {
+        data: authData,
+        error: authError
+      } = await supabaseClient.auth.getUser();
+      if (authError || !authData.user) {
+        alert("No estás autenticado. Por favor inicia sesión.");
+        throw new Error("No autenticado");
+      }
+      const userId = authData.user.id;
+
+      const {
+        data: perfilData,
+        error: perfilError
+      } = await supabaseClient
+        .from("profiles")
+        .select("rol")
+        .eq("id", userId)
+        .single();
+
+      if (perfilError || !perfilData) {
+        alert("Error obteniendo perfil de usuario.");
+        throw new Error("Error perfil");
+      }
+
+      rolUsuario = perfilData.rol;
+      return rolUsuario;
+    } catch (e) {
+      console.error(e);
+      return null;
+    }
+  }
+
+  function changeWeek(direction) {
+    currentWeekOffset += direction;
+    const weekData = weeklyData[currentWeekOffset] || weeklyData[0];
+    
+    document.getElementById('currentWeek').textContent = `Semana del ${weekData.week}`;
+    document.getElementById('totalParticipants').textContent = weekData.stats.participants;
+    document.getElementById('totalInvested').textContent = weekData.stats.invested;
+    document.getElementById('pendingPayments').textContent = weekData.stats.pending;
+    document.getElementById('weekProfit').textContent = weekData.stats.profit;
+  }
+
+  function filterParticipants() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const statusFilter = document.getElementById('statusFilter').value;
+    
+    // Filtrar en ambas tablas
+    ['participantsTableAlpha', 'participantsTableBeta'].forEach(tableId => {
+      const rows = document.querySelectorAll(`#${tableId} tr`);
+      
+      rows.forEach(row => {
+        const email = row.getAttribute('data-email') || '';
+        const id = row.getAttribute('data-id') || '';
+        const status = row.getAttribute('data-status') || '';
+
+        const matchesSearch = email.toLowerCase().includes(searchTerm) || 
+                            id.toLowerCase().includes(searchTerm);
+        const matchesStatus = !statusFilter || status === statusFilter;
+
+        if (matchesSearch && matchesStatus) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    });
+  }
+
+  async function markAsPaid(userId) {
+    // Verificar permisos
+    try {
+      const rol = await obtenerRolUsuario();
+      if (rol !== "admi") {
+        alert("No tienes permisos para procesar pagos.");
+        return;
+      }
+    } catch (error) {
+      alert("Error verificando permisos.");
+      return;
+    }
+
+    if (confirm(`¿Confirmar pago para el usuario ${userId}?`)) {
+      // Aquí iría la lógica para actualizar en Supabase
+      const row = document.querySelector(`tr[data-id="${userId}"]`);
+      if (row) {
+        const statusCell = row.querySelector('.status');
+        statusCell.textContent = 'Pagado';
+        statusCell.className = 'status status-paid';
+        row.setAttribute('data-status', 'paid');
+        
+        // Actualizar botones
+        const actionButtons = row.querySelector('.action-buttons');
+        actionButtons.innerHTML = '<button class="btn-secondary" onclick="viewDetails(\'' + userId + '\')">👁️ Ver</button>';
+      }
+      alert(`Pago procesado para ${userId}`);
+    }
+  }
+
+  function viewDetails(userId) {
+    alert(`Mostrando detalles del usuario ${userId}.\n\nAquí se abriría un modal con información detallada del usuario y su inversión.`);
+  }
+
+  async function processAllPayments() {
+    // Verificar permisos
+    try {
+      const rol = await obtenerRolUsuario();
+      if (rol !== "admi") {
+        alert("No tienes permisos para procesar pagos masivos.");
+        return;
+      }
+    } catch (error) {
+      alert("Error verificando permisos.");
+      return;
+    }
+
+    if (confirm('¿Confirmar procesamiento de TODOS los pagos pendientes?')) {
+      const pendingRows = document.querySelectorAll('tr[data-status="pending"]');
+      let count = 0;
+      
+      pendingRows.forEach(row => {
+        const userId = row.getAttribute('data-id');
+        const statusCell = row.querySelector('.status');
+        statusCell.textContent = 'Pagado';
+        statusCell.className = 'status status-paid';
+        row.setAttribute('data-status', 'paid');
+        
+        const actionButtons = row.querySelector('.action-buttons');
+        actionButtons.innerHTML = '<button class="btn-secondary" onclick="viewDetails(\'' + userId + '\')">👁️ Ver</button>';
+        count++;
+      });
+      
+      alert(`Se procesaron ${count} pagos exitosamente.`);
+      
+      // Actualizar estadísticas
+      document.getElementById('pendingPayments').textContent = '$0';
+    }
+  }
+
+  async function createNewPool() {
+    // Verificar permisos
+    try {
+      const rol = await obtenerRolUsuario();
+      if (rol !== "admi") {
+        alert("No tienes permisos para crear pools.");
+        return;
+      }
+    } catch (error) {
+      alert("Error verificando permisos.");
+      return;
+    }
+
+    const name = document.getElementById('poolName').value.trim();
+    const price = parseInt(document.getElementById('poolPrice').value);
+    const returnRate = parseInt(document.getElementById('poolReturn').value);
+
+    if (!name || isNaN(price) || isNaN(returnRate)) {
+      alert("Completa todos los campos correctamente.");
+      return;
+    }
+
+    // Aquí iría la lógica para crear el pool en Supabase
+    alert(`Pool "${name}" creado exitosamente!\nPrecio: $${price} ARS\nRetorno: ${returnRate}%`);
+    
+    // Limpiar campos
+    document.getElementById('poolName').value = '';
+    document.getElementById('poolPrice').value = '';
+    document.getElementById('poolReturn').value = '100';
+  }
+
+  function closePool(poolId) {
+    if (confirm(`¿Confirmar cierre del pool ${poolId}?`)) {
+      alert(`Pool ${poolId} cerrado exitosamente.`);
+    }
+  }
+
+  function payAllPool(poolId) {
+    if (confirm(`¿Procesar todos los pagos del pool ${poolId}?`)) {
+      alert(`Todos los pagos del pool ${poolId} han sido procesados.`);
+    }
+  }
+
+  async function cargarHistorialTransacciones() {
+    // Aquí cargarías las transacciones desde Supabase
+    const tbody = document.getElementById("transactionHistory");
+    tbody.innerHTML = `
+      <tr>
+        <td>USER001</td>
+        <td>Alpha</td>
+        <td>$10,000</td>
+        <td>Inversión</td>
+        <td>21/07/2025</td>
+        <td><span class="status status-pending">Pendiente</span></td>
+      </tr>
+      <tr>
+        <td>USER002</td>
+        <td>Alpha</td>
+        <td>$20,000</td>
+        <td>Pago</td>
+        <td>21/07/2025</td>
+        <td><span class="status status-paid">Pagado</span></td>
+      </tr>
+      <tr>
+        <td>USER004</td>
+        <td>Beta</td>
+        <td>$25,000</td>
+        <td>Inversión</td>
+        <td>23/07/2025</td>
+        <td><span class="status status-pending">Pendiente</span></td>
+      </tr>
+      <tr>
+        <td>USER005</td>
+        <td>Beta</td>
+        <td>$25,000</td>
+        <td>Inversión</td>
+        <td>20/07/2025</td>
+        <td><span class="status status-expired">Vencido</span></td>
+      </tr>
+    `;
+  }
+
+  // Inicializar
+  (async () => {
+    await obtenerRolUsuario();
+    cargarHistorialTransacciones();
+    console.log('🏊‍♂️ Panel de Minipools cargado correctamente');
+    console.log('📊 Sistema listo para gestionar inversiones semanales');
+  })();
+
+</script>
+</body>
+</html>
