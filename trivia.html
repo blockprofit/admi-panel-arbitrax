@@ -91,8 +91,8 @@
     <label for="op3">Opción 3</label>
     <input type="text" id="op3" />
 
-    <label for="correcta">Número de opción correcta (1, 2 o 3)</label>
-    <input type="number" id="correcta" min="1" max="3" />
+    <label for="correcta-principal">Número de opción correcta (1, 2 o 3)</label>
+    <input type="number" id="correcta-principal" min="1" max="3" />
 
     <button id="guardar-pregunta">Guardar Pregunta</button>
 
@@ -162,50 +162,12 @@
       <input type="text" id="opcion2" placeholder="Opción 2">
       <input type="text" id="opcion3" placeholder="Opción 3">
       <input type="text" id="opcion4" placeholder="Opción 4">
-      <input type="number" id="correcta" min="0" max="3" placeholder="Índice correcta (0-3)">
+      <input type="number" id="correcta-alternativo" min="0" max="3" placeholder="Índice correcta (0-3)">
       <button type="button" onclick="guardarPregunta()">Guardar</button>
     </form>
   </div>
 <script>
-
-  async function guardarPregunta() {
-    const nivel = document.getElementById('nivel').value.trim();
-    const texto = document.getElementById('pregunta').value.trim();
-    const correcta = parseInt(document.getElementById('correcta').value);
-
-    const opciones = [
-      document.getElementById('opcion1').value.trim(),
-      document.getElementById('opcion2').value.trim(),
-      document.getElementById('opcion3').value.trim(),
-      document.getElementById('opcion4').value.trim()
-    ];
-
-    if (!nivel || !texto || opciones.some(op => !op) || isNaN(correcta)) {
-      alert('Completa todos los campos correctamente.');
-      return;
-    }
-
-    const { data, error } = await supabase.from('preguntas_trivia').insert([
-      {
-        nivel,
-        texto,
-        opciones,
-        correcta
-      }
-    ]);
-
-    if (error) {
-      console.error('Error al guardar:', error);
-      alert('Error al guardar la pregunta. Ver consola para más detalles.');
-    } else {
-      alert('Pregunta guardada con éxito ✅');
-      document.getElementById('form-trivia').reset();
-    }
-  }
-</script>
-
-<script>
-  // Instancia única de Supabase
+  // Instancia única de Supabase (URL + KEY correctas)
   const supabaseUrl = "https://ovulezkcxwrjvyxlxsdv.supabase.co";
   const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI";
   const supabase = supabase.createClient(supabaseUrl, supabaseKey);
@@ -266,8 +228,7 @@
       lista.appendChild(li);
     });
   }
-
-  async function cargarPrecios() {
+async function cargarPrecios() {
     const { data, error } = await supabase.from("niveles_trivia").select("*");
     const lista = document.getElementById("lista-precios");
     lista.innerHTML = "";
@@ -366,11 +327,11 @@
     cargarPrecios();
   });
 
-  // Esta es la función corregida y usando la misma instancia supabase:
+  // Función corregida para guardar pregunta desde formulario alternativo
   async function guardarPregunta() {
     const nivel = document.getElementById('nivel').value.trim();
     const texto = document.getElementById('pregunta').value.trim();
-    const correcta = parseInt(document.getElementById('correcta').value);
+    const correcta = parseInt(document.getElementById('correcta-alternativo').value);
 
     const opciones = [
       document.getElementById('opcion1').value.trim(),
@@ -385,7 +346,6 @@
     }
 
     try {
-      // Validar rol antes de insertar
       const rol = await obtenerRolUsuario();
       if (rol !== "admi") {
         alert("No tienes permisos para guardar preguntas.");
@@ -414,7 +374,7 @@
     const op1 = document.getElementById("op1").value.trim();
     const op2 = document.getElementById("op2").value.trim();
     const op3 = document.getElementById("op3").value.trim();
-    const correctaInput = parseInt(document.getElementById("correcta").value);
+    const correctaInput = parseInt(document.getElementById("correcta-principal").value);
 
     // Ajustamos correcta para que sea 0,1,2 según el input 1,2,3
     const correcta = correctaInput - 1;
@@ -452,7 +412,7 @@
       document.getElementById("op1").value = "";
       document.getElementById("op2").value = "";
       document.getElementById("op3").value = "";
-      document.getElementById("correcta").value = "";
+      document.getElementById("correcta-principal").value = "";
       cargarPreguntas(nivel);
     } catch (e) {
       alert("Error inesperado: " + e.message);
