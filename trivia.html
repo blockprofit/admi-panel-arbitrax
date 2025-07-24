@@ -201,14 +201,14 @@
 
   async function obtenerRolUsuario() {
     try {
-      const { data: authData, error: authError } = await supabase.auth.getUser();
+      const { data: authData, error: authError } = await supabaseClient.auth.getUser();
       if (authError || !authData.user) {
         alert("No estás autenticado. Por favor inicia sesión.");
         throw new Error("No autenticado");
       }
       const userId = authData.user.id;
 
-      const { data: perfilData, error: perfilError } = await supabase
+      const { data: perfilData, error: perfilError } = await supabaseClient
         .from("profiles")
         .select("rol")
         .eq("id", userId)
@@ -299,7 +299,7 @@
   }
 
   async function cargarPremios() {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from("recompensas")
       .select("*")
       .eq("tipo", "trivia")
@@ -342,7 +342,7 @@
       alert("Completa todos los campos para guardar el precio.");
       return;
     }
-    const { error } = await supabase.from("niveles_trivia").upsert([{ nivel, precio }]);
+    const { error } = await supabaseClient.from("niveles_trivia").upsert([{ nivel, precio }]);
     if (error) {
       alert("Error al guardar precio: " + error.message);
       return;
@@ -377,7 +377,7 @@
         return;
       }
 
-      const { data, error } = await supabase.from('preguntas_trivia').insert([
+      const { data, error } = await supabaseClient.from('preguntas_trivia').insert([
         { nivel, texto, opciones, correcta }
       ]);
       if (error) {
@@ -424,7 +424,7 @@
     const opciones = [op1, op2, op3];
 
     try {
-      const { error } = await supabase.from("preguntas_trivia").insert([
+      const { error } = await supabaseClient.from("preguntas_trivia").insert([
         { nivel, texto, opciones, correcta }
       ]);
       if (error) {
@@ -474,7 +474,7 @@
     const opcion2 = document.getElementById("opcion2-nueva").value;
     const opcion3 = document.getElementById("opcion3-nueva").value;
 
-    const { error } = await supabase.from("trivia").insert([
+    const { error } = await supabaseClient.from("trivia").insert([
       {
         pregunta,
         opcion_correcta: opcionCorrecta,
