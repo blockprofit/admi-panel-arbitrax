@@ -48,6 +48,21 @@
       background-color: #6c757d;
       cursor: not-allowed;
     }
+    .btn-editar {
+      background-color: #f85149;
+      padding: 5px 10px;
+      font-size: 12px;
+      margin-left: 10px;
+      width: auto;
+      display: inline-block;
+    }
+    .btn-editar:hover {
+      background-color: #da3633;
+    }
+    .editando {
+      background-color: #1f2937;
+      border: 2px solid #f85149;
+    }
     .pregunta {
       margin-bottom: 15px;
       padding: 10px;
@@ -237,6 +252,13 @@
   };
 
   let contadorActual = 0;
+  
+  // Variables para edición
+  let preguntaEditando = null;
+  let posicionEditando = null;
+
+  // Variable global para almacenar preguntas actuales
+  let preguntasActuales = [];
 
   async function cargarPreguntas(nivel) {
     const { data, error } = await supabaseClient
@@ -250,9 +272,10 @@
       return;
     }
 
-    contadorActual = data ? data.length : 0;
+    preguntasActuales = data || [];
+    contadorActual = preguntasActuales.length;
     actualizarContador(nivel);
-    mostrarHistorial(nivel, data || []);
+    mostrarHistorial(nivel, preguntasActuales);
   }
 
   function mostrarHistorial(nivel, preguntas) {
@@ -264,6 +287,9 @@
       const pregunta = preguntas.find((p, index) => index + 1 === i);
       const preguntaDiv = document.createElement("div");
       preguntaDiv.className = "historial-pregunta";
+      if (posicionEditando === i) {
+        preguntaDiv.classList.add("editando");
+      }
 
       const header = document.createElement("div");
       header.className = "historial-header";
@@ -272,13 +298,27 @@
       const titulo = document.createElement("span");
       titulo.textContent = `Pregunta ${i}`;
       
+      const controles = document.createElement("div");
+      
+      if (pregunta) {
+        const btnEditar = document.createElement("button");
+        btnEditar.className = "btn-editar";
+        btnEditar.textContent = "Editar";
+        btnEditar.onclick = (e) => {
+          e.stopPropagation();
+          editarPregunta(pregunta, i);
+        };
+        controles.appendChild(btnEditar);
+      }
+      
       const icono = document.createElement("span");
       icono.className = "toggle-icon";
       icono.textContent = "▶";
       icono.id = `toggle-${i}`;
+      controles.appendChild(icono);
 
       header.appendChild(titulo);
-      header.appendChild(icono);
+      header.appendChild(controles);
 
       const content = document.createElement("div");
       content.className = "historial-content";
@@ -308,6 +348,49 @@
     }
   }
 
+  function editarPregunta(pregunta, posicion) {
+    preguntaEditando = pregunta;
+    posicionEditando = posicion;
+    
+    // Llenar el formulario con los datos de la pregunta
+    document.getElementById("texto-pregunta").value = pregunta.texto;
+    document.getElementById("op1").value = pregunta.opciones[0] || "";
+    document.getElementById("op2").value = pregunta.opciones[1] || "";
+    document.getElementById("op3").value = pregunta.opciones[2] || "";
+    
+    if (pregunta.opciones[3]) {
+      document.getElementById("op4").value = pregunta.opciones[3];
+    }
+    
+    document.getElementById("correcta-principal").value = pregunta.correcta + 1;
+    
+    // Actualizar la interfaz
+    const nivel = document.getElementById("nivel-pregunta").value;
+    actualizarContador(nivel);
+    mostrarHistorial(nivel, preguntasActuales);
+    
+    // Scroll al formulario
+    document.querySelector('.seccion').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function cancelarEdicion() {
+    preguntaEditando = null;
+    posicionEditando = null;
+    
+    // Limpiar formulario
+    document.getElementById("texto-pregunta").value = "";
+    document.getElementById("op1").value = "";
+    document.getElementById("op2").value = "";
+    document.getElementById("op3").value = "";
+    document.getElementById("op4").value = "";
+    document.getElementById("correcta-principal").value = "";
+    
+    // Actualizar interfaz
+    const nivel = document.getElementById("nivel-pregunta").value;
+    actualizarContador(nivel);
+    mostrarHistorial(nivel, preguntasActuales);
+  }
+
   function togglePregunta(numero) {
     const content = document.getElementById(`content-${numero}`);
     const icono = document.getElementById(`toggle-${numero}`);
@@ -326,8 +409,12 @@
     const contador = document.getElementById("contador-preguntas");
     const botonGuardar = document.getElementById("guardar-pregunta");
     
-    if (contadorActual >= limite) {
-      contador.innerHTML = `<span class="limite-alcanzado">Límite alcanzado: ${contadorActual}/${limite} preguntas</span>`;
+    if (preguntaEditando) {
+      contador.innerHTML = `<span style="color: #f85149;">Editando Pregunta ${posicionEditando}</span>`;
+      botonGuardar.disabled = false;
+      botonGuardar.textContent = "Actualizar Pregunta";
+    } else if (contadorActual >= limite) {
+      contador.innerHTML = `<span class="limite-alcanzado">Límite alcanzado: ${contadorActual}/${limite} preguntas - Puedes editar las existentes</span>`;
       contador.className = "contador-preguntas limite-alcanzado";
       botonGuardar.disabled = true;
       botonGuardar.textContent = "Límite de preguntas alcanzado";
@@ -465,9 +552,9 @@
     const op4 = document.getElementById("op4").value.trim();
     const correctaInput = parseInt(document.getElementById("correcta-principal").value);
 
-    // Verificar límite antes de guardar
-    if (contadorActual >= limitesPreguntas[nivel]) {
-      alert(`Ya has alcanzado el límite de ${limitesPreguntas[nivel]} preguntas para el nivel ${nivel}.`);
+    // Verificar límite solo si no estamos editando
+    if (!preguntaEditando && contadorActual >= limitesPreguntas[nivel]) {
+      alert(`Ya has alcanzado el límite de ${limitesPreguntas[nivel]} preguntas para el nivel ${nivel}. Puedes editar las existentes.`);
       return;
     }
 
@@ -494,21 +581,38 @@
     }
 
     try {
-      const { error } = await supabaseClient.from("preguntas_trivia").insert([
-        { nivel, texto, opciones, correcta }
-      ]);
-      if (error) {
-        alert("Error al guardar la pregunta: " + error.message);
-        return;
+      if (preguntaEditando) {
+        // Actualizar pregunta existente
+        const { error } = await supabaseClient
+          .from("preguntas_trivia")
+          .update({ texto, opciones, correcta })
+          .eq("id", preguntaEditando.id);
+          
+        if (error) {
+          alert("Error al actualizar la pregunta: " + error.message);
+          return;
+        }
+        alert("Pregunta actualizada correctamente.");
+        cancelarEdicion();
+      } else {
+        // Insertar nueva pregunta
+        const { error } = await supabaseClient.from("preguntas_trivia").insert([
+          { nivel, texto, opciones, correcta }
+        ]);
+        if (error) {
+          alert("Error al guardar la pregunta: " + error.message);
+          return;
+        }
+        alert("Pregunta guardada correctamente.");
+        // Limpiar inputs
+        document.getElementById("texto-pregunta").value = "";
+        document.getElementById("op1").value = "";
+        document.getElementById("op2").value = "";
+        document.getElementById("op3").value = "";
+        document.getElementById("op4").value = "";
+        document.getElementById("correcta-principal").value = "";
       }
-      alert("Pregunta guardada correctamente.");
-      // Limpiar inputs
-      document.getElementById("texto-pregunta").value = "";
-      document.getElementById("op1").value = "";
-      document.getElementById("op2").value = "";
-      document.getElementById("op3").value = "";
-      document.getElementById("op4").value = "";
-      document.getElementById("correcta-principal").value = "";
+      
       cargarPreguntas(nivel);
     } catch (e) {
       alert("Error inesperado: " + e.message);
@@ -519,6 +623,7 @@
   // Cargar preguntas y configurar formulario al cambiar nivel
   document.getElementById("nivel-pregunta").addEventListener("change", (e) => {
     const nivel = e.target.value;
+    cancelarEdicion(); // Cancelar edición si se cambia de nivel
     cargarPreguntas(nivel);
     configurarFormulario(nivel);
   });
