@@ -141,6 +141,9 @@
       font-size: 12px;
       transition: transform 0.2s;
     }
+    .toggle-icon.expanded {
+      transform: rotate(90deg);
+    }
     .opcion4-container {
       display: none;
     }
@@ -278,6 +281,46 @@
     mostrarHistorial(nivel, preguntasActuales);
   }
 
+  function actualizarContador(nivel) {
+    const limite = limitesPreguntas[nivel];
+    const contador = document.getElementById("contador-preguntas");
+    const botonGuardar = document.getElementById("guardar-pregunta");
+    
+    if (preguntaEditando) {
+      contador.innerHTML = `<span style="color: #f85149;">Editando Pregunta ${posicionEditando}</span>`;
+      botonGuardar.disabled = false;
+      botonGuardar.textContent = "Actualizar Pregunta";
+    } else if (contadorActual >= limite) {
+      contador.innerHTML = `<span class="limite-alcanzado">Límite alcanzado: ${contadorActual}/${limite} preguntas - Puedes editar las existentes</span>`;
+      contador.className = "contador-preguntas limite-alcanzado";
+      botonGuardar.disabled = true;
+      botonGuardar.textContent = "Límite de preguntas alcanzado";
+    } else {
+      contador.innerHTML = `<span class="limite-ok">Preguntas: ${contadorActual}/${limite}</span>`;
+      contador.className = "contador-preguntas limite-ok";
+      botonGuardar.disabled = false;
+      botonGuardar.textContent = "Guardar Pregunta";
+    }
+  }
+
+  function configurarFormulario(nivel) {
+    const opcion4Container = document.getElementById("opcion4-container");
+    const correctaInput = document.getElementById("correcta-principal");
+    const labelCorrecta = document.getElementById("label-correcta");
+    
+    if (nivel === "avanzado") {
+      opcion4Container.style.display = "block";
+      correctaInput.max = 4;
+      labelCorrecta.textContent = "Número de opción correcta (1, 2, 3 o 4)";
+    } else {
+      opcion4Container.style.display = "none";
+      correctaInput.max = 3;
+      correctaInput.value = "";
+      labelCorrecta.textContent = "Número de opción correcta (1, 2 o 3)";
+      document.getElementById("op4").value = ""; // Limpiar opción 4
+    }
+  }
+
   function mostrarHistorial(nivel, preguntas) {
     const limite = limitesPreguntas[nivel];
     const historial = document.getElementById("historial-preguntas");
@@ -404,46 +447,6 @@
     }
   }
 
-  function actualizarContador(nivel) {
-    const limite = limitesPreguntas[nivel];
-    const contador = document.getElementById("contador-preguntas");
-    const botonGuardar = document.getElementById("guardar-pregunta");
-    
-    if (preguntaEditando) {
-      contador.innerHTML = `<span style="color: #f85149;">Editando Pregunta ${posicionEditando}</span>`;
-      botonGuardar.disabled = false;
-      botonGuardar.textContent = "Actualizar Pregunta";
-    } else if (contadorActual >= limite) {
-      contador.innerHTML = `<span class="limite-alcanzado">Límite alcanzado: ${contadorActual}/${limite} preguntas - Puedes editar las existentes</span>`;
-      contador.className = "contador-preguntas limite-alcanzado";
-      botonGuardar.disabled = true;
-      botonGuardar.textContent = "Límite de preguntas alcanzado";
-    } else {
-      contador.innerHTML = `<span class="limite-ok">Preguntas: ${contadorActual}/${limite}</span>`;
-      contador.className = "contador-preguntas limite-ok";
-      botonGuardar.disabled = false;
-      botonGuardar.textContent = "Guardar Pregunta";
-    }
-  }
-
-  function configurarFormulario(nivel) {
-    const opcion4Container = document.getElementById("opcion4-container");
-    const correctaInput = document.getElementById("correcta-principal");
-    const labelCorrecta = document.getElementById("label-correcta");
-    
-    if (nivel === "avanzado") {
-      opcion4Container.style.display = "block";
-      correctaInput.max = 4;
-      labelCorrecta.textContent = "Número de opción correcta (1, 2, 3 o 4)";
-    } else {
-      opcion4Container.style.display = "none";
-      correctaInput.max = 3;
-      correctaInput.value = "";
-      labelCorrecta.textContent = "Número de opción correcta (1, 2 o 3)";
-      document.getElementById("op4").value = ""; // Limpiar opción 4
-    }
-  }
-
   async function cargarPrecios() {
     const { data, error } = await supabaseClient.from("niveles_trivia").select("*");
     const lista = document.getElementById("lista-precios");
@@ -452,9 +455,9 @@
       lista.innerHTML = `<li>Error al cargar precios: ${error.message}</li>`;
       return;
     }
-    data.forEach(({ nivel, precio }) => {
+    data.forEach(({ nombre, precio }) => {
       const li = document.createElement("li");
-      li.textContent = `${nivel}: $${precio}`;
+      li.textContent = `${nombre}: $${precio}`;
       lista.appendChild(li);
     });
   }
@@ -533,7 +536,7 @@
       alert("Completa todos los campos para guardar el precio.");
       return;
     }
-    const { error } = await supabaseClient.from("niveles_trivia").upsert([{ nivel, precio }]);
+    const { error } = await supabaseClient.from("niveles_trivia").upsert([{ nombre: nivel, precio }]);
     if (error) {
       alert("Error al guardar precio: " + error.message);
       return;
