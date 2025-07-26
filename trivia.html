@@ -82,6 +82,50 @@
     .limite-ok {
       color: #56d364;
     }
+    .historial-pregunta {
+      margin-bottom: 10px;
+      border: 1px solid #30363d;
+      border-radius: 5px;
+      background-color: #0d1117;
+    }
+    .historial-header {
+      padding: 12px;
+      background-color: #21262d;
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .historial-header:hover {
+      background-color: #30363d;
+    }
+    .historial-content {
+      padding: 15px;
+      display: none;
+      border-top: 1px solid #30363d;
+    }
+    .historial-content.expanded {
+      display: block;
+    }
+    .opcion-respuesta {
+      margin: 5px 0;
+      padding: 8px;
+      border-radius: 3px;
+      background-color: #161b22;
+    }
+    .opcion-correcta {
+      background-color: #238636;
+      font-weight: bold;
+    }
+    .pregunta-vacia {
+      color: #6c757d;
+      font-style: italic;
+    }
+    .toggle-icon {
+      font-size: 12px;
+      transition: transform 0.2s;
+    }
     .opcion4-container {
       display: none;
     }
@@ -127,8 +171,8 @@
 
     <button id="guardar-pregunta">Guardar Pregunta</button>
 
-    <h3>Preguntas guardadas</h3>
-    <ul id="lista-preguntas"></ul>
+    <h3>Historial de Preguntas</h3>
+    <div id="historial-preguntas"></div>
   </div>
 
   <div class="seccion">
@@ -198,29 +242,83 @@
     const { data, error } = await supabaseClient
       .from("preguntas_trivia")
       .select("*")
-      .eq("nivel", nivel);
-
-    const lista = document.getElementById("lista-preguntas");
-    lista.innerHTML = "";
+      .eq("nivel", nivel)
+      .order('created_at', { ascending: true });
 
     if (error) {
-      lista.innerHTML = "Error cargando preguntas: " + error.message;
+      document.getElementById("historial-preguntas").innerHTML = "Error cargando preguntas: " + error.message;
       return;
     }
 
     contadorActual = data ? data.length : 0;
     actualizarContador(nivel);
+    mostrarHistorial(nivel, data || []);
+  }
 
-    if (!data || data.length === 0) {
-      lista.innerHTML = "<li>No hay preguntas para este nivel.</li>";
-      return;
+  function mostrarHistorial(nivel, preguntas) {
+    const limite = limitesPreguntas[nivel];
+    const historial = document.getElementById("historial-preguntas");
+    historial.innerHTML = "";
+
+    for (let i = 1; i <= limite; i++) {
+      const pregunta = preguntas.find((p, index) => index + 1 === i);
+      const preguntaDiv = document.createElement("div");
+      preguntaDiv.className = "historial-pregunta";
+
+      const header = document.createElement("div");
+      header.className = "historial-header";
+      header.onclick = () => togglePregunta(i);
+      
+      const titulo = document.createElement("span");
+      titulo.textContent = `Pregunta ${i}`;
+      
+      const icono = document.createElement("span");
+      icono.className = "toggle-icon";
+      icono.textContent = "▶";
+      icono.id = `toggle-${i}`;
+
+      header.appendChild(titulo);
+      header.appendChild(icono);
+
+      const content = document.createElement("div");
+      content.className = "historial-content";
+      content.id = `content-${i}`;
+
+      if (pregunta) {
+        content.innerHTML = `
+          <div style="margin-bottom: 15px;">
+            <strong>Pregunta:</strong> ${pregunta.texto}
+          </div>
+          <div>
+            <strong>Opciones:</strong>
+            ${pregunta.opciones.map((opcion, index) => 
+              `<div class="opcion-respuesta ${index === pregunta.correcta ? 'opcion-correcta' : ''}">
+                ${index + 1}. ${opcion} ${index === pregunta.correcta ? '✓ (Correcta)' : ''}
+              </div>`
+            ).join('')}
+          </div>
+        `;
+      } else {
+        content.innerHTML = '<div class="pregunta-vacia">Esta pregunta aún no ha sido creada</div>';
+      }
+
+      preguntaDiv.appendChild(header);
+      preguntaDiv.appendChild(content);
+      historial.appendChild(preguntaDiv);
     }
+  }
 
-    data.forEach(pregunta => {
-      const li = document.createElement("li");
-      li.textContent = `${pregunta.texto} (Opciones: ${pregunta.opciones.join(", ")}) [Correcta: ${pregunta.correcta + 1}]`;
-      lista.appendChild(li);
-    });
+  function togglePregunta(numero) {
+    const content = document.getElementById(`content-${numero}`);
+    const icono = document.getElementById(`toggle-${numero}`);
+    
+    if (content.classList.contains('expanded')) {
+      content.classList.remove('expanded');
+      icono.classList.remove('expanded');
+    } else {
+      content.classList.add('expanded');
+      icono.classList.add('expanded');
+    }
   }
 
   function actualizarContador(nivel) {
