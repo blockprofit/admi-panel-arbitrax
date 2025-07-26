@@ -536,7 +536,13 @@
       alert("Completa todos los campos para guardar el precio.");
       return;
     }
-    const { error } = await supabaseClient.from("niveles_trivia").upsert([{ nombre: nivel, precio }]);
+    
+    const { error } = await supabaseClient
+      .from("niveles_trivia")
+      .upsert([{ nombre: nivel, precio }], { 
+        onConflict: 'nombre' 
+      });
+      
     if (error) {
       alert("Error al guardar precio: " + error.message);
       return;
