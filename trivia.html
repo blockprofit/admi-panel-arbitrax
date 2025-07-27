@@ -468,7 +468,7 @@
         content.innerHTML = '<div class="pregunta-vacia">Esta pregunta aún no ha sido creada</div>';
       }
 
-      preguntaDiv.appendChild(header);
+preguntaDiv.appendChild(header);
       preguntaDiv.appendChild(content);
       historial.appendChild(preguntaDiv);
     }
@@ -546,70 +546,222 @@
   }
 
   async function cargarRanking() {
-    const { data, error } = await supabaseClient
+    const nivelSeleccionado = document.getElementById("nivel-ranking")?.value || "basico";
+    const busqueda = document.getElementById("buscar-usuario")?.value.toLowerCase() || "";
+    const filtroPremio = document.getElementById("filtro-premio")?.value || "";
+
+    let query = supabaseClient
       .from("ranking_trivia")
-      .select("usuario_id, puntaje")
-      .order("puntaje", { ascending: false });
+      .select("*")
+      .eq("nivel", nivelSeleccionado);
+
+    // Aplicar filtro de premio si está seleccionado
+    if (filtroPremio !== "") {
+      query = query.eq("premio_liberado", filtroPremio === "true");
+    }
+
+    // Ordenamiento por ranking: 1° más aciertos, 2° menor tiempo
+    query = query.order("acertadas", { ascending: false })
+                 .order("tiempo", { ascending: true });
+
+    const { data, error } = await query;
 
     const tbody = document.getElementById("ranking-trivia");
     tbody.innerHTML = "";
 
     if (error) {
       const tr = document.createElement("tr");
-      tr.innerHTML = `<td colspan="2">Error cargando ranking: ${error.message}</td>`;
+      tr.innerHTML = `<td colspan="8">Error cargando ranking: ${error.message}</td>`;
       tbody.appendChild(tr);
       return;
     }
 
     if (!data || data.length === 0) {
       const tr = document.createElement("tr");
-      tr.innerHTML = `<td colspan="2">No hay datos en ranking</td>`;
+      tr.innerHTML = `<td colspan="8">No hay participantes en el nivel ${nivelSeleccionado}</td>`;
       tbody.appendChild(tr);
+      actualizarEstadisticas([]);
       return;
     }
 
-    data.forEach(({ usuario_id, puntaje }) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${usuario_id}</td><td>${puntaje}</td>`;
-      tbody.appendChild(tr);
-    });
-  }
-
-  async function cargarPremios() {
-    const { data, error } = await supabaseClient
-      .from("recompensas")
-      .select("*")
-      .eq("tipo", "trivia")
-      .order("fecha", { ascending: false });
-
-    const tbody = document.getElementById("premios-trivia");
-    tbody.innerHTML = "";
-
-    if (error) {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td colspan="5">Error cargando premios: ${error.message}</td>`;
-      tbody.appendChild(tr);
-      return;
+    // Filtrar por búsqueda de usuario si hay texto
+    let datosFiltrados = data;
+    if (busqueda) {
+      datosFiltrados = data.filter(item => 
+        item.usuario_nombre.toLowerCase().includes(busqueda)
+      );
     }
 
-    if (!data || data.length === 0) {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td colspan="5">No hay premios registrados</td>`;
-      tbody.appendChild(tr);
-      return;
-    }
-
-    data.forEach(premio => {
+    // Mostrar datos con posición correcta
+    datosFiltrados.forEach((registro, index) => {
+      const posicionReal = data.findIndex(r => r.id === registro.id) + 1;
+      
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td>${premio.usuario_id}</td>
-        <td>${premio.monto}</td>
-        <td>${premio.moneda}</td>
-        <td>${new Date(premio.fecha).toLocaleDateString()}</td>
-        <td>${premio.aprobado ? "✅" : "❌"}</td>
+        <td><strong>${posicionReal}°</strong></td>
+        <td>${registro.usuario_nombre}</td>
+        <td><strong>${registro.acertadas}</strong></td>
+        <td>${registro.tiempo}s</td>
+        <td>$${registro.premio.toLocaleString()}</td>
+        <td>
+          <span class="${registro.premio_liberado ? 'premio-liberado' : 'premio-pendiente'}">
+            ${registro.premio_liberado ? '✅ Liberado' : '⏳ Pendiente'}
+          </span>
+        </td>
+        <td>${new Date(registro.created_at).toLocaleDateString()}</td>
+        <td>
+          <button class="btn-premio ${registro.premio_liberado ? 'liberado' : ''}" 
+                  onclick="togglePremio('${registro.id}', ${!registro.premio_liberado})"
+                  ${registro.premio_liberado ? 'disabled' : ''}>
+            ${registro.premio_liberado ? 'Liberado' : 'Liberar'}
+          </button>
+          <button class="btn-eliminar" onclick="eliminarRegistro('${registro.id}')">
+            Eliminar
+          </button>
+        </td>
       `;
       tbody.appendChild(tr);
     });
+
+    // Actualizar estadísticas
+    actualizarEstadisticas(data, nivelSeleccionado);
+  }
+
+  async function actualizarEstadisticas(data, nivel) {
+    const estadisticasDiv = document.getElementById("estadisticas-ranking");
+    
+    if (!data || data.length === 0) {
+      estadisticasDiv.innerHTML = `
+        <div style="text-align: center; color: #8b949e;">
+          No hay participantes en el nivel <strong>${nivel}</strong>
+        </div>
+      `;
+      return;
+    }
+
+    const totalJugadores = data.length;
+    const premiosLiberados = data.filter(r => r.premio_liberado).length;
+    const premiosPendientes = totalJugadores - premiosLiberados;
+    const promedioAciertos = (data.reduce((sum, r) => sum + r.acertadas, 0) / totalJugadores).toFixed(1);
+    const totalPremios = data.reduce((sum, r) => sum + r.premio, 0);
+    const mejorTiempo = Math.min(...data.map(r => r.tiempo));
+    const maxAciertos = Math.max(...data.map(r => r.acertadas));
+
+    estadisticasDiv.innerHTML = `
+      <div style="text-align: center; margin-bottom: 10px;">
+        <h4 style="color: #58a6ff; margin: 0;">Estadísticas - Nivel ${nivel.charAt(0).toUpperCase() + nivel.slice(1)}</h4>
+      </div>
+      <div class="estadisticas">
+        <div class="estadistica-item">
+          <div class="estadistica-numero">${totalJugadores}</div>
+          <div class="estadistica-label">Participantes</div>
+        </div>
+        <div class="estadistica-item">
+          <div class="estadistica-numero">${maxAciertos}</div>
+          <div class="estadistica-label">Mejor Puntaje</div>
+        </div>
+        <div class="estadistica-item">
+          <div class="estadistica-numero">${mejorTiempo}s</div>
+          <div class="estadistica-label">Mejor Tiempo</div>
+        </div>
+        <div class="estadistica-item">
+          <div class="estadistica-numero">${promedioAciertos}</div>
+          <div class="estadistica-label">Promedio</div>
+        </div>
+        <div class="estadistica-item">
+          <div class="estadistica-numero">${premiosLiberados}</div>
+          <div class="estadistica-label">Liberados</div>
+        </div>
+        <div class="estadistica-item">
+          <div class="estadistica-numero">${premiosPendientes}</div>
+          <div class="estadistica-label">Pendientes</div>
+        </div>
+        <div class="estadistica-item">
+          <div class="estadistica-numero">$${totalPremios.toLocaleString()}</div>
+          <div class="estadistica-label">Total Premios</div>
+        </div>
+      </div>
+    `;
+  }
+
+  async function togglePremio(registroId, liberar) {
+    if (!liberar) return; // Solo se puede liberar, no "des-liberar"
+
+    const { error } = await supabaseClient
+      .from("ranking_trivia")
+      .update({ premio_liberado: true })
+      .eq("id", registroId);
+
+    if (error) {
+      alert("Error al liberar premio: " + error.message);
+      return;
+    }
+
+    alert("Premio liberado correctamente");
+    cargarRanking();
+  }
+
+  async function eliminarRegistro(registroId) {
+    if (!confirm("¿Estás seguro de que quieres eliminar este registro del ranking?")) {
+      return;
+    }
+
+    const { error } = await supabaseClient
+      .from("ranking_trivia")
+      .delete()
+      .eq("id", registroId);
+
+    if (error) {
+      alert("Error al eliminar registro: " + error.message);
+      return;
+    }
+
+    alert("Registro eliminado correctamente");
+    cargarRanking();
+  }
+
+  async function cargarPremios() {
+    try {
+      const { data, error } = await supabaseClient
+        .from("recompensas")
+        .select("*")
+        .eq("tipo", "trivia")
+        .order("fecha", { ascending: false });
+
+      const tbody = document.getElementById("premios-trivia");
+      tbody.innerHTML = "";
+
+      if (error) {
+        console.error("Error en cargarPremios:", error);
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td colspan="5">Error cargando premios: ${error.message}</td>`;
+        tbody.appendChild(tr);
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td colspan="5">No hay premios registrados</td>`;
+        tbody.appendChild(tr);
+        return;
+      }
+
+      data.forEach(premio => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${premio.usuario_id || 'N/A'}</td>
+          <td>${premio.monto || 0}</td>
+          <td>${premio.moneda || 'USD'}</td>
+          <td>${premio.fecha ? new Date(premio.fecha).toLocaleDateString() : 'N/A'}</td>
+          <td>${premio.aprobado ? "✅" : "❌"}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    } catch (error) {
+      console.error("Error completo en cargarPremios:", error);
+      const tbody = document.getElementById("premios-trivia");
+      tbody.innerHTML = `<tr><td colspan="5">Error: No se pudo cargar la tabla de premios</td></tr>`;
+    }
   }
 
   document.getElementById("guardar-nivel").addEventListener("click", async () => {
@@ -619,7 +771,13 @@
       alert("Completa todos los campos para guardar el precio.");
       return;
     }
-    const { error } = await supabaseClient.from("niveles_trivia").upsert([{ nombre: nivel, precio }]);
+    
+    const { error } = await supabaseClient
+      .from("niveles_trivia")
+      .upsert([{ nombre: nivel, precio }], { 
+        onConflict: 'nombre' 
+      });
+      
     if (error) {
       alert("Error al guardar precio: " + error.message);
       return;
@@ -713,6 +871,12 @@
     cargarPreguntas(nivel);
     configurarFormulario(nivel);
   });
+
+  // Event listeners para ranking
+  document.getElementById("nivel-ranking").addEventListener("change", cargarRanking);
+  document.getElementById("actualizar-ranking").addEventListener("click", cargarRanking);
+  document.getElementById("buscar-usuario").addEventListener("input", cargarRanking);
+  document.getElementById("filtro-premio").addEventListener("change", cargarRanking);
 
   // Inicializar cargas
   (async () => {
