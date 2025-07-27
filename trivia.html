@@ -144,6 +144,59 @@
     .toggle-icon.expanded {
       transform: rotate(90deg);
     }
+    .btn-premio {
+      background-color: #238636;
+      color: white;
+      padding: 4px 8px;
+      font-size: 11px;
+      border-radius: 3px;
+      cursor: pointer;
+      margin-right: 5px;
+      width: auto;
+      display: inline-block;
+    }
+    .btn-premio:hover {
+      background-color: #2ea043;
+    }
+    .btn-premio.liberado {
+      background-color: #6c757d;
+      cursor: not-allowed;
+    }
+    .btn-eliminar {
+      background-color: #da3633;
+      color: white;
+      padding: 4px 8px;
+      font-size: 11px;
+      border-radius: 3px;
+      cursor: pointer;
+      width: auto;
+      display: inline-block;
+    }
+    .btn-eliminar:hover {
+      background-color: #b91c1c;
+    }
+    .premio-liberado {
+      color: #56d364;
+      font-weight: bold;
+    }
+    .premio-pendiente {
+      color: #f85149;
+      font-weight: bold;
+    }
+    .estadisticas {
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+    }
+    .estadistica-item {
+      text-align: center;
+      margin: 5px;
+    }
+    .estadistica-numero {
+      font-size: 24px;
+      font-weight: bold;
+      color: #58a6ff;
+    }
     .opcion4-container {
       display: none;
     }
@@ -213,12 +266,42 @@
   </div>
 
   <div class="seccion">
-    <h3>Ranking</h3>
+    <h3>Ranking de Trivia por Nivel</h3>
+    
+    <div style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+      <select id="nivel-ranking" style="width: 150px;">
+        <option value="basico">Básico</option>
+        <option value="medio">Medio</option>
+        <option value="avanzado">Avanzado</option>
+      </select>
+      <input type="text" id="buscar-usuario" placeholder="Buscar por nombre..." style="width: 200px;">
+      <select id="filtro-premio" style="width: 150px;">
+        <option value="">Todos</option>
+        <option value="true">Liberados</option>
+        <option value="false">Pendientes</option>
+      </select>
+      <button id="actualizar-ranking" style="width: auto; padding: 8px 15px;">Actualizar</button>
+    </div>
+
+    <div id="estadisticas-ranking" style="background-color: #0d1117; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+      Cargando estadísticas...
+    </div>
+
+    <div style="margin-bottom: 10px; font-size: 14px; color: #8b949e;">
+      <strong>Criterio de ranking:</strong> 1° Mayor número de aciertos → 2° Menor tiempo (en caso de empate)
+    </div>
+
     <table>
       <thead>
         <tr>
+          <th>Pos</th>
           <th>Usuario</th>
-          <th>Puntaje</th>
+          <th>Aciertos</th>
+          <th>Tiempo</th>
+          <th>Premio</th>
+          <th>Estado</th>
+          <th>Fecha</th>
+          <th>Acciones</th>
         </tr>
       </thead>
       <tbody id="ranking-trivia"></tbody>
@@ -402,7 +485,7 @@
     document.getElementById("op3").value = pregunta.opciones[2] || "";
     
     if (pregunta.opciones[3]) {
-document.getElementById("op4").value = pregunta.opciones[3];
+      document.getElementById("op4").value = pregunta.opciones[3];
     }
     
     document.getElementById("correcta-principal").value = pregunta.correcta + 1;
