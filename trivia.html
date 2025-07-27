@@ -402,7 +402,7 @@
     document.getElementById("op3").value = pregunta.opciones[2] || "";
     
     if (pregunta.opciones[3]) {
-      document.getElementById("op4").value = pregunta.opciones[3];
+document.getElementById("op4").value = pregunta.opciones[3];
     }
     
     document.getElementById("correcta-principal").value = pregunta.correcta + 1;
@@ -536,13 +536,7 @@
       alert("Completa todos los campos para guardar el precio.");
       return;
     }
-    
-    const { error } = await supabaseClient
-      .from("niveles_trivia")
-      .upsert([{ nombre: nivel, precio }], { 
-        onConflict: 'nombre' 
-      });
-      
+    const { error } = await supabaseClient.from("niveles_trivia").upsert([{ nombre: nivel, precio }]);
     if (error) {
       alert("Error al guardar precio: " + error.message);
       return;
