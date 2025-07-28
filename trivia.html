@@ -200,11 +200,102 @@
     .opcion4-container {
       display: none;
     }
+    .evento-control {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 15px;
+      padding: 15px;
+      background-color: #0d1117;
+      border-radius: 5px;
+      border: 1px solid #30363d;
+    }
+    .evento-estado {
+      padding: 5px 10px;
+      border-radius: 3px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .estado-activo {
+      background-color: #238636;
+      color: white;
+    }
+    .estado-pausado {
+      background-color: #f85149;
+      color: white;
+    }
+    .btn-lanzar {
+      background-color: #238636;
+      color: white;
+      padding: 8px 15px;
+      border-radius: 3px;
+      cursor: pointer;
+      width: auto;
+      display: inline-block;
+      border: none;
+    }
+    .btn-pausar {
+      background-color: #f85149;
+      color: white;
+      padding: 8px 15px;
+      border-radius: 3px;
+      cursor: pointer;
+      width: auto;
+      display: inline-block;
+      border: none;
+    }
+    .ganancias-info {
+      background-color: #0d1117;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 15px;
+      border: 1px solid #30363d;
+    }
   </style>
 </head>
 <body>
 
   <h1>Administrar Trivia</h1>
+
+  <!-- NUEVA SECCIÓN: Control de Eventos de Trivia -->
+  <div class="seccion">
+    <h2>🎮 Control de Eventos de Trivia</h2>
+    
+    <div id="eventos-basico" class="evento-control">
+      <strong>Básico:</strong>
+      <span id="estado-basico" class="evento-estado estado-pausado">⏸️ PAUSADO</span>
+      <input type="number" id="precio-basico" placeholder="Precio" style="width: 100px;">
+      <button id="btn-lanzar-basico" class="btn-lanzar" onclick="lanzarEvento('basico')">🚀 Lanzar</button>
+      <button id="btn-pausar-basico" class="btn-pausar" onclick="pausarEvento('basico')" disabled>⏸️ Pausar</button>
+      <span id="tiempo-basico" style="color: #8b949e; font-size: 12px;"></span>
+    </div>
+
+    <div id="eventos-medio" class="evento-control">
+      <strong>Medio:</strong>
+      <span id="estado-medio" class="evento-estado estado-pausado">⏸️ PAUSADO</span>
+      <input type="number" id="precio-medio" placeholder="Precio" style="width: 100px;">
+      <button id="btn-lanzar-medio" class="btn-lanzar" onclick="lanzarEvento('medio')">🚀 Lanzar</button>
+      <button id="btn-pausar-medio" class="btn-pausar" onclick="pausarEvento('medio')" disabled>⏸️ Pausar</button>
+      <span id="tiempo-medio" style="color: #8b949e; font-size: 12px;"></span>
+    </div>
+
+    <div id="eventos-avanzado" class="evento-control">
+      <strong>Avanzado:</strong>
+      <span id="estado-avanzado" class="evento-estado estado-pausado">⏸️ PAUSADO</span>
+      <input type="number" id="precio-avanzado" placeholder="Precio" style="width: 100px;">
+      <button id="btn-lanzar-avanzado" class="btn-lanzar" onclick="lanzarEvento('avanzado')">🚀 Lanzar</button>
+      <button id="btn-pausar-avanzado" class="btn-pausar" onclick="pausarEvento('avanzado')" disabled>⏸️ Pausar</button>
+      <span id="tiempo-avanzado" style="color: #8b949e; font-size: 12px;"></span>
+    </div>
+
+    <div class="ganancias-info">
+      <h4 style="color: #58a6ff; margin: 0 0 10px 0;">💰 Cálculo Automático de Ganancias</h4>
+      <div style="display: flex; justify-content: space-between; font-size: 14px;">
+        <div><strong>📊 50% Plataforma</strong> | <strong>🏆 50% Premios</strong></div>
+        <div id="calculo-ganancias" style="color: #56d364;">Esperando eventos...</div>
+      </div>
+    </div>
+  </div>
 
   <div class="seccion">
     <h2>Agregar Pregunta</h2>
@@ -274,7 +365,7 @@
         <option value="medio">Medio</option>
         <option value="avanzado">Avanzado</option>
       </select>
-      <input type="text" id="buscar-usuario" placeholder="Buscar por nombre..." style="width: 200px;">
+      <input type="text" id="buscar-usuario" placeholder="Buscar por ID de usuario..." style="width: 200px;">
       <select id="filtro-premio" style="width: 150px;">
         <option value="">Todos</option>
         <option value="true">Liberados</option>
@@ -295,6 +386,7 @@
       <thead>
         <tr>
           <th>Pos</th>
+          <th>ID Usuario</th>
           <th>Usuario</th>
           <th>Aciertos</th>
           <th>Tiempo</th>
@@ -345,6 +437,171 @@
 
   // Variable global para almacenar preguntas actuales
   let preguntasActuales = [];
+
+  // Variables para eventos
+  let intervalosEventos = {};
+
+  // NUEVAS FUNCIONES PARA EVENTOS DE TRIVIA
+  async function lanzarEvento(nivel) {
+    const precio = parseFloat(document.getElementById(`precio-${nivel}`).value);
+    
+    if (!precio || precio <= 0) {
+      alert(`Por favor ingresa un precio válido para el nivel ${nivel}`);
+      return;
+    }
+
+    const ahora = new Date();
+    const fechaFin = new Date(ahora.getTime() + 24 * 60 * 60 * 1000); // 24 horas después
+
+    try {
+      const { error } = await supabaseClient
+        .from("eventos_trivia")
+        .insert([{
+          nivel: nivel,
+          precio: precio,
+          fecha_inicio: ahora.toISOString(),
+          fecha_fin: fechaFin.toISOString(),
+          estado: 'activo'
+        }]);
+
+      if (error) {
+        alert(`Error al lanzar evento: ${error.message}`);
+        return;
+      }
+
+      alert(`🚀 Evento ${nivel} lanzado correctamente!\n⏰ Duración: 24 horas\n💰 Precio: $${precio}`);
+      actualizarEstadoEvento(nivel, true);
+      iniciarTemporizador(nivel, fechaFin);
+      actualizarCalculoGanancias();
+      
+    } catch (error) {
+      alert(`Error inesperado: ${error.message}`);
+    }
+  }
+
+  async function pausarEvento(nivel) {
+    try {
+      const { error } = await supabaseClient
+        .from("eventos_trivia")
+        .update({ estado: 'pausado' })
+        .eq('nivel', nivel)
+        .eq('estado', 'activo');
+
+      if (error) {
+        alert(`Error al pausar evento: ${error.message}`);
+        return;
+      }
+
+      alert(`⏸️ Evento ${nivel} pausado correctamente`);
+      actualizarEstadoEvento(nivel, false);
+      clearInterval(intervalosEventos[nivel]);
+      
+    } catch (error) {
+      alert(`Error inesperado: ${error.message}`);
+    }
+  }
+
+  function actualizarEstadoEvento(nivel, activo) {
+    const estadoSpan = document.getElementById(`estado-${nivel}`);
+    const btnLanzar = document.getElementById(`btn-lanzar-${nivel}`);
+    const btnPausar = document.getElementById(`btn-pausar-${nivel}`);
+    
+    if (activo) {
+      estadoSpan.textContent = '🟢 ACTIVO';
+      estadoSpan.className = 'evento-estado estado-activo';
+      btnLanzar.disabled = true;
+      btnPausar.disabled = false;
+    } else {
+      estadoSpan.textContent = '⏸️ PAUSADO';
+      estadoSpan.className = 'evento-estado estado-pausado';
+      btnLanzar.disabled = false;
+      btnPausar.disabled = true;
+      document.getElementById(`tiempo-${nivel}`).textContent = '';
+    }
+  }
+
+  function iniciarTemporizador(nivel, fechaFin) {
+    intervalosEventos[nivel] = setInterval(() => {
+      const ahora = new Date();
+      const tiempoRestante = fechaFin - ahora;
+      
+      if (tiempoRestante <= 0) {
+        // Auto-pausa después de 24 horas
+        pausarEventoAutomatico(nivel);
+        clearInterval(intervalosEventos[nivel]);
+        return;
+      }
+      
+      const horas = Math.floor(tiempoRestante / (1000 * 60 * 60));
+      const minutos = Math.floor((tiempoRestante % (1000 * 60 * 60)) / (1000 * 60));
+      const segundos = Math.floor((tiempoRestante % (1000 * 60)) / 1000);
+      
+      document.getElementById(`tiempo-${nivel}`).textContent = 
+        `⏱️ ${horas}h ${minutos}m ${segundos}s restantes`;
+    }, 1000);
+  }
+
+  async function pausarEventoAutomatico(nivel) {
+    try {
+      await supabaseClient
+        .from("eventos_trivia")
+        .update({ estado: 'finalizado' })
+        .eq('nivel', nivel)
+        .eq('estado', 'activo');
+
+      actualizarEstadoEvento(nivel, false);
+      document.getElementById(`tiempo-${nivel}`).textContent = '⏰ Evento finalizado automáticamente';
+      
+      alert(`⏰ El evento ${nivel} se ha pausado automáticamente después de 24 horas`);
+      
+    } catch (error) {
+      console.error(`Error al pausar automáticamente ${nivel}:`, error);
+    }
+  }
+
+  async function actualizarCalculoGanancias() {
+    try {
+      const { data, error } = await supabaseClient
+        .from("eventos_trivia")
+        .select("*")
+        .eq('estado', 'activo');
+
+      if (error) return;
+
+      const totalRecaudado = data.reduce((sum, evento) => sum + (evento.total_recaudado || 0), 0);
+      const gananciasPlataforma = totalRecaudado * 0.5;
+      const totalPremios = totalRecaudado * 0.5;
+
+      document.getElementById('calculo-ganancias').innerHTML = 
+        `💰 Total: $${totalRecaudado.toLocaleString()} | 🏢 Plataforma: $${gananciasPlataforma.toLocaleString()} | 🏆 Premios: $${totalPremios.toLocaleString()}`;
+        
+    } catch (error) {
+      console.error('Error al calcular ganancias:', error);
+    }
+  }
+
+  async function cargarEventosActivos() {
+    try {
+      const { data, error } = await supabaseClient
+        .from("eventos_trivia")
+        .select("*")
+        .eq('estado', 'activo');
+
+      if (error) return;
+
+      data.forEach(evento => {
+        actualizarEstadoEvento(evento.nivel, true);
+        const fechaFin = new Date(evento.fecha_fin);
+        if (fechaFin > new Date()) {
+          iniciarTemporizador(evento.nivel, fechaFin);
+        }
+      });
+      
+      actualizarCalculoGanancias();
+    } catch (error) {
+      console.error('Error al cargar eventos activos:', error);
+    }
+  }
 
   async function cargarPreguntas(nivel) {
     const { data, error } = await supabaseClient
@@ -400,7 +657,7 @@
       correctaInput.max = 3;
       correctaInput.value = "";
       labelCorrecta.textContent = "Número de opción correcta (1, 2 o 3)";
-      document.getElementById("op4").value = ""; // Limpiar opción 4
+      document.getElementById("op4").value = "";
     }
   }
 
@@ -468,7 +725,7 @@
         content.innerHTML = '<div class="pregunta-vacia">Esta pregunta aún no ha sido creada</div>';
       }
 
-preguntaDiv.appendChild(header);
+      preguntaDiv.appendChild(header);
       preguntaDiv.appendChild(content);
       historial.appendChild(preguntaDiv);
     }
@@ -478,7 +735,6 @@ preguntaDiv.appendChild(header);
     preguntaEditando = pregunta;
     posicionEditando = posicion;
     
-    // Llenar el formulario con los datos de la pregunta
     document.getElementById("texto-pregunta").value = pregunta.texto;
     document.getElementById("op1").value = pregunta.opciones[0] || "";
     document.getElementById("op2").value = pregunta.opciones[1] || "";
@@ -490,12 +746,10 @@ preguntaDiv.appendChild(header);
     
     document.getElementById("correcta-principal").value = pregunta.correcta + 1;
     
-    // Actualizar la interfaz
     const nivel = document.getElementById("nivel-pregunta").value;
     actualizarContador(nivel);
     mostrarHistorial(nivel, preguntasActuales);
     
-    // Scroll al formulario
     document.querySelector('.seccion').scrollIntoView({ behavior: 'smooth' });
   }
 
@@ -503,7 +757,6 @@ preguntaDiv.appendChild(header);
     preguntaEditando = null;
     posicionEditando = null;
     
-    // Limpiar formulario
     document.getElementById("texto-pregunta").value = "";
     document.getElementById("op1").value = "";
     document.getElementById("op2").value = "";
@@ -511,7 +764,6 @@ preguntaDiv.appendChild(header);
     document.getElementById("op4").value = "";
     document.getElementById("correcta-principal").value = "";
     
-    // Actualizar interfaz
     const nivel = document.getElementById("nivel-pregunta").value;
     actualizarContador(nivel);
     mostrarHistorial(nivel, preguntasActuales);
@@ -555,12 +807,10 @@ preguntaDiv.appendChild(header);
       .select("*")
       .eq("nivel", nivelSeleccionado);
 
-    // Aplicar filtro de premio si está seleccionado
     if (filtroPremio !== "") {
       query = query.eq("premio_liberado", filtroPremio === "true");
     }
 
-    // Ordenamiento por ranking: 1° más aciertos, 2° menor tiempo
     query = query.order("acertadas", { ascending: false })
                  .order("tiempo", { ascending: true });
 
@@ -571,34 +821,34 @@ preguntaDiv.appendChild(header);
 
     if (error) {
       const tr = document.createElement("tr");
-      tr.innerHTML = `<td colspan="8">Error cargando ranking: ${error.message}</td>`;
+      tr.innerHTML = `<td colspan="9">Error cargando ranking: ${error.message}</td>`;
       tbody.appendChild(tr);
       return;
     }
 
     if (!data || data.length === 0) {
       const tr = document.createElement("tr");
-      tr.innerHTML = `<td colspan="8">No hay participantes en el nivel ${nivelSeleccionado}</td>`;
+      tr.innerHTML = `<td colspan="9">No hay participantes en el nivel ${nivelSeleccionado}</td>`;
       tbody.appendChild(tr);
       actualizarEstadisticas([]);
       return;
     }
 
-    // Filtrar por búsqueda de usuario si hay texto
+    // MODIFICACIÓN: Filtrar por ID de usuario (no por nombre)
     let datosFiltrados = data;
     if (busqueda) {
       datosFiltrados = data.filter(item => 
-        item.usuario_nombre.toLowerCase().includes(busqueda)
+        item.usuario_id.toLowerCase().includes(busqueda)
       );
     }
 
-    // Mostrar datos con posición correcta
     datosFiltrados.forEach((registro, index) => {
       const posicionReal = data.findIndex(r => r.id === registro.id) + 1;
       
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td><strong>${posicionReal}°</strong></td>
+        <td style="font-family: monospace; font-size: 11px;">${registro.usuario_id}</td>
         <td>${registro.usuario_nombre}</td>
         <td><strong>${registro.acertadas}</strong></td>
         <td>${registro.tiempo}s</td>
@@ -623,11 +873,9 @@ preguntaDiv.appendChild(header);
       tbody.appendChild(tr);
     });
 
-    // Actualizar estadísticas
     actualizarEstadisticas(data, nivelSeleccionado);
   }
-
-  async function actualizarEstadisticas(data, nivel) {
+async function actualizarEstadisticas(data, nivel) {
     const estadisticasDiv = document.getElementById("estadisticas-ranking");
     
     if (!data || data.length === 0) {
@@ -684,21 +932,58 @@ preguntaDiv.appendChild(header);
     `;
   }
 
+  // MODIFICACIÓN: Al liberar premio, crear registro en recompensas
   async function togglePremio(registroId, liberar) {
-    if (!liberar) return; // Solo se puede liberar, no "des-liberar"
+    if (!liberar) return;
 
-    const { error } = await supabaseClient
-      .from("ranking_trivia")
-      .update({ premio_liberado: true })
-      .eq("id", registroId);
+    try {
+      // Obtener datos del registro
+      const { data: registro, error: errorGet } = await supabaseClient
+        .from("ranking_trivia")
+        .select("*")
+        .eq("id", registroId)
+        .single();
 
-    if (error) {
-      alert("Error al liberar premio: " + error.message);
-      return;
+      if (errorGet) {
+        alert("Error al obtener datos del registro: " + errorGet.message);
+        return;
+      }
+
+      // Actualizar estado en ranking_trivia
+      const { error: errorUpdate } = await supabaseClient
+        .from("ranking_trivia")
+        .update({ premio_liberado: true })
+        .eq("id", registroId);
+
+      if (errorUpdate) {
+        alert("Error al liberar premio: " + errorUpdate.message);
+        return;
+      }
+
+      // NUEVO: Crear registro en tabla recompensas
+      const { error: errorRecompensa } = await supabaseClient
+        .from("recompensas")
+        .insert([{
+          usuario_id: registro.usuario_id,
+          monto: registro.premio,
+          moneda: "USD",
+          tipo: "trivia",
+          fecha: new Date().toISOString(),
+          aprobado: true
+        }]);
+
+      if (errorRecompensa) {
+        console.error("Error al crear recompensa:", errorRecompensa);
+        // No mostramos error al usuario para que no se confunda
+      }
+
+      alert("✅ Premio liberado correctamente y registrado en recompensas");
+      cargarRanking();
+      cargarPremios(); // Actualizar tabla de premios
+      
+    } catch (error) {
+      alert("Error inesperado: " + error.message);
     }
-
-    alert("Premio liberado correctamente");
-    cargarRanking();
   }
 
   async function eliminarRegistro(registroId) {
@@ -749,8 +1034,8 @@ preguntaDiv.appendChild(header);
       data.forEach(premio => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${premio.usuario_id || 'N/A'}</td>
-          <td>${premio.monto || 0}</td>
+          <td style="font-family: monospace; font-size: 11px;">${premio.usuario_id || 'N/A'}</td>
+          <td>$${(premio.monto || 0).toLocaleString()}</td>
           <td>${premio.moneda || 'USD'}</td>
           <td>${premio.fecha ? new Date(premio.fecha).toLocaleDateString() : 'N/A'}</td>
           <td>${premio.aprobado ? "✅" : "❌"}</td>
@@ -796,25 +1081,21 @@ preguntaDiv.appendChild(header);
     const op4 = document.getElementById("op4").value.trim();
     const correctaInput = parseInt(document.getElementById("correcta-principal").value);
 
-    // Verificar límite solo si no estamos editando
     if (!preguntaEditando && contadorActual >= limitesPreguntas[nivel]) {
       alert(`Ya has alcanzado el límite de ${limitesPreguntas[nivel]} preguntas para el nivel ${nivel}. Puedes editar las existentes.`);
       return;
     }
 
-    // Ajustamos correcta para que sea 0,1,2,3 según el input 1,2,3,4
     const correcta = correctaInput - 1;
 
     let opciones;
     let maxOpciones;
 
     if (nivel === "avanzado") {
-      // Para nivel avanzado, pueden ser 3 o 4 opciones
       opciones = [op1, op2, op3];
       if (op4) opciones.push(op4);
       maxOpciones = opciones.length - 1;
     } else {
-      // Para básico y medio, solo 3 opciones
       opciones = [op1, op2, op3];
       maxOpciones = 2;
     }
@@ -826,7 +1107,6 @@ preguntaDiv.appendChild(header);
 
     try {
       if (preguntaEditando) {
-        // Actualizar pregunta existente
         const { error } = await supabaseClient
           .from("preguntas_trivia")
           .update({ texto, opciones, correcta })
@@ -839,7 +1119,6 @@ preguntaDiv.appendChild(header);
         alert("Pregunta actualizada correctamente.");
         cancelarEdicion();
       } else {
-        // Insertar nueva pregunta
         const { error } = await supabaseClient.from("preguntas_trivia").insert([
           { nivel, texto, opciones, correcta }
         ]);
@@ -848,7 +1127,6 @@ preguntaDiv.appendChild(header);
           return;
         }
         alert("Pregunta guardada correctamente.");
-        // Limpiar inputs
         document.getElementById("texto-pregunta").value = "";
         document.getElementById("op1").value = "";
         document.getElementById("op2").value = "";
@@ -864,21 +1142,19 @@ preguntaDiv.appendChild(header);
     }
   });
 
-  // Cargar preguntas y configurar formulario al cambiar nivel
   document.getElementById("nivel-pregunta").addEventListener("change", (e) => {
     const nivel = e.target.value;
-    cancelarEdicion(); // Cancelar edición si se cambia de nivel
+    cancelarEdicion();
     cargarPreguntas(nivel);
     configurarFormulario(nivel);
   });
 
-  // Event listeners para ranking
   document.getElementById("nivel-ranking").addEventListener("change", cargarRanking);
   document.getElementById("actualizar-ranking").addEventListener("click", cargarRanking);
   document.getElementById("buscar-usuario").addEventListener("input", cargarRanking);
   document.getElementById("filtro-premio").addEventListener("change", cargarRanking);
 
-  // Inicializar cargas
+  // Inicializar todo
   (async () => {
     const nivelInicial = document.getElementById("nivel-pregunta").value;
     cargarPrecios();
@@ -886,6 +1162,7 @@ preguntaDiv.appendChild(header);
     cargarPremios();
     cargarPreguntas(nivelInicial);
     configurarFormulario(nivelInicial);
+    cargarEventosActivos(); // NUEVO: Cargar eventos activos al iniciar
   })();
 
 </script>
