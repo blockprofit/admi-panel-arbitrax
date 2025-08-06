@@ -949,7 +949,31 @@ async function actualizarEstadisticas(data, nivel) {
         return;
       }
 
-      // Actualizar estado en ranking_trivia
+      console.log("Datos del registro:", registro); // Debug
+
+      // NUEVO: Crear registro en tabla recompensas PRIMERO
+      const { data: recompensaCreada, error: errorRecompensa } = await supabaseClient
+        .from("recompensas")
+        .insert([{
+          usuario_id: registro.usuario_id,
+          monto: registro.premio,
+          moneda: "USD",
+          tipo: "trivia",
+          fecha: new Date().toISOString(),
+          aprobado: true
+        }])
+        .select()
+        .single();
+
+      if (errorRecompensa) {
+        console.error("Error detallado al crear recompensa:", errorRecompensa);
+        alert("Error al crear recompensa: " + errorRecompensa.message);
+        return;
+      }
+
+      console.log("Recompensa creada:", recompensaCreada); // Debug
+
+      // Actualizar estado en ranking_trivia DESPUÉS
       const { error: errorUpdate } = await supabaseClient
         .from("ranking_trivia")
         .update({ premio_liberado: true })
@@ -960,28 +984,12 @@ async function actualizarEstadisticas(data, nivel) {
         return;
       }
 
-      // NUEVO: Crear registro en tabla recompensas
-      const { error: errorRecompensa } = await supabaseClient
-        .from("recompensas")
-        .insert([{
-          usuario_id: registro.usuario_id,
-          monto: registro.premio,
-          moneda: "USD",
-          tipo: "trivia",
-          fecha: new Date().toISOString(),
-          aprobado: true
-        }]);
-
-      if (errorRecompensa) {
-        console.error("Error al crear recompensa:", errorRecompensa);
-        // No mostramos error al usuario para que no se confunda
-      }
-
       alert("✅ Premio liberado correctamente y registrado en recompensas");
       cargarRanking();
       cargarPremios(); // Actualizar tabla de premios
       
     } catch (error) {
+      console.error("Error completo:", error);
       alert("Error inesperado: " + error.message);
     }
   }
@@ -1007,11 +1015,16 @@ async function actualizarEstadisticas(data, nivel) {
 
   async function cargarPremios() {
     try {
+      console.log("Cargando premios..."); // Debug
+      
       const { data, error } = await supabaseClient
         .from("recompensas")
         .select("*")
         .eq("tipo", "trivia")
         .order("fecha", { ascending: false });
+
+      console.log("Datos recibidos:", data); // Debug
+      console.log("Error:", error); // Debug
 
       const tbody = document.getElementById("premios-trivia");
       tbody.innerHTML = "";
@@ -1026,7 +1039,7 @@ async function actualizarEstadisticas(data, nivel) {
 
       if (!data || data.length === 0) {
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td colspan="5">No hay premios registrados</td>`;
+        tr.innerHTML = `<td colspan="5">No hay premios registrados aún</td>`;
         tbody.appendChild(tr);
         return;
       }
@@ -1038,10 +1051,13 @@ async function actualizarEstadisticas(data, nivel) {
           <td>$${(premio.monto || 0).toLocaleString()}</td>
           <td>${premio.moneda || 'USD'}</td>
           <td>${premio.fecha ? new Date(premio.fecha).toLocaleDateString() : 'N/A'}</td>
-          <td>${premio.aprobado ? "✅" : "❌"}</td>
+          <td>${premio.aprobado ? "✅ Sí" : "❌ No"}</td>
         `;
         tbody.appendChild(tr);
       });
+      
+      console.log(`Cargados ${data.length} premios`); // Debug
+      
     } catch (error) {
       console.error("Error completo en cargarPremios:", error);
       const tbody = document.getElementById("premios-trivia");
