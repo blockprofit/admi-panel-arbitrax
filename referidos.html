@@ -124,6 +124,46 @@
       background: linear-gradient(90deg, #00d4ff, #0099cc);
       transition: width 0.3s ease;
     }
+
+    .pago-pendiente {
+      background: white;
+      margin: 10px 0;
+      padding: 15px;
+      border-radius: 8px;
+      border-left: 4px solid #ffc107;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .pago-pendiente button {
+      background: #28a745;
+      color: white;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .pago-pendiente button:hover {
+      background: #218838;
+    }
+
+    .liberar-todos {
+      background: #17a2b8;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+
+    .liberar-todos:hover {
+      background: #138496;
+    }
   </style>
 </head>
 <body>
@@ -158,14 +198,23 @@
       • 35 referidos (5+10+20) = $100.000 ARS adicionales<br>
       • 85 referidos (5+10+20+50) = $250.000 ARS adicionales
     </div>
+
+    <!-- SECCIÓN DE PAGOS PENDIENTES -->
+    <div id="pagos-pendientes" style="margin-bottom: 30px; padding: 15px; background: #fff3cd; border-radius: 8px; color: #856404;">
+      <h3 style="color: #856404; margin-top: 0;">💰 Pagos Pendientes de Liberación</h3>
+      <div id="lista-pagos-pendientes">
+        <!-- Se cargarán dinámicamente -->
+      </div>
+    </div>
+
     <table id="tabla-recompensas" border="1">
       <thead>
         <tr>
           <th>Email del Usuario</th>
           <th>Referidos Confirmados</th>
           <th>Próxima Meta</th>
-          <th>Recompensas Pagadas</th>
-          <th>Acción</th>
+          <th>Recompensas Generadas</th>
+          <th>Estado de Pagos</th>
         </tr>
       </thead>
       <tbody id="cuerpo-recompensas">
@@ -280,13 +329,15 @@ async function aprobarReferido(id, referidoPor) {
           if (errYaExiste) continue;
 
           if (!yaExiste) {
-            // Insertar nueva recompensa
+            // Insertar nueva recompensa con la estructura correcta
             const { error: errorRecompensa } = await supabaseClient
               .from('recompensas')
               .insert({
                 usuario_id: referidoPor,
                 meta: meta.total_requerido,
-                recompensa_ars: meta.recompensa,
+                monto: meta.recompensa,
+                moneda: 'ARS',
+                tipo: 'referidos',
                 fecha: new Date().toISOString(),
                 aprobado: false
               });
@@ -303,6 +354,7 @@ async function aprobarReferido(id, referidoPor) {
 
       cargarReferidos();
       cargarRecompensasReferidos();
+      cargarPagosPendientes();
     }
 
     async function rechazarReferido(id) {
@@ -314,6 +366,7 @@ async function aprobarReferido(id, referidoPor) {
       if (error) return alert('Error al eliminar referido');
       cargarReferidos();
       cargarRecompensasReferidos();
+      cargarPagosPendientes();
     }
 
     async function mostrarProgresoVisual() {
@@ -420,40 +473,109 @@ async function aprobarReferido(id, referidoPor) {
           `${cantidadReferidos}/${proximaMeta.total_requerido} - ${proximaMeta.nombre}` : 
           "¡Todas completadas!";
 
-        // Crear lista de recompensas pagadas
-        const recompensasPagadasTexto = recompensasPagadas.length > 0 ?
-          recompensasPagadas.map(r => `${r.meta} ref: $${r.recompensa_ars}`).join('<br>') :
+        // Crear lista de recompensas generadas (pagadas y pendientes)
+        const { data: todasRecompensas, error: errorTodasRecompensas } = await supabaseClient
+          .from('recompensas')
+          .select('*')
+          .eq('usuario_id', perfil.id)
+          .order('meta', { ascending: true });
+
+        if (errorTodasRecompensas) continue;
+
+        const recompensasTexto = todasRecompensas.length > 0 ?
+          todasRecompensas.map(r => {
+            const estado = r.aprobado ? '✅' : '⏳';
+            return `${estado} ${r.meta} ref: $${r.monto} ${r.moneda}`;
+          }).join('<br>') :
           'Ninguna';
 
-        // Botones para recompensas pendientes
-        const botonesPendientes = recompensasPendientes.map(r => 
-          `<button onclick="aprobarRecompensa('${perfil.id}', ${r.meta}, ${r.recompensa_ars})" style="margin: 2px; font-size: 12px;">
-            Pagar ${r.meta} ref ($${r.recompensa_ars})
-           </button>`
-        ).join('');
+        // Estado de pagos
+        const pendientes = todasRecompensas.filter(r => !r.aprobado).length;
+        const pagadas = todasRecompensas.filter(r => r.aprobado).length;
+        const estadoPagos = `✅ ${pagadas} | ⏳ ${pendientes}`;
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${perfil.email}</td>
           <td style="text-align:center;">${cantidadReferidos}</td>
           <td style="text-align:center;">${textoProximaMeta}</td>
-          <td style="text-align:center; font-size: 12px;">${recompensasPagadasTexto}</td>
-          <td style="text-align:center;">${botonesPendientes}</td>
+          <td style="text-align:center; font-size: 12px;">${recompensasTexto}</td>
+          <td style="text-align:center;">${estadoPagos}</td>
         `;
         cuerpo.appendChild(tr);
       }
     }
 
-    async function aprobarRecompensa(userId, meta, recompensa) {
-      // Actualizar la recompensa como aprobada
+    async function cargarPagosPendientes() {
+      const { data: pagosPendientes, error } = await supabaseClient
+        .from('recompensas')
+        .select(`
+          *,
+          profiles:usuario_id (email)
+        `)
+        .eq('aprobado', false)
+        .order('fecha', { ascending: true });
+
+      if (error) {
+        console.error('Error al cargar pagos pendientes:', error);
+        return;
+      }
+
+      const container = document.getElementById('lista-pagos-pendientes');
+      
+      if (!pagosPendientes || pagosPendientes.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #666;">No hay pagos pendientes de liberación.</p>';
+        return;
+      }
+
+      let html = `<button class="liberar-todos" onclick="liberarTodosPagos()">🚀 Liberar Todos los Pagos (${pagosPendientes.length})</button>`;
+      
+      pagosPendientes.forEach(pago => {
+        const email = pago.profiles?.email || 'Email no encontrado';
+        const fecha = new Date(pago.fecha).toLocaleDateString();
+        
+        html += `
+          <div class="pago-pendiente">
+            <div>
+              <strong>${email}</strong><br>
+              <span>Meta: ${pago.meta} referidos | Monto: $${pago.monto} ${pago.moneda}</span><br>
+              <small>Generado: ${fecha}</small>
+            </div>
+            <button onclick="liberarPago('${pago.id}', '${email}', ${pago.monto}, '${pago.moneda}')">
+              💰 Liberar Pago
+            </button>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    async function liberarPago(recompensaId, email, monto, moneda) {
+      if (!confirm(`¿Liberar pago de $${monto} ${moneda} para ${email}?`)) {
+        return;
+      }
+
+      // Obtener datos de la recompensa
+      const { data: recompensa, error: errorRecompensa } = await supabaseClient
+        .from('recompensas')
+        .select('usuario_id')
+        .eq('id', recompensaId)
+        .single();
+
+      if (errorRecompensa) {
+        alert('Error al obtener datos de la recompensa');
+        return;
+      }
+
+      // Actualizar recompensa como aprobada
       const { error: errorAprobar } = await supabaseClient
         .from('recompensas')
         .update({ aprobado: true })
-        .eq('usuario_id', userId)
-        .eq('meta', meta);
+        .eq('id', recompensaId);
 
       if (errorAprobar) {
-        alert('Error al aprobar recompensa');
+        alert('Error al liberar el pago');
         console.error(errorAprobar);
         return;
       }
@@ -462,34 +584,107 @@ async function aprobarReferido(id, referidoPor) {
       const { data: balance, error: errorBalance } = await supabaseClient
         .from('balances')
         .select('saldo')
-        .eq('usuario_id', userId)
+        .eq('usuario_id', recompensa.usuario_id)
         .maybeSingle();
 
       if (errorBalance) {
         console.error('Error al obtener balance:', errorBalance);
       } else {
-        const nuevoSaldo = (balance?.saldo || 0) + recompensa;
+        const nuevoSaldo = (balance?.saldo || 0) + monto;
         
         if (balance) {
           await supabaseClient
             .from('balances')
             .update({ saldo: nuevoSaldo })
-            .eq('usuario_id', userId);
+            .eq('usuario_id', recompensa.usuario_id);
         } else {
           await supabaseClient
             .from('balances')
-            .insert({ usuario_id: userId, saldo: recompensa });
+            .insert({ usuario_id: recompensa.usuario_id, saldo: monto });
         }
       }
 
-      alert(`Recompensa aprobada: $${recompensa} ARS por ${meta} referidos`);
+      alert(`✅ Pago liberado exitosamente: $${monto} ${moneda} para ${email}`);
+      
+      // Recargar todas las vistas
+      cargarPagosPendientes();
       cargarRecompensasReferidos();
+    }
+
+    async function liberarTodosPagos() {
+      const { data: pagosPendientes } = await supabaseClient
+        .from('recompensas')
+        .select('*')
+        .eq('aprobado', false);
+
+      if (!pagosPendientes || pagosPendientes.length === 0) {
+        alert('No hay pagos pendientes para liberar');
+        return;
+      }
+
+      const totalMonto = pagosPendientes.reduce((sum, pago) => sum + Number(pago.monto), 0);
+      
+      if (!confirm(`¿Liberar TODOS los pagos pendientes?\n\nTotal: ${pagosPendientes.length} pagos\nMonto total: $${totalMonto} ARS`)) {
+        return;
+      }
+
+      let exitosos = 0;
+      let errores = 0;
+
+      for (const pago of pagosPendientes) {
+        try {
+          // Aprobar recompensa
+          const { error: errorAprobar } = await supabaseClient
+            .from('recompensas')
+            .update({ aprobado: true })
+            .eq('id', pago.id);
+
+          if (errorAprobar) throw errorAprobar;
+
+          // Actualizar balance
+          const { data: balance } = await supabaseClient
+            .from('balances')
+            .select('saldo')
+            .eq('usuario_id', pago.usuario_id)
+            .maybeSingle();
+
+          const nuevoSaldo = (balance?.saldo || 0) + Number(pago.monto);
+          
+          if (balance) {
+            await supabaseClient
+              .from('balances')
+              .update({ saldo: nuevoSaldo })
+              .eq('usuario_id', pago.usuario_id);
+          } else {
+            await supabaseClient
+              .from('balances')
+              .insert({ usuario_id: pago.usuario_id, saldo: Number(pago.monto) });
+          }
+
+          exitosos++;
+        } catch (error) {
+          console.error(`Error al procesar pago ${pago.id}:`, error);
+          errores++;
+        }
+      }
+
+      alert(`✅ Proceso completado:\n- Pagos liberados: ${exitosos}\n- Errores: ${errores}\n\nTotal procesado: $${totalMonto} ARS`);
+      
+      // Recargar vistas
+      cargarPagosPendientes();
+      cargarRecompensasReferidos();
+    }
+
+    async function aprobarRecompensa(userId, meta, recompensa) {
+      // Esta función ya no es necesaria, pero la mantengo para compatibilidad
+      console.log('Esta función ha sido reemplazada por el sistema de liberación de pagos');
     }
 
     // Inicializar cuando el DOM esté listo
     document.addEventListener('DOMContentLoaded', function() {
       cargarReferidos();
       cargarRecompensasReferidos();
+      cargarPagosPendientes();
     });
 </script>
 
