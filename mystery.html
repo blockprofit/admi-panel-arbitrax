@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin - Mystery Box</title>
+  <link rel="icon" href="favicon.png" type="image/png" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-image: url('fondodepantallaprincipal1.jpeg');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      color: white;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.3);
+      z-index: 1;
+    }
+
+    .menu-toggle {
+      position: fixed;
+      top: 15px;
+      left: 15px;
+      font-size: 24px;
+      cursor: pointer;
+      z-index: 1001;
+      background-color: rgba(0, 0, 0, 0.6);
+      padding: 10px 15px;
+      border-radius: 6px;
+      transition: all 0.3s ease;
+    }
+
+    .menu-toggle:hover {
+      background-color: rgba(0, 168, 255, 0.6);
+      transform: scale(1.1);
+    }
+
+    .sidebar {
+      width: 250px;
+      background-color: rgba(0, 0, 0, 0.9);
+      height: 100vh;
+      padding-top: 60px;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0;
+      left: 0;
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+      z-index: 1000;
+      backdrop-filter: blur(10px);
+      overflow-y: auto;
+    }
+
+    .sidebar.active {
+      transform: translateX(0%);
+    }
+
+    .sidebar button {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 14px;
+      padding: 12px 20px;
+      text-align: left;
+      cursor: pointer;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      transition: all 0.3s ease;
+    }
+
+    .sidebar button:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+      transform: translateX(5px);
+    }
+
+    .sidebar button.active {
+      background-color: rgba(0, 168, 255, 0.3);
+      border-left: 3px solid #00a8ff;
+    }
+
+    .sidebar button i {
+      margin-right: 12px;
+      width: 20px;
+      text-align: center;
+    }
+
+    .content {
+      flex: 1;
+      padding: 30px;
+      margin-left: 0;
+      width: 100%;
+      position: relative;
+      z-index: 2;
+    }
+
+    .admin-container {
+      background: rgba(0, 0, 0, 0.8);
+      padding: 30px;
+      border-radius: 15px;
+      backdrop-filter: blur(15px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 0 30px rgba(0, 168, 255, 0.3);
+    }
+
+    .page-title {
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 2.5rem;
+      background: linear-gradient(135deg, #FFD700, #FFA500, #00a8ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+
+    .stat-card {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 25px;
+      border-radius: 12px;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(0, 168, 255, 0.3);
+    }
+
+    .stat-icon {
+      font-size: 3rem;
+      margin-bottom: 15px;
+      display: block;
+    }
+
+    .stat-number {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #FFD700;
+      margin-bottom: 5px;
+    }
+
+    .stat-label {
+      font-size: 1rem;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .section {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 25px;
+      border-radius: 12px;
+      margin-bottom: 25px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+      color: #FFD700;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+    }
+
+    .section-title i {
+      margin-right: 10px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 25px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-group label {
+      margin-bottom: 8px;
+      color: rgba(255, 255, 255, 0.9);
+      font-weight: 500;
+    }
+
+    .form-group input {
+      padding: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 16px;
+      transition: all 0.3s ease;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #00a8ff;
+      box-shadow: 0 0 10px rgba(0, 168, 255, 0.3);
+    }
+
+    .form-group input::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #00a8ff, #0078cc);
+      color: white;
+      padding: 12px 25px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 168, 255, 0.4);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #28a745, #20c997);
+    }
+
+    .btn-warning {
+      background: linear-gradient(135deg, #ffc107, #fd7e14);
+      color: #000;
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #dc3545, #c82333);
+    }
+
+    .prize-preview {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 20px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .preview-title {
+      font-size: 1.2rem;
+      color: #FFD700;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+    }
+
+    .preview-item {
+      text-align: center;
+      padding: 15px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .preview-icon {
+      font-size: 2rem;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .preview-count {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #00a8ff;
+      margin-bottom: 5px;
+    }
+
+    .preview-label {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .alert {
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border: 1px solid;
+    }
+
+    .alert-success {
+      background: rgba(40, 167, 69, 0.2);
+      border-color: #28a745;
+      color: #28a745;
+    }
+
+    .alert-warning {
+      background: rgba(255, 193, 7, 0.2);
+      border-color: #ffc107;
+      color: #ffc107;
+    }
+
+    .alert-error {
+      background: rgba(220, 53, 69, 0.2);
+      border-color: #dc3545;
+      color: #dc3545;
+    }
+
+    .total-prizes {
+      text-align: center;
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: #FFD700;
+      margin-top: 15px;
+    }
+
+    .actions-container {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 768px) {
+      .content {
+        padding: 20px;
+      }
+      
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .actions-container {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="menu-toggle" onclick="toggleSidebar()">☰</div>
+
+  <div class="sidebar" id="sidebar">
+    <button onclick="window.location.href='admin.html'"><i class="fas fa-home"></i> Panel Principal</button>
+    <button onclick="window.location.href='admin-usuarios.html'"><i class="fas fa-users"></i> Gestión de Usuarios</button>
+    <button onclick="window.location.href='admin-depositos.html'"><i class="fas fa-wallet"></i> Depósitos</button>
+    <button onclick="window.location.href='admin-retiros.html'"><i class="fas fa-hand-holding-usd"></i> Retiros</button>
+    <button onclick="window.location.href='admin-inversiones.html'"><i class="fas fa-chart-line"></i> Inversiones</button>
+    <button onclick="window.location.href='admin-trivia.html'"><i class="fas fa-question"></i> Trivia</button>
+    <button onclick="window.location.href='admin-minipool.html'"><i class="fas fa-coins"></i> Mini Pool</button>
+    <button class="active"><i class="fas fa-box-open"></i> Mystery Box</button>
+    <button onclick="window.location.href='admin-sorteos.html'"><i class="fas fa-gift"></i> Sorteos</button>
+    <button onclick="window.location.href='admin-reportes.html'"><i class="fas fa-chart-bar"></i> Reportes</button>
+    <button onclick="logout()"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</button>
+  </div>
+
+  <div class="content" onclick="closeSidebar()">
+    <div class="admin-container">
+      <h1 class="page-title">🎁 Administración Mystery Box 🎁</h1>
+
+      <!-- Estadísticas -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-icon">📦</span>
+          <div class="stat-number" id="totalBoxes">0</div>
+          <div class="stat-label">Cajas Compradas</div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">💰</span>
+          <div class="stat-number" id="totalRevenue">$0</div>
+          <div class="stat-label">Ingresos Totales</div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">🎉</span>
+          <div class="stat-number" id="totalPrizes">0</div>
+          <div class="stat-label">Premios Entregados</div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">👥</span>
+          <div class="stat-number" id="activeUsers">0</div>
+          <div class="stat-label">Usuarios Activos</div>
+        </div>
+      </div>
+
+      <!-- Configuración de Premios -->
+      <div class="section">
+        <h2 class="section-title">
+          <i class="fas fa-cog"></i>
+          Configuración de Premios
+        </h2>
+
+        <div id="alertContainer"></div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="cashPrizes">💰 Premios en Efectivo</label>
+            <input type="number" id="cashPrizes" placeholder="Cantidad de premios" min="0" value="0">
+          </div>
+          <div class="form-group">
+            <label for="cashAmount">💵 Monto por Premio</label>
+            <input type="number" id="cashAmount" placeholder="Ej: 2000" min="0" value="2000">
+          </div>
+          <div class="form-group">
+            <label for="triviaPrizes">🎯 Entradas Trivia</label>
+            <input type="number" id="triviaPrizes" placeholder="Cantidad de entradas" min="0" value="0">
+          </div>
+          <div class="form-group">
+            <label for="minipoolPrizes">🔥 Entradas Mini Pool</label>
+            <input type="number" id="minipoolPrizes" placeholder="Cantidad de entradas" min="0" value="0">
+          </div>
+          <div class="form-group">
+            <label for="emptyBoxes">😔 Cajas Vacías</label>
+            <input type="number" id="emptyBoxes" placeholder="Cantidad sin premio" min="0" value="0">
+          </div>
+        </div>
+
+        <div class="actions-container">
+          <button class="btn btn-success" onclick="savePrizeConfig()">
+            <i class="fas fa-save"></i> Guardar Configuración
+          </button>
+          <button class="btn btn-warning" onclick="loadCurrentConfig()">
+            <i class="fas fa-sync"></i> Cargar Actual
+          </button>
+          <button class="btn" onclick="previewPrizes()">
+            <i class="fas fa-eye"></i> Vista Previa
+          </button>
+        </div>
+      </div>
+
+      <!-- Vista Previa de Premios -->
+      <div class="section">
+        <div class="prize-preview">
+          <div class="preview-title">🎁 Vista Previa de Premios Configurados</div>
+          
+          <div class="preview-grid">
+            <div class="preview-item">
+              <span class="preview-icon">💰</span>
+              <div class="preview-count" id="previewCash">0</div>
+              <div class="preview-label">Premios en Efectivo</div>
+            </div>
+            <div class="preview-item">
+              <span class="preview-icon">🎯</span>
+              <div class="preview-count" id="previewTrivia">0</div>
+              <div class="preview-label">Entradas Trivia</div>
+            </div>
+            <div class="preview-item">
+              <span class="preview-icon">🔥</span>
+              <div class="preview-count" id="previewMinipool">0</div>
+              <div class="preview-label">Entradas Mini Pool</div>
+            </div>
+            <div class="preview-item">
+              <span class="preview-icon">😔</span>
+              <div class="preview-count" id="previewEmpty">0</div>
+              <div class="preview-label">Cajas Vacías</div>
+            </div>
+          </div>
+          
+          <div class="total-prizes">
+            Total de Premios Configurados: <span id="totalConfigured">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Acciones Administrativas -->
+      <div class="section">
+        <h2 class="section-title">
+          <i class="fas fa-tools"></i>
+          Acciones Administrativas
+        </h2>
+        
+        <div class="actions-container">
+          <button class="btn btn-danger" onclick="resetAllPrizes()">
+            <i class="fas fa-trash"></i> Resetear Premios
+          </button>
+          <button class="btn" onclick="exportStats()">
+            <i class="fas fa-download"></i> Exportar Estadísticas
+          </button>
+          <button class="btn btn-warning" onclick="refreshStats()">
+            <i class="fas fa-refresh"></i> Actualizar Stats
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const client = supabase.createClient(
+    'https://ovulezkcxwrjvyxlxsdv.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI'
+  );
+
+  // Variables globales
+  let currentConfig = {
+    cashPrizes: 0,
+    cashAmount: 2000,
+    triviaPrizes: 0,
+    minipoolPrizes: 0,
+    emptyBoxes: 0
+  };
+
+  // Función para mostrar alertas
+  function showAlert(message, type = 'success') {
+    const alertContainer = document.getElementById('alertContainer');
+    const alertClass = type === 'success' ? 'alert-success' : type === 'warning' ? 'alert-warning' : 'alert-error';
+    
+    alertContainer.innerHTML = `
+      <div class="alert ${alertClass}">
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : 'times-circle'}"></i>
+        ${message}
+      </div>
+    `;
+    
+    setTimeout(() => {
+      alertContainer.innerHTML = '';
+    }, 5000);
+  }
+
+  // Función para guardar configuración de premios
+  async function savePrizeConfig() {
+    try {
+      const cashPrizes = parseInt(document.getElementById('cashPrizes').value) || 0;
+      const cashAmount = parseInt(document.getElementById('cashAmount').value) || 2000;
+      const triviaPrizes = parseInt(document.getElementById('triviaPrizes').value) || 0;
+      const minipoolPrizes = parseInt(document.getElementById('minipoolPrizes').value) || 0;
+      const emptyBoxes = parseInt(document.getElementById('emptyBoxes').value) || 0;
+
+      const totalPrizes = cashPrizes + triviaPrizes + minipoolPrizes + emptyBoxes;
+      
+      if (totalPrizes === 0) {
+        showAlert('Debe configurar al menos un premio', 'warning');
+        return;
+      }
+
+      const config = {
+        id: 'mysterybox_config',
+        cashPrizes,
+        cashAmount,
+        triviaPrizes,
+        minipoolPrizes,
+        emptyBoxes,
+        totalConfigured: totalPrizes,
+        updatedAt: new Date().toISOString()
+      };
+
+      // Guardar en localStorage como backup
+      localStorage.setItem('mysterybox_config', JSON.stringify(config));
+      
+      currentConfig = config;
+      previewPrizes();
+      
+      showAlert(`Configuración guardada correctamente. Total de premios: ${totalPrizes}`, 'success');
+      
+    } catch (error) {
+      console.error('Error al guardar configuración:', error);
+      showAlert('Error al guardar la configuración', 'error');
+    }
+  }
+
+  // Función para cargar configuración actual
+  function loadCurrentConfig() {
+    try {
+      const saved = localStorage.getItem('mysterybox_config');
+      if (saved) {
+        const config = JSON.parse(saved);
+        
+        document.getElementById('cashPrizes').value = config.cashPrizes || 0;
+        document.getElementById('cashAmount').value = config.cashAmount || 2000;
+        document.getElementById('triviaPrizes').value = config.triviaPrizes || 0;
+        document.getElementById('minipoolPrizes').value = config.minipoolPrizes || 0;
+        document.getElementById('emptyBoxes').value = config.emptyBoxes || 0;
+        
+        currentConfig = config;
+        previewPrizes();
+        
+        showAlert('Configuración cargada correctamente', 'success');
+      } else {
+        showAlert('No hay configuración guardada', 'warning');
+      }
+    } catch (error) {
+      console.error('Error al cargar configuración:', error);
+      showAlert('Error al cargar la configuración', 'error');
+    }
+  }
+
+  // Función para vista previa de premios
+  function previewPrizes() {
+    const cashPrizes = parseInt(document.getElementById('cashPrizes').value) || 0;
+    const triviaPrizes = parseInt(document.getElementById('triviaPrizes').value) || 0;
+    const minipoolPrizes = parseInt(document.getElementById('minipoolPrizes').value) || 0;
+    const emptyBoxes = parseInt(document.getElementById('emptyBoxes').value) || 0;
+    
+    document.getElementById('previewCash').textContent = cashPrizes;
+    document.getElementById('previewTrivia').textContent = triviaPrizes;
+    document.getElementById('previewMinipool').textContent = minipoolPrizes;
+    document.getElementById('previewEmpty').textContent = emptyBoxes;
+    
+    const total = cashPrizes + triviaPrizes + minipoolPrizes + emptyBoxes;
+    document.getElementById('totalConfigured').textContent = total;
+  }
+
+  // Función para resetear todos los premios
+  function resetAllPrizes() {
+    if (confirm('¿Estás seguro de que quieres resetear toda la configuración de premios?')) {
+      document.getElementById('cashPrizes').value = 0;
+      document.getElementById('cashAmount').value = 2000;
+      document.getElementById('triviaPrizes').value = 0;
+      document.getElementById('minipoolPrizes').value = 0;
+      document.getElementById('emptyBoxes').value = 0;
+      
+      localStorage.removeItem('mysterybox_config');
+      previewPrizes();
+      
+      showAlert('Configuración reseteada correctamente', 'success');
+    }
+  }
+
+  // Función para actualizar estadísticas
+  function refreshStats() {
+    // Simular datos (en implementación real, estos vendrían de la base de datos)
+    const stats = {
+      totalBoxes: Math.floor(Math.random() * 500) + 100,
+      totalRevenue: Math.floor(Math.random() * 1000000) + 50000,
+      totalPrizes: Math.floor(Math.random() * 300) + 80,
+      activeUsers: Math.floor(Math.random() * 200) + 50
+    };
+    
+    document.getElementById('totalBoxes').textContent = stats.totalBoxes;
+    document.getElementById('totalRevenue').textContent = `$${stats.totalRevenue.toLocaleString()}`;
+    document.getElementById('totalPrizes').textContent = stats.totalPrizes;
+    document.getElementById('activeUsers').textContent = stats.activeUsers;
+    
+    showAlert('Estadísticas actualizadas', 'success');
+  }
+
+  // Función para exportar estadísticas
+  function exportStats() {
+    const stats = {
+      fecha: new Date().toLocaleDateString(),
+      cajasCompradas: document.getElementById('totalBoxes').textContent,
+      ingresosTotales: document.getElementById('totalRevenue').textContent,
+      premiosEntregados: document.getElementById('totalPrizes').textContent,
+      usuariosActivos: document.getElementById('activeUsers').textContent,
+      configuracionActual: currentConfig
+    };
+    
+    const dataStr = JSON.stringify(stats, null, 2);
+    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+    
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(dataBlob);
+    link.download = `mysterybox_stats_${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    
+    showAlert('Estadísticas exportadas correctamente', 'success');
+  }
+
+  // Funciones del sidebar
+  function toggleSidebar() {
+    document.getElementById("sidebar").classList.toggle("active");
+  }
+
+  function closeSidebar() {
+    document.getElementById("sidebar").classList.remove("active");
+  }
+
+  // Función de logout
+  async function logout() {
+    await client.auth.signOut();
+    window.location.href = "index.html";
+  }
+
+  // Event listeners para actualizar vista previa en tiempo real
+  document.getElementById('cashPrizes').addEventListener('input', previewPrizes);
+  document.getElementById('triviaPrizes').addEventListener('input', previewPrizes);
+  document.getElementById('minipoolPrizes').addEventListener('input', previewPrizes);
+  document.getElementById('emptyBoxes').addEventListener('input', previewPrizes);
+
+  // Inicializar página
+  document.addEventListener('DOMContentLoaded', function() {
+    loadCurrentConfig();
+    refreshStats();
+    previewPrizes();
+  });
+</script>
+</body>
+</html>
