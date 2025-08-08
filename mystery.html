@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
@@ -249,6 +249,12 @@
       box-shadow: 0 8px 25px rgba(0, 168, 255, 0.4);
     }
 
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
     .btn-success {
       background: linear-gradient(135deg, #28a745, #20c997);
     }
@@ -348,6 +354,25 @@
       flex-wrap: wrap;
     }
 
+    .loading {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
     @media (max-width: 768px) {
       .content {
         padding: 20px;
@@ -356,8 +381,8 @@
       .form-grid {
         grid-template-columns: 1fr;
       }
-      
-      .stats-grid {
+
+.stats-grid {
         grid-template-columns: 1fr;
       }
       
@@ -442,10 +467,14 @@
             <label for="emptyBoxes">😔 Cajas Vacías</label>
             <input type="number" id="emptyBoxes" placeholder="Cantidad sin premio" min="0" value="0">
           </div>
+          <div class="form-group">
+            <label for="boxCost">💳 Costo por Caja</label>
+            <input type="number" id="boxCost" placeholder="Ej: 5000" min="0" value="5000">
+          </div>
         </div>
 
         <div class="actions-container">
-          <button class="btn btn-success" onclick="savePrizeConfig()">
+          <button class="btn btn-success" id="saveBtn" onclick="savePrizeConfig()">
             <i class="fas fa-save"></i> Guardar Configuración
           </button>
           <button class="btn btn-warning" onclick="loadCurrentConfig()">
@@ -467,6 +496,7 @@
               <span class="preview-icon">💰</span>
               <div class="preview-count" id="previewCash">0</div>
               <div class="preview-label">Premios en Efectivo</div>
+              <div style="font-size: 0.8rem; color: #FFD700; margin-top: 5px;" id="previewCashAmount">$0</div>
             </div>
             <div class="preview-item">
               <span class="preview-icon">🎯</span>
@@ -487,6 +517,9 @@
           
           <div class="total-prizes">
             Total de Premios Configurados: <span id="totalConfigured">0</span>
+          </div>
+          <div style="text-align: center; margin-top: 10px; color: #00a8ff; font-size: 1.1rem;">
+            Costo por Caja: $<span id="previewCost">5000</span>
           </div>
         </div>
       </div>
@@ -521,11 +554,13 @@
 
   // Variables globales
   let currentConfig = {
-    cashPrizes: 0,
-    cashAmount: 2000,
-    triviaPrizes: 0,
-    minipoolPrizes: 0,
-    emptyBoxes: 0
+    id: null,
+    cash_prizes: 0,
+    cash_amount: 2000,
+    trivia_prizes: 0,
+    minipool_prizes: 0,
+    empty_boxes: 0,
+    box_cost: 5000
   };
 
   // Función para mostrar alertas
@@ -545,84 +580,134 @@
     }, 5000);
   }
 
+  // Función para mostrar loading
+  function setLoading(btnId, loading) {
+    const btn = document.getElementById(btnId);
+    if (loading) {
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner"></div> Guardando...';
+    } else {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-save"></i> Guardar Configuración';
+    }
+  }
+
   // Función para guardar configuración de premios
   async function savePrizeConfig() {
     try {
+      setLoading('saveBtn', true);
+
       const cashPrizes = parseInt(document.getElementById('cashPrizes').value) || 0;
       const cashAmount = parseInt(document.getElementById('cashAmount').value) || 2000;
       const triviaPrizes = parseInt(document.getElementById('triviaPrizes').value) || 0;
       const minipoolPrizes = parseInt(document.getElementById('minipoolPrizes').value) || 0;
       const emptyBoxes = parseInt(document.getElementById('emptyBoxes').value) || 0;
+      const boxCost = parseInt(document.getElementById('boxCost').value) || 5000;
 
       const totalPrizes = cashPrizes + triviaPrizes + minipoolPrizes + emptyBoxes;
       
       if (totalPrizes === 0) {
         showAlert('Debe configurar al menos un premio', 'warning');
+        setLoading('saveBtn', false);
         return;
       }
 
-      const config = {
-        id: 'mysterybox_config',
-        cashPrizes,
-        cashAmount,
-        triviaPrizes,
-        minipoolPrizes,
-        emptyBoxes,
-        totalConfigured: totalPrizes,
-        updatedAt: new Date().toISOString()
-      };
+      // Desactivar configuración anterior
+      const { error: deactivateError } = await client
+        .from('mystery_box_config')
+        .update({ is_active: false })
+        .eq('is_active', true);
 
-      // Guardar en localStorage como backup
-      localStorage.setItem('mysterybox_config', JSON.stringify(config));
-      
-      currentConfig = config;
+      if (deactivateError) {
+        console.error('Error desactivando configuración anterior:', deactivateError);
+      }
+
+      // Insertar nueva configuración
+      const { data, error } = await client
+        .from('mystery_box_config')
+        .insert([{
+          cash_prizes: cashPrizes,
+          cash_amount: cashAmount,
+          trivia_prizes: triviaPrizes,
+          minipool_prizes: minipoolPrizes,
+          empty_boxes: emptyBoxes,
+          box_cost: boxCost,
+          total_configured: totalPrizes,
+          is_active: true
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      currentConfig = data;
       previewPrizes();
       
-      showAlert(`Configuración guardada correctamente. Total de premios: ${totalPrizes}`, 'success');
+      showAlert(`✅ Configuración guardada correctamente. Total de premios: ${totalPrizes}`, 'success');
       
     } catch (error) {
       console.error('Error al guardar configuración:', error);
-      showAlert('Error al guardar la configuración', 'error');
+      showAlert('❌ Error al guardar la configuración: ' + error.message, 'error');
+    } finally {
+      setLoading('saveBtn', false);
     }
   }
 
   // Función para cargar configuración actual
-  function loadCurrentConfig() {
+  async function loadCurrentConfig() {
     try {
-      const saved = localStorage.getItem('mysterybox_config');
-      if (saved) {
-        const config = JSON.parse(saved);
+      const { data, error } = await client
+        .from('mystery_box_config')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          showAlert('⚠️ No hay configuración guardada', 'warning');
+          return;
+        }
+        throw error;
+      }
+
+      if (data) {
+        document.getElementById('cashPrizes').value = data.cash_prizes || 0;
+        document.getElementById('cashAmount').value = data.cash_amount || 2000;
+        document.getElementById('triviaPrizes').value = data.trivia_prizes || 0;
+        document.getElementById('minipoolPrizes').value = data.minipool_prizes || 0;
+        document.getElementById('emptyBoxes').value = data.empty_boxes || 0;
+        document.getElementById('boxCost').value = data.box_cost || 5000;
         
-        document.getElementById('cashPrizes').value = config.cashPrizes || 0;
-        document.getElementById('cashAmount').value = config.cashAmount || 2000;
-        document.getElementById('triviaPrizes').value = config.triviaPrizes || 0;
-        document.getElementById('minipoolPrizes').value = config.minipoolPrizes || 0;
-        document.getElementById('emptyBoxes').value = config.emptyBoxes || 0;
-        
-        currentConfig = config;
+        currentConfig = data;
         previewPrizes();
         
-        showAlert('Configuración cargada correctamente', 'success');
-      } else {
-        showAlert('No hay configuración guardada', 'warning');
+        showAlert('✅ Configuración cargada correctamente', 'success');
       }
     } catch (error) {
       console.error('Error al cargar configuración:', error);
-      showAlert('Error al cargar la configuración', 'error');
+      showAlert('❌ Error al cargar la configuración: ' + error.message, 'error');
     }
   }
 
-  // Función para vista previa de premios
+// Función para vista previa de premios
   function previewPrizes() {
     const cashPrizes = parseInt(document.getElementById('cashPrizes').value) || 0;
+    const cashAmount = parseInt(document.getElementById('cashAmount').value) || 2000;
     const triviaPrizes = parseInt(document.getElementById('triviaPrizes').value) || 0;
     const minipoolPrizes = parseInt(document.getElementById('minipoolPrizes').value) || 0;
     const emptyBoxes = parseInt(document.getElementById('emptyBoxes').value) || 0;
+    const boxCost = parseInt(document.getElementById('boxCost').value) || 5000;
     
     document.getElementById('previewCash').textContent = cashPrizes;
+    document.getElementById('previewCashAmount').textContent = `$${cashAmount.toLocaleString()}`;
     document.getElementById('previewTrivia').textContent = triviaPrizes;
     document.getElementById('previewMinipool').textContent = minipoolPrizes;
     document.getElementById('previewEmpty').textContent = emptyBoxes;
+    document.getElementById('previewCost').textContent = boxCost.toLocaleString();
     
     const total = cashPrizes + triviaPrizes + minipoolPrizes + emptyBoxes;
     document.getElementById('totalConfigured').textContent = total;
@@ -636,52 +721,105 @@
       document.getElementById('triviaPrizes').value = 0;
       document.getElementById('minipoolPrizes').value = 0;
       document.getElementById('emptyBoxes').value = 0;
+      document.getElementById('boxCost').value = 5000;
       
-      localStorage.removeItem('mysterybox_config');
       previewPrizes();
       
-      showAlert('Configuración reseteada correctamente', 'success');
+      showAlert('✅ Configuración reseteada correctamente', 'success');
     }
   }
 
   // Función para actualizar estadísticas
-  function refreshStats() {
-    // Simular datos (en implementación real, estos vendrían de la base de datos)
-    const stats = {
-      totalBoxes: Math.floor(Math.random() * 500) + 100,
-      totalRevenue: Math.floor(Math.random() * 1000000) + 50000,
-      totalPrizes: Math.floor(Math.random() * 300) + 80,
-      activeUsers: Math.floor(Math.random() * 200) + 50
-    };
-    
-    document.getElementById('totalBoxes').textContent = stats.totalBoxes;
-    document.getElementById('totalRevenue').textContent = `$${stats.totalRevenue.toLocaleString()}`;
-    document.getElementById('totalPrizes').textContent = stats.totalPrizes;
-    document.getElementById('activeUsers').textContent = stats.activeUsers;
-    
-    showAlert('Estadísticas actualizadas', 'success');
+  async function refreshStats() {
+    try {
+      // Obtener estadísticas de hoy
+      const { data: statsData, error: statsError } = await client
+        .from('mystery_box_stats')
+        .select('*')
+        .eq('date', new Date().toISOString().split('T')[0])
+        .single();
+
+      if (statsError && statsError.code !== 'PGRST116') {
+        throw statsError;
+      }
+
+      // Contar usuarios únicos que han comprado cajas
+      const { count: uniqueUsers, error: usersError } = await client
+        .from('mystery_box_purchases')
+        .select('user_id', { count: 'exact', head: true })
+        .eq('created_at::date', new Date().toISOString().split('T')[0]);
+
+      if (usersError) {
+        console.error('Error contando usuarios:', usersError);
+      }
+
+      const stats = statsData || {
+        total_boxes_sold: 0,
+        total_revenue: 0,
+        total_prizes_given: 0,
+        active_users: 0
+      };
+
+      document.getElementById('totalBoxes').textContent = stats.total_boxes_sold || 0;
+      document.getElementById('totalRevenue').textContent = `$${(stats.total_revenue || 0).toLocaleString()}`;
+      document.getElementById('totalPrizes').textContent = stats.total_prizes_given || 0;
+      document.getElementById('activeUsers').textContent = uniqueUsers || 0;
+      
+      showAlert('✅ Estadísticas actualizadas', 'success');
+      
+    } catch (error) {
+      console.error('Error al obtener estadísticas:', error);
+      // Mostrar datos de ejemplo si hay error
+      document.getElementById('totalBoxes').textContent = '0';
+      document.getElementById('totalRevenue').textContent = '$0';
+      document.getElementById('totalPrizes').textContent = '0';
+      document.getElementById('activeUsers').textContent = '0';
+      
+      showAlert('⚠️ Error al cargar estadísticas, mostrando datos base', 'warning');
+    }
   }
 
   // Función para exportar estadísticas
-  function exportStats() {
-    const stats = {
-      fecha: new Date().toLocaleDateString(),
-      cajasCompradas: document.getElementById('totalBoxes').textContent,
-      ingresosTotales: document.getElementById('totalRevenue').textContent,
-      premiosEntregados: document.getElementById('totalPrizes').textContent,
-      usuariosActivos: document.getElementById('activeUsers').textContent,
-      configuracionActual: currentConfig
-    };
-    
-    const dataStr = JSON.stringify(stats, null, 2);
-    const dataBlob = new Blob([dataStr], {type: 'application/json'});
-    
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(dataBlob);
-    link.download = `mysterybox_stats_${new Date().toISOString().split('T')[0]}.json`;
-    link.click();
-    
-    showAlert('Estadísticas exportadas correctamente', 'success');
+  async function exportStats() {
+    try {
+      const { data: configData, error: configError } = await client
+        .from('mystery_box_config')
+        .select('*')
+        .eq('is_active', true)
+        .single();
+
+      const { data: statsData, error: statsError } = await client
+        .from('mystery_box_stats')
+        .select('*')
+        .order('date', { ascending: false })
+        .limit(30);
+
+      const exportData = {
+        fecha_exportacion: new Date().toISOString(),
+        configuracion_actual: configData || null,
+        estadisticas_recientes: statsData || [],
+        resumen: {
+          cajas_compradas: document.getElementById('totalBoxes').textContent,
+          ingresos_totales: document.getElementById('totalRevenue').textContent,
+          premios_entregados: document.getElementById('totalPrizes').textContent,
+          usuarios_activos: document.getElementById('activeUsers').textContent
+        }
+      };
+      
+      const dataStr = JSON.stringify(exportData, null, 2);
+      const dataBlob = new Blob([dataStr], {type: 'application/json'});
+      
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(dataBlob);
+      link.download = `mysterybox_stats_${new Date().toISOString().split('T')[0]}.json`;
+      link.click();
+      
+      showAlert('✅ Estadísticas exportadas correctamente', 'success');
+      
+    } catch (error) {
+      console.error('Error al exportar:', error);
+      showAlert('❌ Error al exportar estadísticas', 'error');
+    }
   }
 
   // Funciones del sidebar
@@ -701,9 +839,11 @@
 
   // Event listeners para actualizar vista previa en tiempo real
   document.getElementById('cashPrizes').addEventListener('input', previewPrizes);
+  document.getElementById('cashAmount').addEventListener('input', previewPrizes);
   document.getElementById('triviaPrizes').addEventListener('input', previewPrizes);
   document.getElementById('minipoolPrizes').addEventListener('input', previewPrizes);
   document.getElementById('emptyBoxes').addEventListener('input', previewPrizes);
+  document.getElementById('boxCost').addEventListener('input', previewPrizes);
 
   // Inicializar página
   document.addEventListener('DOMContentLoaded', function() {
