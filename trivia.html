@@ -405,9 +405,10 @@
     <table>
       <thead>
         <tr>
-          <th>Usuario</th>
+          <th>Usuario ID</th>
           <th>Monto</th>
           <th>Moneda</th>
+          <th>Tipo</th>
           <th>Fecha</th>
           <th>Aprobado</th>
         </tr>
@@ -875,6 +876,7 @@
 
     actualizarEstadisticas(data, nivelSeleccionado);
   }
+
 async function actualizarEstadisticas(data, nivel) {
     const estadisticasDiv = document.getElementById("estadisticas-ranking");
     
@@ -932,7 +934,7 @@ async function actualizarEstadisticas(data, nivel) {
     `;
   }
 
-  // MODIFICACIÓN: Al liberar premio, crear registro en recompensas
+  // CORREGIDA: Función togglePremio usando la estructura EXACTA de referidos
   async function togglePremio(registroId, liberar) {
     if (!liberar) return;
 
@@ -951,29 +953,28 @@ async function actualizarEstadisticas(data, nivel) {
 
       console.log("Datos del registro:", registro); // Debug
 
-      // NUEVO: Crear registro en tabla recompensas PRIMERO
-      const { data: recompensaCreada, error: errorRecompensa } = await supabaseClient
-        .from("recompensas")
-        .insert([{
+      // CREAR registro en recompensas usando la MISMA estructura que referidos
+      const { error: errorRecompensa } = await supabaseClient
+        .from('recompensas')
+        .insert({
           usuario_id: registro.usuario_id,
+          meta: registro.acertadas, // Usar aciertos como "meta" igual que referidos
           monto: registro.premio,
-          moneda: "USD",
-          tipo: "trivia",
+          moneda: 'ARS', // Usar ARS como referidos
+          tipo: 'trivia',
           fecha: new Date().toISOString(),
-          aprobado: true
-        }])
-        .select()
-        .single();
+          aprobado: false // Igual que referidos, inicia como false
+        });
 
       if (errorRecompensa) {
-        console.error("Error detallado al crear recompensa:", errorRecompensa);
+        console.error("Error al crear recompensa:", errorRecompensa);
         alert("Error al crear recompensa: " + errorRecompensa.message);
         return;
       }
 
-      console.log("Recompensa creada:", recompensaCreada); // Debug
+      console.log("Recompensa creada exitosamente"); // Debug
 
-      // Actualizar estado en ranking_trivia DESPUÉS
+      // Actualizar estado en ranking_trivia
       const { error: errorUpdate } = await supabaseClient
         .from("ranking_trivia")
         .update({ premio_liberado: true })
@@ -984,7 +985,7 @@ async function actualizarEstadisticas(data, nivel) {
         return;
       }
 
-      alert("✅ Premio liberado correctamente y registrado en recompensas");
+      alert("✅ Premio liberado correctamente y registrado en recompensas\n(Aparecerá en la tabla con estado 'No' hasta que se apruebe manualmente)");
       cargarRanking();
       cargarPremios(); // Actualizar tabla de premios
       
@@ -1013,9 +1014,10 @@ async function actualizarEstadisticas(data, nivel) {
     cargarRanking();
   }
 
+  // CORREGIDA: Función cargarPremios usando la misma consulta que referidos
   async function cargarPremios() {
     try {
-      console.log("Cargando premios..."); // Debug
+      console.log("Cargando premios de trivia..."); // Debug
       
       const { data, error } = await supabaseClient
         .from("recompensas")
@@ -1032,14 +1034,14 @@ async function actualizarEstadisticas(data, nivel) {
       if (error) {
         console.error("Error en cargarPremios:", error);
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td colspan="5">Error cargando premios: ${error.message}</td>`;
+        tr.innerHTML = `<td colspan="6">Error cargando premios: ${error.message}</td>`;
         tbody.appendChild(tr);
         return;
       }
 
       if (!data || data.length === 0) {
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td colspan="5">No hay premios registrados aún</td>`;
+        tr.innerHTML = `<td colspan="6">No hay premios de trivia registrados aún</td>`;
         tbody.appendChild(tr);
         return;
       }
@@ -1049,19 +1051,20 @@ async function actualizarEstadisticas(data, nivel) {
         tr.innerHTML = `
           <td style="font-family: monospace; font-size: 11px;">${premio.usuario_id || 'N/A'}</td>
           <td>$${(premio.monto || 0).toLocaleString()}</td>
-          <td>${premio.moneda || 'USD'}</td>
+          <td>${premio.moneda || 'ARS'}</td>
+          <td>${premio.tipo || 'trivia'}</td>
           <td>${premio.fecha ? new Date(premio.fecha).toLocaleDateString() : 'N/A'}</td>
           <td>${premio.aprobado ? "✅ Sí" : "❌ No"}</td>
         `;
         tbody.appendChild(tr);
       });
       
-      console.log(`Cargados ${data.length} premios`); // Debug
+      console.log(`Cargados ${data.length} premios de trivia`); // Debug
       
     } catch (error) {
       console.error("Error completo en cargarPremios:", error);
       const tbody = document.getElementById("premios-trivia");
-      tbody.innerHTML = `<tr><td colspan="5">Error: No se pudo cargar la tabla de premios</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6">Error: No se pudo cargar la tabla de premios</td></tr>`;
     }
   }
 
