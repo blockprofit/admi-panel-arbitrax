@@ -192,11 +192,12 @@
   <section id="admin-recompensas">
     <h2>Gestión de Recompensas por Referidos</h2>
     <div style="margin-bottom: 15px; padding: 10px; background: #f0f8ff; border-radius: 5px;">
-      <strong>Sistema de Metas Acumulativas:</strong><br>
+      <strong>Sistema de Metas Independientes:</strong><br>
       • 5 referidos = $20.000 ARS<br>
-      • 15 referidos (5+10) = $80.000 ARS adicionales<br>
-      • 35 referidos (5+10+20) = $100.000 ARS adicionales<br>
-      • 85 referidos (5+10+20+50) = $250.000 ARS adicionales
+      • 10 referidos = $80.000 ARS<br>
+      • 20 referidos = $100.000 ARS<br>
+      • 50 referidos = $250.000 ARS<br>
+      <small style="color: #666;">Cada meta es independiente y se paga cuando se alcanza.</small>
     </div>
 
     <!-- SECCIÓN DE PAGOS PENDIENTES -->
@@ -212,7 +213,7 @@
         <tr>
           <th>Email del Usuario</th>
           <th>Referidos Confirmados</th>
-          <th>Próxima Meta</th>
+          <th>Metas Disponibles</th>
           <th>Recompensas Generadas</th>
           <th>Estado de Pagos</th>
         </tr>
@@ -232,12 +233,12 @@
 
     let referidosData = [];
 
-    // Definir las metas acumulativas
-    const METAS_ACUMULATIVAS = [
-      { total_requerido: 5, recompensa: 20000, nombre: "5 referidos" },
-      { total_requerido: 15, recompensa: 80000, nombre: "15 referidos (5+10)" },
-      { total_requerido: 35, recompensa: 100000, nombre: "35 referidos (5+10+20)" },
-      { total_requerido: 85, recompensa: 250000, nombre: "85 referidos (5+10+20+50)" }
+    // Definir las metas independientes (CORREGIDO)
+    const METAS_INDEPENDIENTES = [
+      { referidos_necesarios: 5, recompensa: 20000, nombre: "5 referidos" },
+      { referidos_necesarios: 10, recompensa: 80000, nombre: "10 referidos" },
+      { referidos_necesarios: 20, recompensa: 100000, nombre: "20 referidos" },
+      { referidos_necesarios: 50, recompensa: 250000, nombre: "50 referidos" }
     ];
 
     async function cargarReferidos() {
@@ -255,6 +256,7 @@
       referidosData = data;
       mostrarReferidos(referidosData);
       await mostrarProgresoVisual();
+      await cargarPagosPendientes();
     }
 
     function mostrarReferidos(data) {
@@ -295,6 +297,7 @@
 
       mostrarReferidos(filtrados);
     }
+
 async function aprobarReferido(id, referidoPor) {
       const { error: errorAprobar } = await supabaseClient
         .from('referidos')
@@ -315,15 +318,15 @@ async function aprobarReferido(id, referidoPor) {
       const totalReferidos = aprobados.length;
       console.log(`Usuario ${referidoPor} tiene ${totalReferidos} referidos confirmados`);
 
-      // Verificar qué metas puede alcanzar
-      for (const meta of METAS_ACUMULATIVAS) {
-        if (totalReferidos >= meta.total_requerido) {
+      // Verificar qué metas puede alcanzar (CORREGIDO)
+      for (const meta of METAS_INDEPENDIENTES) {
+        if (totalReferidos >= meta.referidos_necesarios) {
           // Verificar si ya se pagó esta meta
           const { data: yaExiste, error: errYaExiste } = await supabaseClient
             .from('recompensas')
             .select('*')
             .eq('usuario_id', referidoPor)
-            .eq('meta', meta.total_requerido)
+            .eq('meta', meta.referidos_necesarios)
             .maybeSingle();
 
           if (errYaExiste) continue;
@@ -334,7 +337,7 @@ async function aprobarReferido(id, referidoPor) {
               .from('recompensas')
               .insert({
                 usuario_id: referidoPor,
-                meta: meta.total_requerido,
+                meta: meta.referidos_necesarios,
                 monto: meta.recompensa,
                 moneda: 'ARS',
                 tipo: 'referidos',
@@ -393,17 +396,17 @@ async function aprobarReferido(id, referidoPor) {
 
         const cantidad = referidos.length;
         
-        // Encontrar la próxima meta
-        const proximaMeta = METAS_ACUMULATIVAS.find(m => m.total_requerido > cantidad);
-        const metaAnterior = METAS_ACUMULATIVAS.slice().reverse().find(m => m.total_requerido <= cantidad);
+        // Encontrar la próxima meta (CORREGIDO)
+        const proximaMeta = METAS_INDEPENDIENTES.find(m => m.referidos_necesarios > cantidad);
+        const metaAnterior = METAS_INDEPENDIENTES.slice().reverse().find(m => m.referidos_necesarios <= cantidad);
         
         let progreso = 0;
         let textoProgreso = "";
         
         if (proximaMeta) {
-          const base = metaAnterior ? metaAnterior.total_requerido : 0;
-          progreso = ((cantidad - base) / (proximaMeta.total_requerido - base)) * 100;
-          textoProgreso = `${cantidad}/${proximaMeta.total_requerido} - Próxima: ${proximaMeta.nombre}`;
+          const base = metaAnterior ? metaAnterior.referidos_necesarios : 0;
+          progreso = ((cantidad - base) / (proximaMeta.referidos_necesarios - base)) * 100;
+          textoProgreso = `${cantidad}/${proximaMeta.referidos_necesarios} - Próxima: ${proximaMeta.nombre}`;
         } else {
           progreso = 100;
           textoProgreso = `${cantidad}/✓ - ¡Todas las metas completadas!`;
@@ -449,39 +452,25 @@ async function aprobarReferido(id, referidoPor) {
 
         const cantidadReferidos = referidos.length;
 
-        // Obtener recompensas ya pagadas
-        const { data: recompensasPagadas, error: errorRecompensas } = await supabaseClient
-          .from('recompensas')
-          .select('*')
-          .eq('usuario_id', perfil.id)
-          .eq('aprobado', true);
-
-        if (errorRecompensas) continue;
-
-        // Obtener recompensas pendientes
-        const { data: recompensasPendientes, error: errorPendientes } = await supabaseClient
-          .from('recompensas')
-          .select('*')
-          .eq('usuario_id', perfil.id)
-          .eq('aprobado', false);
-
-        if (errorPendientes) continue;
-
-        // Determinar próxima meta
-        const proximaMeta = METAS_ACUMULATIVAS.find(m => m.total_requerido > cantidadReferidos);
-        const textoProximaMeta = proximaMeta ? 
-          `${cantidadReferidos}/${proximaMeta.total_requerido} - ${proximaMeta.nombre}` : 
-          "¡Todas completadas!";
-
-        // Crear lista de recompensas generadas (pagadas y pendientes)
+        // Obtener todas las recompensas generadas (CORREGIDO)
         const { data: todasRecompensas, error: errorTodasRecompensas } = await supabaseClient
           .from('recompensas')
           .select('*')
           .eq('usuario_id', perfil.id)
+          .eq('tipo', 'referidos')
           .order('meta', { ascending: true });
 
         if (errorTodasRecompensas) continue;
 
+        // Determinar metas disponibles (CORREGIDO)
+        const metasDisponibles = METAS_INDEPENDIENTES
+          .filter(meta => cantidadReferidos >= meta.referidos_necesarios)
+          .map(meta => `${meta.nombre} ✓`)
+          .join('<br>');
+
+        const textoMetasDisponibles = metasDisponibles || 'Ninguna meta alcanzada';
+
+        // Crear lista de recompensas generadas (pagadas y pendientes)
         const recompensasTexto = todasRecompensas.length > 0 ?
           todasRecompensas.map(r => {
             const estado = r.aprobado ? '✅' : '⏳';
@@ -498,7 +487,7 @@ async function aprobarReferido(id, referidoPor) {
         tr.innerHTML = `
           <td>${perfil.email}</td>
           <td style="text-align:center;">${cantidadReferidos}</td>
-          <td style="text-align:center;">${textoProximaMeta}</td>
+          <td style="text-align:center; font-size: 12px;">${textoMetasDisponibles}</td>
           <td style="text-align:center; font-size: 12px;">${recompensasTexto}</td>
           <td style="text-align:center;">${estadoPagos}</td>
         `;
@@ -514,6 +503,7 @@ async function aprobarReferido(id, referidoPor) {
           profiles:usuario_id (email)
         `)
         .eq('aprobado', false)
+        .eq('tipo', 'referidos')
         .order('fecha', { ascending: true });
 
       if (error) {
@@ -615,7 +605,8 @@ async function aprobarReferido(id, referidoPor) {
       const { data: pagosPendientes } = await supabaseClient
         .from('recompensas')
         .select('*')
-        .eq('aprobado', false);
+        .eq('aprobado', false)
+        .eq('tipo', 'referidos');
 
       if (!pagosPendientes || pagosPendientes.length === 0) {
         alert('No hay pagos pendientes para liberar');
@@ -673,11 +664,6 @@ async function aprobarReferido(id, referidoPor) {
       // Recargar vistas
       cargarPagosPendientes();
       cargarRecompensasReferidos();
-    }
-
-    async function aprobarRecompensa(userId, meta, recompensa) {
-      // Esta función ya no es necesaria, pero la mantengo para compatibilidad
-      console.log('Esta función ha sido reemplazada por el sistema de liberación de pagos');
     }
 
     // Inicializar cuando el DOM esté listo
