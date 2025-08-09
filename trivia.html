@@ -179,7 +179,7 @@
       color: #56d364;
       font-weight: bold;
     }
-.premio-pendiente {
+    .premio-pendiente {
       color: #f85149;
       font-weight: bold;
     }
@@ -251,11 +251,36 @@
       margin-bottom: 15px;
       border: 1px solid #30363d;
     }
+    .input-monto {
+      background-color: #21262d;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
+      padding: 4px 8px;
+      border-radius: 3px;
+      width: 80px;
+      font-size: 12px;
+      text-align: center;
+    }
+    .btn-confirmar {
+      background-color: #0969da;
+      color: white;
+      padding: 4px 8px;
+      font-size: 11px;
+      border-radius: 3px;
+      cursor: pointer;
+      width: auto;
+      display: inline-block;
+      border: none;
+      margin-left: 5px;
+    }
+    .btn-confirmar:hover {
+      background-color: #0550ae;
+    }
   </style>
 </head>
 <body>
 
-  <h1>Administrar Trivia</h1>
+<h1>Administrar Trivia</h1>
 
   <!-- NUEVA SECCIÓN: Control de Eventos de Trivia -->
   <div class="seccion">
@@ -458,7 +483,7 @@
   // Variables para eventos
   let intervalosEventos = {};
 
-  // NUEVAS FUNCIONES PARA EVENTOS DE TRIVIA
+  // NUEVAS FUNCIONES PARA EVENTOS DE TRIVIA CON ACTUALIZACIÓN DE PRECIOS
   async function lanzarEvento(nivel) {
     const precio = parseFloat(document.getElementById(`precio-${nivel}`).value);
     
@@ -471,6 +496,19 @@
     const fechaFin = new Date(ahora.getTime() + 24 * 60 * 60 * 1000); // 24 horas después
 
     try {
+      // NUEVO: Actualizar precio en la tabla niveles_trivia
+      const { error: errorPrecio } = await supabaseClient
+        .from("niveles_trivia")
+        .upsert([{ nombre: nivel, precio: precio }], { 
+          onConflict: 'nombre' 
+        });
+
+      if (errorPrecio) {
+        alert(`Error al actualizar precio: ${errorPrecio.message}`);
+        return;
+      }
+
+      // Crear evento
       const { error } = await supabaseClient
         .from("eventos_trivia")
         .insert([{
@@ -486,10 +524,11 @@
         return;
       }
 
-      alert(`🚀 Evento ${nivel} lanzado correctamente!\n⏰ Duración: 24 horas\n💰 Precio: $${precio}`);
+      alert(`🚀 Evento ${nivel} lanzado correctamente!\n⏰ Duración: 24 horas\n💰 Precio actualizado: $${precio}`);
       actualizarEstadoEvento(nivel, true);
       iniciarTemporizador(nivel, fechaFin);
       actualizarCalculoGanancias();
+      cargarPrecios(); // Actualizar lista de precios
       
     } catch (error) {
       alert(`Error inesperado: ${error.message}`);
@@ -632,7 +671,7 @@
       return;
     }
 
-preguntasActuales = data || [];
+    preguntasActuales = data || [];
     contadorActual = preguntasActuales.length;
     actualizarContador(nivel);
     mostrarHistorial(nivel, preguntasActuales);
@@ -660,7 +699,7 @@ preguntasActuales = data || [];
     }
   }
 
-  function configurarFormulario(nivel) {
+function configurarFormulario(nivel) {
     const opcion4Container = document.getElementById("opcion4-container");
     const correctaInput = document.getElementById("correcta-principal");
     const labelCorrecta = document.getElementById("label-correcta");
@@ -869,7 +908,13 @@ preguntasActuales = data || [];
         <td>${registro.usuario_nombre}</td>
         <td><strong>${registro.acertadas}</strong></td>
         <td>${registro.tiempo}s</td>
-        <td>$${registro.premio.toLocaleString()}</td>
+        <td>
+          ${registro.premio_liberado ? 
+            `$${registro.premio.toLocaleString()}` : 
+            `<input type="number" class="input-monto" id="monto-${registro.id}" value="${registro.premio}" min="0">
+             <button class="btn-confirmar" onclick="actualizarMonto('${registro.id}')">✓</button>`
+          }
+        </td>
         <td>
           <span class="${registro.premio_liberado ? 'premio-liberado' : 'premio-pendiente'}">
             ${registro.premio_liberado ? '✅ Liberado' : '⏳ Pendiente'}
@@ -893,7 +938,35 @@ preguntasActuales = data || [];
     actualizarEstadisticas(data, nivelSeleccionado);
   }
 
-  async function actualizarEstadisticas(data, nivel) {
+  // NUEVA FUNCIÓN: Actualizar monto antes de liberar
+  async function actualizarMonto(registroId) {
+    const nuevoMonto = parseInt(document.getElementById(`monto-${registroId}`).value);
+    
+    if (!nuevoMonto || nuevoMonto <= 0) {
+      alert("Por favor ingresa un monto válido");
+      return;
+    }
+
+    try {
+      const { error } = await supabaseClient
+        .from("ranking_trivia")
+        .update({ premio: nuevoMonto })
+        .eq("id", registroId);
+
+      if (error) {
+        alert("Error al actualizar monto: " + error.message);
+        return;
+      }
+
+      alert(`✅ Monto actualizado a $${nuevoMonto.toLocaleString()}`);
+      cargarRanking();
+      
+    } catch (error) {
+      alert("Error inesperado: " + error.message);
+    }
+  }
+
+async function actualizarEstadisticas(data, nivel) {
     const estadisticasDiv = document.getElementById("estadisticas-ranking");
     
     if (!data || data.length === 0) {
@@ -905,7 +978,7 @@ preguntasActuales = data || [];
       return;
     }
 
-const totalJugadores = data.length;
+    const totalJugadores = data.length;
     const premiosLiberados = data.filter(r => r.premio_liberado).length;
     const premiosPendientes = totalJugadores - premiosLiberados;
     const promedioAciertos = (data.reduce((sum, r) => sum + r.acertadas, 0) / totalJugadores).toFixed(1);
@@ -950,7 +1023,7 @@ const totalJugadores = data.length;
     `;
   }
 
-  // CORREGIDA: Función togglePremio usando la estructura EXACTA de referidos
+  // FUNCIÓN CORREGIDA: Sin usar campo "meta" que causa error de constraint
   async function togglePremio(registroId, liberar) {
     if (!liberar) return;
 
@@ -969,17 +1042,16 @@ const totalJugadores = data.length;
 
       console.log("Datos del registro:", registro); // Debug
 
-      // CREAR registro en recompensas usando la MISMA estructura que referidos
+      // CORREGIDA: Crear registro en recompensas SIN el campo "meta" problemático
       const { error: errorRecompensa } = await supabaseClient
         .from('recompensas')
         .insert({
           usuario_id: registro.usuario_id,
-          meta: registro.acertadas, // Usar aciertos como "meta" igual que referidos
           monto: registro.premio,
-          moneda: 'ARS', // Usar ARS como referidos
+          moneda: 'ARS',
           tipo: 'trivia',
           fecha: new Date().toISOString(),
-          aprobado: false // Igual que referidos, inicia como false
+          aprobado: false
         });
 
       if (errorRecompensa) {
@@ -1003,8 +1075,8 @@ const totalJugadores = data.length;
 
       alert("✅ Premio liberado correctamente y registrado en recompensas\n(Aparecerá en la sección de gestión para aprobación manual)");
       cargarRanking();
-      cargarPremios(); // Actualizar tabla de premios
-      cargarPremiosTriviaLiberados(); // Actualizar sección de aprobación
+      cargarPremios();
+      cargarPremiosTriviaLiberados();
       
     } catch (error) {
       console.error("Error completo:", error);
@@ -1031,7 +1103,6 @@ const totalJugadores = data.length;
     cargarRanking();
   }
 
-  // CORREGIDA: Función cargarPremios usando la misma consulta que referidos
   async function cargarPremios() {
     try {
       console.log("Cargando premios de trivia..."); // Debug
@@ -1085,7 +1156,6 @@ const totalJugadores = data.length;
     }
   }
 
-  // NUEVAS FUNCIONES para gestión de premios trivia
   async function cargarPremiosTriviaLiberados() {
     try {
       const { data: premiosPendientes, error } = await supabaseClient
@@ -1120,7 +1190,7 @@ const totalJugadores = data.length;
           <div style="background: white; margin: 10px 0; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107; display: flex; justify-content: space-between; align-items: center; color: #333;">
             <div>
               <strong>${email}</strong><br>
-              <span>Aciertos: ${premio.meta} | Monto: $${premio.monto} ${premio.moneda}</span><br>
+              <span>Monto: $${premio.monto} ${premio.moneda}</span><br>
               <small>Generado: ${fecha}</small>
             </div>
             <button onclick="aprobarPremioTrivia('${premio.id}', '${email}', ${premio.monto}, '${premio.moneda}')" 
@@ -1131,7 +1201,7 @@ const totalJugadores = data.length;
         `;
       });
 
-      container.innerHTML = html;
+container.innerHTML = html;
       
     } catch (error) {
       console.error('Error al cargar premios trivia pendientes:', error);
@@ -1175,7 +1245,7 @@ const totalJugadores = data.length;
         .eq('usuario_id', recompensa.usuario_id)
         .maybeSingle();
 
-if (errorBalance) {
+      if (errorBalance) {
         console.error('Error al obtener balance:', errorBalance);
       } else {
         const nuevoSaldo = (balance?.saldo || 0) + monto;
@@ -1380,7 +1450,7 @@ if (errorBalance) {
     cargarPrecios();
     cargarRanking();
     cargarPremios();
-    cargarPremiosTriviaLiberados(); // AGREGAR esta línea
+    cargarPremiosTriviaLiberados();
     cargarPreguntas(nivelInicial);
     configurarFormulario(nivelInicial);
     cargarEventosActivos();
