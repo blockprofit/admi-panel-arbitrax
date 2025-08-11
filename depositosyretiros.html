@@ -361,6 +361,21 @@
   let depositoSeleccionado = null;
   let destinoSeleccionado = null;
 
+  // Verificación de autenticación (NUEVO)
+  async function verificarAuth() {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    console.log('Usuario autenticado:', user?.id, user?.email);
+    
+    if (user) {
+      const { data: profile } = await supabaseClient
+        .from('profiles')
+        .select('rol')
+        .eq('id', user.id)
+        .single();
+      console.log('Rol del usuario:', profile?.rol);
+    }
+  }
+
   function formatearFecha(fecha) {
     return new Date(fecha).toLocaleDateString("es-AR", {
       day: "2-digit", month: "2-digit", year: "numeric",
@@ -428,7 +443,180 @@
     return data?.email || usuarioId;
   }
 
-  async function cargarDepositos() {
+  function mostrarModalDestino(depositoId, monto, usuarioId) {
+    depositoSeleccionado = { id: depositoId, monto: monto, usuario_id: usuarioId };
+    document.getElementById('montoDeposito').textContent = parseFloat(monto).toLocaleString();
+    document.getElementById('modalDestino').style.display = 'block';
+    destinoSeleccionado = null;
+    document.getElementById('btnConfirmarDestino').disabled = true;
+    
+    // Resetear selección
+    document.querySelectorAll('.destino-option').forEach(el => el.classList.remove('selected'));
+  }
+
+  function seleccionarDestino(destino) {
+    destinoSeleccionado = destino;
+    
+    // Resetear estilos
+    document.querySelectorAll('.destino-option').forEach(el => el.classList.remove('selected'));
+    
+    // Marcar seleccionado
+    document.getElementById(`opcion${destino.charAt(0).toUpperCase() + destino.slice(1)}`).classList.add('selected');
+    
+    document.getElementById('btnConfirmarDestino').disabled = false;
+  }
+
+  function cerrarModal() {
+    document.getElementById('modalDestino').style.display = 'none';
+    depositoSeleccionado = null;
+    destinoSeleccionado = null;
+  }
+
+  // FUNCIÓN CONFIRMAR DESTINO CORREGIDA
+  async function confirmarDestino() {
+    if (!depositoSeleccionado || !destinoSeleccionado) return;
+
+    try {
+        // 1. Verificar que somos admin
+        const { data: authData, error: userError } = await supabaseClient.auth.getUser();
+        const user = authData?.user;
+        
+        if (userError || !user) {
+            mostrarMensaje('Error de autenticación', 'error');
+            return;
+        }
+
+        console.log('Usuario actual:', user.id, user.email); // Debug
+
+        // 2. Actualizar depósito con destino
+        const { error: errorDeposito } = await supabaseClient
+            .from("depositos")
+            .update({ 
+                estado: 'confirmado',
+                destino: destinoSeleccionado 
+            })
+            .eq("id", depositoSeleccionado.id);
+
+        if (errorDeposito) {
+            console.error('Error actualizando depósito:', errorDeposito);
+            throw errorDeposito;
+        }
+
+        // 3. Aplicar el monto según destino
+        const monto = parseFloat(depositoSeleccionado.monto);
+        
+        if (destinoSeleccionado === 'inversion') {
+            // Suma a monto_confirmado (Total Invertido)
+            const { data: profile, error: errorProfile } = await supabaseClient
+                .from('profiles')
+                .select('monto_confirmado')
+                .eq('id', depositoSeleccionado.usuario_id)
+                .single();
+
+            if (errorProfile) {
+                console.error('Error obteniendo perfil:', errorProfile);
+                throw errorProfile;
+            }
+
+            const nuevoMonto = (parseFloat(profile?.monto_confirmado) || 0) + monto;
+            
+            const { error: errorUpdateProfile } = await supabaseClient
+                .from('profiles')
+                .update({ monto_confirmado: nuevoMonto })
+                .eq('id', depositoSeleccionado.usuario_id);
+
+            if (errorUpdateProfile) {
+                console.error('Error actualizando perfil:', errorUpdateProfile);
+                throw errorUpdateProfile;
+            }
+            
+            mostrarMensaje(`Depósito confirmado: $${monto.toLocaleString()} agregado a inversión`, 'success');
+            
+        } else {
+            // Suma a balances (Saldo Disponible)
+            console.log('Actualizando balance para usuario:', depositoSeleccionado.usuario_id);
+            
+            // Primero verificar si existe un balance
+            const { data: balance, error: errorBalance } = await supabaseClient
+                .from('balances')
+                .select('saldo')
+                .eq('usuario_id', depositoSeleccionado.usuario_id)
+                .single();
+
+            console.log('Balance actual:', balance, 'Error:', errorBalance);
+
+            if (errorBalance && errorBalance.code !== 'PGRST116') {
+                // Si hay error y NO es "no rows returned"
+                console.error('Error obteniendo balance:', errorBalance);
+                throw errorBalance;
+            }
+
+            const nuevoSaldo = (balance?.saldo || 0) + monto;
+            
+            if (balance) {
+                // Actualizar balance existente
+                console.log('Actualizando balance existente a:', nuevoSaldo);
+                
+                const { error: errorActualizar } = await supabaseClient
+                    .from('balances')
+                    .update({ saldo: nuevoSaldo })
+                    .eq('usuario_id', depositoSeleccionado.usuario_id);
+
+                if (errorActualizar) {
+                    console.error('Error actualizando balance:', errorActualizar);
+                    throw errorActualizar;
+                }
+            } else {
+                // Insertar nuevo balance
+                console.log('Insertando nuevo balance:', monto);
+                
+                const { error: errorInsertar } = await supabaseClient
+                    .from('balances')
+                    .insert({ 
+                        usuario_id: depositoSeleccionado.usuario_id, 
+                        saldo: monto 
+                    });
+
+                if (errorInsertar) {
+                    console.error('Error insertando balance:', errorInsertar);
+                    throw errorInsertar;
+                }
+            }
+            
+            mostrarMensaje(`Depósito confirmado: $${monto.toLocaleString()} agregado a saldo disponible`, 'success');
+        }
+
+        cerrarModal();
+        await cargarDepositos();
+        await cargarEstadisticas();
+        
+    } catch (error) {
+        console.error('Error confirmando depósito:', error);
+        mostrarMensaje('Error al confirmar el depósito: ' + (error.message || 'Error desconocido'), 'error');
+    }
+  }
+
+  async function actualizarEstadoDeposito(id, estado) {
+    if (estado === 'rechazado' && !confirm('¿Estás seguro de rechazar este depósito?')) {
+      return;
+    }
+
+    const { error } = await supabaseClient
+      .from("depositos")
+      .update({ estado })
+      .eq("id", id);
+
+    if (error) {
+      console.error("Error actualizando depósito:", error);
+      mostrarMensaje("Error al actualizar depósito", 'error');
+      return;
+    }
+
+    mostrarMensaje(`Depósito ${estado}`, 'success');
+    await cargarDepositos();
+  }
+
+async function cargarDepositos() {
     const { data: authData, error: userError } = await supabaseClient.auth.getUser();
     const user = authData?.user;
     if (userError || !user) {
@@ -514,124 +702,6 @@
     }
   }
 
-  function mostrarModalDestino(depositoId, monto, usuarioId) {
-    depositoSeleccionado = { id: depositoId, monto: monto, usuario_id: usuarioId };
-    document.getElementById('montoDeposito').textContent = parseFloat(monto).toLocaleString();
-    document.getElementById('modalDestino').style.display = 'block';
-    destinoSeleccionado = null;
-    document.getElementById('btnConfirmarDestino').disabled = true;
-    
-    // Resetear selección
-    document.querySelectorAll('.destino-option').forEach(el => el.classList.remove('selected'));
-  }
-
-  function seleccionarDestino(destino) {
-    destinoSeleccionado = destino;
-    
-    // Resetear estilos
-    document.querySelectorAll('.destino-option').forEach(el => el.classList.remove('selected'));
-    
-    // Marcar seleccionado
-    document.getElementById(`opcion${destino.charAt(0).toUpperCase() + destino.slice(1)}`).classList.add('selected');
-    
-    document.getElementById('btnConfirmarDestino').disabled = false;
-  }
-
-  function cerrarModal() {
-    document.getElementById('modalDestino').style.display = 'none';
-    depositoSeleccionado = null;
-    destinoSeleccionado = null;
-  }
-
-  async function confirmarDestino() {
-    if (!depositoSeleccionado || !destinoSeleccionado) return;
-
-    try {
-      // Actualizar depósito con destino
-      const { error: errorDeposito } = await supabaseClient
-        .from("depositos")
-        .update({ 
-          estado: 'confirmado',
-          destino: destinoSeleccionado 
-        })
-        .eq("id", depositoSeleccionado.id);
-
-      if (errorDeposito) throw errorDeposito;
-
-      // Aplicar el monto según destino
-      const monto = parseFloat(depositoSeleccionado.monto);
-      
-      if (destinoSeleccionado === 'inversion') {
-        // Suma a monto_confirmado (Total Invertido)
-        const { data: profile, error: errorProfile } = await supabaseClient
-          .from('profiles')
-          .select('monto_confirmado')
-          .eq('id', depositoSeleccionado.usuario_id)
-          .single();
-
-        if (!errorProfile) {
-          const nuevoMonto = (parseFloat(profile?.monto_confirmado) || 0) + monto;
-          
-          await supabaseClient
-            .from('profiles')
-            .update({ monto_confirmado: nuevoMonto })
-            .eq('id', depositoSeleccionado.usuario_id);
-        }
-        
-        mostrarMensaje(`Depósito confirmado: $${monto.toLocaleString()} agregado a inversión`, 'success');
-      } else {
-        // Suma a balances (Saldo Disponible)
-        const { data: balance, error: errorBalance } = await supabaseClient
-          .from('balances')
-          .select('saldo')
-          .eq('usuario_id', depositoSeleccionado.usuario_id)
-          .single();
-
-        const nuevoSaldo = (balance?.saldo || 0) + monto;
-        
-        if (balance) {
-          await supabaseClient
-            .from('balances')
-            .update({ saldo: nuevoSaldo })
-            .eq('usuario_id', depositoSeleccionado.usuario_id);
-        } else {
-          await supabaseClient
-            .from('balances')
-            .insert({ usuario_id: depositoSeleccionado.usuario_id, saldo: monto });
-        }
-        
-        mostrarMensaje(`Depósito confirmado: $${monto.toLocaleString()} agregado a saldo disponible`, 'success');
-      }
-
-      cerrarModal();
-      await cargarDepositos();
-      
-    } catch (error) {
-      console.error('Error confirmando depósito:', error);
-      mostrarMensaje('Error al confirmar el depósito: ' + error.message, 'error');
-    }
-  }
-
-  async function actualizarEstadoDeposito(id, estado) {
-    if (estado === 'rechazado' && !confirm('¿Estás seguro de rechazar este depósito?')) {
-      return;
-    }
-
-    const { error } = await supabaseClient
-      .from("depositos")
-      .update({ estado })
-      .eq("id", id);
-
-    if (error) {
-      console.error("Error actualizando depósito:", error);
-      mostrarMensaje("Error al actualizar depósito", 'error');
-      return;
-    }
-
-    mostrarMensaje(`Depósito ${estado}`, 'success');
-    await cargarDepositos();
-  }
-
   async function cargarRetiros() {
     const { data: authData, error: userError } = await supabaseClient.auth.getUser();
     const user = authData?.user;
@@ -708,7 +778,7 @@
     }
   }
 
-async function actualizarEstadoRetiro(id, estado, cantidad, usuarioId) {
+  async function actualizarEstadoRetiro(id, estado, cantidad, usuarioId) {
     const monto = parseFloat(cantidad);
     
     if (estado === 'confirmado') {
@@ -884,7 +954,7 @@ async function actualizarEstadoRetiro(id, estado, cantidad, usuarioId) {
     }
   }
 
-  async function cargarRetirosBuscados(usuarioId) {
+async function cargarRetirosBuscados(usuarioId) {
     let query = supabaseClient
       .from("retiros")
       .select("*")
@@ -1004,8 +1074,9 @@ async function actualizarEstadoRetiro(id, estado, cantidad, usuarioId) {
     }
   }
 
-  // Inicializar
+  // Inicialización
   document.addEventListener('DOMContentLoaded', function() {
+    verificarAuth(); // NUEVO - Verificar autenticación al cargar
     cargarDepositos();
     cargarRetiros();
   });
