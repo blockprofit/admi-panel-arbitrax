@@ -569,8 +569,8 @@
           .eq('id', depositoSeleccionado.usuario_id)
           .single();
 
-        if (!errorProfile && profile) {
-          const nuevoMonto = (parseFloat(profile.monto_confirmado) || 0) + monto;
+        if (!errorProfile) {
+          const nuevoMonto = (parseFloat(profile?.monto_confirmado) || 0) + monto;
           
           await supabaseClient
             .from('profiles')
@@ -608,7 +608,7 @@
       
     } catch (error) {
       console.error('Error confirmando depósito:', error);
-      mostrarMensaje('Error al confirmar el depósito', 'error');
+      mostrarMensaje('Error al confirmar el depósito: ' + error.message, 'error');
     }
   }
 
