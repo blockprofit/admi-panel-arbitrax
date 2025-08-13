@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Caja Misteriosa</title>
+  <title>Admin - Mystery Box</title>
   <link rel="icon" href="favicon.png" type="image/png" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
@@ -22,10 +22,8 @@
       color: white;
       display: flex;
       min-height: 100vh;
-      overflow-x: hidden;
     }
 
-    /* Efectos de fondo mágicos */
     body::before {
       content: '';
       position: fixed;
@@ -33,11 +31,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: 
-        radial-gradient(circle at 20% 80%, rgba(0, 168, 255, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, rgba(255, 215, 0, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
-      pointer-events: none;
+      background: rgba(0, 0, 0, 0.3);
       z-index: 1;
     }
 
@@ -60,8 +54,8 @@
     }
 
     .sidebar {
-      width: 230px;
-      background-color: rgba(0, 0, 0, 0.85);
+      width: 250px;
+      background-color: rgba(0, 0, 0, 0.9);
       height: 100vh;
       padding-top: 60px;
       display: flex;
@@ -73,6 +67,7 @@
       transition: transform 0.3s ease;
       z-index: 1000;
       backdrop-filter: blur(10px);
+      overflow-y: auto;
     }
 
     .sidebar.active {
@@ -83,7 +78,7 @@
       background: none;
       border: none;
       color: white;
-      font-size: 15px;
+      font-size: 14px;
       padding: 12px 20px;
       text-align: left;
       cursor: pointer;
@@ -114,534 +109,249 @@
       padding: 30px;
       margin-left: 0;
       width: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
       position: relative;
       z-index: 2;
     }
 
-    .mistery-container {
-      background: rgba(0, 0, 0, 0.7);
-      padding: 40px;
-      border-radius: 20px;
-      text-align: center;
-      max-width: 600px;
-      width: 100%;
-      box-shadow: 
-        0 0 30px rgba(0, 168, 255, 0.3),
-        0 0 60px rgba(255, 215, 0, 0.2),
-        inset 0 1px 20px rgba(255, 255, 255, 0.1);
+    .admin-container {
+      background: rgba(0, 0, 0, 0.8);
+      padding: 30px;
+      border-radius: 15px;
       backdrop-filter: blur(15px);
       border: 1px solid rgba(255, 255, 255, 0.2);
-      position: relative;
-      overflow: hidden;
+      box-shadow: 0 0 30px rgba(0, 168, 255, 0.3);
     }
 
-    .mistery-container::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: linear-gradient(45deg, transparent, rgba(255, 215, 0, 0.05), transparent);
-      animation: containerShine 6s ease-in-out infinite;
-      pointer-events: none;
-    }
-
-    @keyframes containerShine {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    h1 {
+    .page-title {
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 30px;
       font-size: 2.5rem;
       background: linear-gradient(135deg, #FFD700, #FFA500, #00a8ff);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      text-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
-      animation: titleGlow 3s ease-in-out infinite alternate;
-      font-weight: bold;
-      letter-spacing: 2px;
-      position: relative;
-      z-index: 10;
     }
 
-    @keyframes titleGlow {
-      0% { filter: brightness(1); }
-      100% { filter: brightness(1.3); }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
     }
 
-    .description {
-      margin-bottom: 30px;
-      font-size: 1.1rem;
-      color: rgba(255, 255, 255, 0.9);
-      line-height: 1.6;
-      position: relative;
-      z-index: 10;
-    }
-
-    .info-bar {
+    .stat-card {
       background: rgba(255, 255, 255, 0.1);
-      padding: 15px;
-      border-radius: 10px;
-      margin-bottom: 30px;
+      padding: 25px;
+      border-radius: 12px;
+      text-align: center;
       border: 1px solid rgba(255, 255, 255, 0.2);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 15px;
-      position: relative;
-      z-index: 10;
+      transition: all 0.3s ease;
     }
 
-    .info-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-width: 120px;
+    .stat-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(0, 168, 255, 0.3);
     }
 
-    .info-label {
-      font-size: 0.9rem;
-      color: rgba(255, 255, 255, 0.7);
+    .stat-icon {
+      font-size: 3rem;
+      margin-bottom: 15px;
+      display: block;
+    }
+
+    .stat-number {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #FFD700;
       margin-bottom: 5px;
     }
 
-    .info-value {
-      font-size: 1.2rem;
-      font-weight: bold;
-      color: #FFD700;
+    .stat-label {
+      font-size: 1rem;
+      color: rgba(255, 255, 255, 0.8);
     }
 
-    .treasure-chest-container {
-      perspective: 1000px;
-      width: 300px;
-      margin: 0 auto 30px;
-      height: 250px;
-      position: relative;
+    .section {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 25px;
+      border-radius: 12px;
+      margin-bottom: 25px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    .treasure-chest {
-      width: 100%;
-      height: 100%;
-      position: relative;
-      transform-style: preserve-3d;
-      cursor: pointer;
-      transition: transform 0.3s ease;
-    }
-
-    .treasure-chest:hover:not(.opening) {
-      transform: translateY(-10px) rotateX(5deg);
-      filter: drop-shadow(0 20px 40px rgba(255, 215, 0, 0.3));
-    }
-
-    .chest-base {
-      width: 100%;
-      height: 160px;
-      background: linear-gradient(145deg, #8B4513, #A0522D, #CD853F);
-      border-radius: 0 0 25px 25px;
-      position: absolute;
-      bottom: 0;
-      box-shadow: 
-        0 15px 35px rgba(0,0,0,0.4),
-        inset 0 -8px 20px rgba(139, 69, 19, 0.8),
-        inset 0 8px 20px rgba(205, 133, 63, 0.6);
-      border: 3px solid #654321;
-    }
-
-    .chest-lid {
-      width: 100%;
-      height: 100px;
-      background: linear-gradient(145deg, #A0522D, #CD853F, #DEB887);
-      border-radius: 25px 25px 0 0;
-      position: absolute;
-      top: 0;
-      left: 0;
-      box-shadow: 
-        0 -8px 25px rgba(0,0,0,0.3),
-        inset 0 8px 20px rgba(222, 184, 135, 0.8),
-        inset 0 -8px 20px rgba(160, 82, 45, 0.6);
-      border: 3px solid #654321;
-      transform-origin: bottom;
-      transition: transform 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      z-index: 5;
-    }
-
-    .chest-lid.open {
-      transform: rotateX(-130deg);
-    }
-
-    .chest-lock {
-      position: absolute;
-      bottom: 30px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 50px;
-      height: 60px;
-      background: linear-gradient(145deg, #FFD700, #FFA500);
-      border-radius: 8px;
-      box-shadow: 
-        0 8px 20px rgba(255, 215, 0, 0.4),
-        inset 0 3px 15px rgba(255, 255, 255, 0.3);
-      border: 2px solid #DAA520;
-      transition: all 0.5s ease;
-    }
-
-    .chest-lock::before {
-      content: '';
-      position: absolute;
-      top: -12px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 30px;
-      height: 30px;
-      border: 5px solid #FFD700;
-      border-radius: 50%;
-      border-bottom: none;
-      box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
-    }
-
-    .chest-lock::after {
-      content: '🔐';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
+    .section-title {
       font-size: 1.5rem;
-      text-shadow: 0 0 10px rgba(0,0,0,0.5);
+      color: #FFD700;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
     }
 
-.chest-bands {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      top: 0;
-      left: 0;
+    .section-title i {
+      margin-right: 10px;
     }
 
-    .band {
-      position: absolute;
-      width: 100%;
-      height: 12px;
-      background: linear-gradient(90deg, #FFD700, #FFA500, #FFD700);
-      box-shadow: 
-        0 3px 12px rgba(255, 215, 0, 0.4),
-        inset 0 2px 6px rgba(255, 255, 255, 0.3);
-      border: 1px solid #DAA520;
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 25px;
     }
 
-    .band:first-child {
-      top: 40px;
+    .form-group {
+      display: flex;
+      flex-direction: column;
     }
 
-    .band:last-child {
-      bottom: 40px;
+    .form-group label {
+      margin-bottom: 8px;
+      color: rgba(255, 255, 255, 0.9);
+      font-weight: 500;
     }
 
-    .magical-aura {
-      position: absolute;
-      top: -30px;
-      left: -30px;
-      width: calc(100% + 60px);
-      height: calc(100% + 60px);
-      border-radius: 40px;
-      background: radial-gradient(circle, transparent 60%, rgba(255, 215, 0, 0.1) 70%, transparent 80%);
-      animation: auraGlow 4s ease-in-out infinite;
-      pointer-events: none;
+    .form-group input {
+      padding: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 16px;
+      transition: all 0.3s ease;
     }
 
-    @keyframes auraGlow {
-      0%, 100% { 
-        opacity: 0.4;
-        transform: scale(1);
-      }
-      50% { 
-        opacity: 0.8;
-        transform: scale(1.1);
-      }
+    .form-group input:focus {
+      outline: none;
+      border-color: #00a8ff;
+      box-shadow: 0 0 10px rgba(0, 168, 255, 0.3);
     }
 
-    .treasure-chest.opening {
-      animation: chestShake 1s ease-in-out;
+    .form-group input::placeholder {
+      color: rgba(255, 255, 255, 0.5);
     }
 
-    @keyframes chestShake {
-      0%, 100% { transform: translateX(0) translateY(0) rotateZ(0deg); }
-      10% { transform: translateX(-8px) translateY(-3px) rotateZ(-2deg); }
-      20% { transform: translateX(8px) translateY(-3px) rotateZ(2deg); }
-      30% { transform: translateX(-12px) translateY(-6px) rotateZ(-3deg); }
-      40% { transform: translateX(12px) translateY(-6px) rotateZ(3deg); }
-      50% { transform: translateX(-15px) translateY(-9px) rotateZ(-3deg); }
-      60% { transform: translateX(15px) translateY(-9px) rotateZ(3deg); }
-      70% { transform: translateX(-8px) translateY(-6px) rotateZ(-2deg); }
-      80% { transform: translateX(8px) translateY(-3px) rotateZ(2deg); }
-      90% { transform: translateX(-3px) translateY(-1px) rotateZ(-1deg); }
-    }
-
-    .light-explosion {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      opacity: 0;
-      pointer-events: none;
-      z-index: 20;
-    }
-
-    .light-explosion.active {
-      opacity: 1;
-      animation: lightBurst 2.5s ease-out;
-    }
-
-    @keyframes lightBurst {
-      0% { 
-        opacity: 0;
-        transform: scale(0.3);
-      }
-      30% { 
-        opacity: 1;
-        transform: scale(1);
-      }
-      100% { 
-        opacity: 0.6;
-        transform: scale(1.5);
-      }
-    }
-
-    .light-ray {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 6px;
-      height: 300px;
-      background: linear-gradient(to top, transparent, #FFD700, #FFA500, transparent);
-      transform-origin: bottom;
-      border-radius: 3px;
-      box-shadow: 0 0 20px #FFD700;
-    }
-
-    .open-button {
+    .btn {
       background: linear-gradient(135deg, #00a8ff, #0078cc);
       color: white;
-      padding: 18px 35px;
+      padding: 12px 25px;
       border: none;
-      border-radius: 50px;
-      font-size: 1.2rem;
+      border-radius: 8px;
+      font-size: 16px;
       font-weight: bold;
       cursor: pointer;
       transition: all 0.3s ease;
-      box-shadow: 
-        0 8px 25px rgba(0, 168, 255, 0.4),
-        inset 0 2px 10px rgba(255, 255, 255, 0.2);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      position: relative;
-      overflow: hidden;
-      z-index: 10;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
     }
 
-    .open-button::before {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-      transform: translateY(-50%);
-      transition: left 0.6s ease;
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 168, 255, 0.4);
     }
 
-    .open-button:hover::before {
-      left: 100%;
-    }
-
-    .open-button:hover {
-      transform: translateY(-3px);
-      box-shadow: 
-        0 12px 35px rgba(0, 168, 255, 0.6),
-        inset 0 2px 15px rgba(255, 255, 255, 0.3);
-    }
-
-    .open-button:disabled {
-      opacity: 0.7;
+    .btn:disabled {
+      opacity: 0.6;
       cursor: not-allowed;
       transform: none;
     }
 
-    .prize-reveal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.85);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      opacity: 0;
-      visibility: hidden;
-      z-index: 2000;
-      transition: all 0.5s ease;
-      backdrop-filter: blur(10px);
+    .btn-success {
+      background: linear-gradient(135deg, #28a745, #20c997);
     }
 
-    .prize-reveal.show {
-      opacity: 1;
-      visibility: visible;
+    .btn-warning {
+      background: linear-gradient(135deg, #ffc107, #fd7e14);
+      color: #000;
     }
 
-    .prize-container {
-      background: linear-gradient(135deg, #fff, #f8f9fa);
-      padding: 50px;
-      border-radius: 30px;
-      box-shadow: 
-        0 30px 80px rgba(0,0,0,0.5),
-        0 0 150px rgba(255, 215, 0, 0.3);
+    .btn-danger {
+      background: linear-gradient(135deg, #dc3545, #c82333);
+    }
+
+    .prize-preview {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 20px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .preview-title {
+      font-size: 1.2rem;
+      color: #FFD700;
+      margin-bottom: 15px;
       text-align: center;
-      max-width: 450px;
-      transform: scale(0.3) rotateY(180deg);
-      transition: transform 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      border: 3px solid #FFD700;
-      position: relative;
-      overflow: hidden;
     }
 
-    .prize-reveal.show .prize-container {
-      transform: scale(1) rotateY(0deg);
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
     }
 
-    .prize-container::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: linear-gradient(45deg, transparent, rgba(255,215,0,0.1), transparent);
-      animation: prizeShine 4s ease-in-out infinite;
+    .preview-item {
+      text-align: center;
+      padding: 15px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    @keyframes prizeShine {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    .prize-icon {
-      font-size: 6rem;
-      margin-bottom: 25px;
-      display: block;
-      animation: bounce 2s ease-in-out infinite;
-      text-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
-      position: relative;
-      z-index: 10;
-    }
-
-    @keyframes bounce {
-      0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-      40% { transform: translateY(-25px); }
-      60% { transform: translateY(-15px); }
-    }
-
-    .prize-title {
-      font-size: 1.8rem;
-      color: #333;
-      margin-bottom: 20px;
-      font-weight: bold;
-      background: linear-gradient(135deg, #FFD700, #FFA500);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      position: relative;
-      z-index: 10;
-    }
-
-    .prize-description {
-      color: #666;
-      font-size: 1.1rem;
-      margin-bottom: 35px;
-      line-height: 1.6;
-      position: relative;
-      z-index: 10;
-    }
-
-    .close-btn {
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      color: white;
-      border: none;
-      padding: 15px 30px;
-      border-radius: 30px;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 1.1rem;
-      transition: all 0.3s ease;
-      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
-      position: relative;
-      z-index: 10;
-    }
-
-    .close-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 12px 30px rgba(102, 126, 234, 0.6);
-    }
-
-    .particles-container {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 1500;
-    }
-
-    .particle {
-      position: absolute;
-      border-radius: 50%;
-      pointer-events: none;
-    }
-
-    .floating-coins {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 15;
-    }
-
-    .coin {
-      position: absolute;
+    .preview-icon {
       font-size: 2rem;
-      animation: floatUp 4s ease-out infinite;
-      opacity: 0;
+      margin-bottom: 8px;
+      display: block;
     }
 
-    @keyframes floatUp {
-      0% { 
-        opacity: 0;
-        transform: translateY(50px) rotate(0deg) scale(0.3);
-      }
-      15% { 
-        opacity: 1;
-        transform: translateY(0px) rotate(180deg) scale(1);
-      }
-      85% { 
-        opacity: 1;
-        transform: translateY(-150px) rotate(540deg) scale(1);
-      }
-      100% { 
-        opacity: 0;
-        transform: translateY(-300px) rotate(720deg) scale(0.3);
-      }
+    .preview-count {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #00a8ff;
+      margin-bottom: 5px;
+    }
+
+    .preview-label {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .alert {
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border: 1px solid;
+    }
+
+    .alert-success {
+      background: rgba(40, 167, 69, 0.2);
+      border-color: #28a745;
+      color: #28a745;
+    }
+
+    .alert-warning {
+      background: rgba(255, 193, 7, 0.2);
+      border-color: #ffc107;
+      color: #ffc107;
+    }
+
+    .alert-error {
+      background: rgba(220, 53, 69, 0.2);
+      border-color: #dc3545;
+      color: #dc3545;
+    }
+
+    .total-prizes {
+      text-align: center;
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: #FFD700;
+      margin-top: 15px;
+    }
+
+    .actions-container {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      flex-wrap: wrap;
     }
 
     .loading {
@@ -663,35 +373,20 @@
       to { transform: rotate(360deg); }
     }
 
-    .error-message {
-      background: rgba(220, 53, 69, 0.2);
-      border: 1px solid #dc3545;
-      color: #dc3545;
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      display: none;
-    }
-
     @media (max-width: 768px) {
       .content {
         padding: 20px;
       }
       
-      .mistery-container {
-        padding: 25px;
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+.stats-grid {
+        grid-template-columns: 1fr;
       }
       
-      .treasure-chest-container {
-        width: 250px;
-        height: 200px;
-      }
-      
-      h1 {
-        font-size: 2rem;
-      }
-      
-      .info-bar {
+      .actions-container {
         flex-direction: column;
       }
     }
@@ -701,652 +396,430 @@
   <div class="menu-toggle" onclick="toggleSidebar()">☰</div>
 
   <div class="sidebar" id="sidebar">
-    <button onclick="window.location.href='principal.html#welcome'"><i class="fas fa-home"></i> Inicio</button>
-    <button onclick="window.location.href='principal.html#perfil'"><i class="fas fa-user"></i> Perfil</button>
-    <button onclick="window.location.href='inversion.html'"><i class="fas fa-chart-line"></i> Nivel de inversión</button>
-    <button onclick="window.location.href='deposito.html'"><i class="fas fa-wallet"></i> Depósito</button>
-    <button onclick="window.location.href='retiro.html'"><i class="fas fa-hand-holding-usd"></i> Retiro</button>
-    <button onclick="window.location.href='referidos.html'"><i class="fas fa-users"></i> Programa de referidos</button>
-    <button onclick="window.location.href='trivia.html'"><i class="fas fa-question"></i> Trivia</button>
-    <button onclick="window.location.href='minipool.html'"><i class="fas fa-coins"></i> Mini Pool</button>
+    <button onclick="window.location.href='admin.html'"><i class="fas fa-home"></i> Panel Principal</button>
+    <button onclick="window.location.href='admin-usuarios.html'"><i class="fas fa-users"></i> Gestión de Usuarios</button>
+    <button onclick="window.location.href='admin-depositos.html'"><i class="fas fa-wallet"></i> Depósitos</button>
+    <button onclick="window.location.href='admin-retiros.html'"><i class="fas fa-hand-holding-usd"></i> Retiros</button>
+    <button onclick="window.location.href='admin-inversiones.html'"><i class="fas fa-chart-line"></i> Inversiones</button>
+    <button onclick="window.location.href='admin-trivia.html'"><i class="fas fa-question"></i> Trivia</button>
+    <button onclick="window.location.href='admin-minipool.html'"><i class="fas fa-coins"></i> Mini Pool</button>
     <button class="active"><i class="fas fa-box-open"></i> Mystery Box</button>
-    <button onclick="window.location.href='sorteo.html'"><i class="fas fa-gift"></i> Sorteo</button>
-    <button onclick="window.location.href='preguntasfrecuentes.html'"><i class="fas fa-question-circle"></i> Preguntas frecuentes</button>
-    <button onclick="window.location.href='terminosycondiciones.html'"><i class="fas fa-file-contract"></i> Términos y condiciones</button>
+    <button onclick="window.location.href='admin-sorteos.html'"><i class="fas fa-gift"></i> Sorteos</button>
+    <button onclick="window.location.href='admin-reportes.html'"><i class="fas fa-chart-bar"></i> Reportes</button>
     <button onclick="logout()"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</button>
   </div>
 
   <div class="content" onclick="closeSidebar()">
-    <div class="mistery-container">
-      <h1 id="pageTitle">🎁 Caja Misteriosa 🎁</h1>
-      <p class="description" id="pageDescription">¡Abrí tu cofre y descubrí premios especiales! Podés ganar entradas gratis, bonificaciones o premios en efectivo.</p>
+    <div class="admin-container">
+      <h1 class="page-title">🎁 Administración Mystery Box 🎁</h1>
 
-      <div class="error-message" id="errorMessage"></div>
-
-      <!-- Información de la caja -->
-      <div class="info-bar" id="infoBar">
-        <div class="info-item">
-          <div class="info-label">💰 Costo</div>
-          <div class="info-value" id="boxCost">Cargando...</div>
+      <!-- Estadísticas -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-icon">📦</span>
+          <div class="stat-number" id="totalBoxes">0</div>
+          <div class="stat-label">Cajas Compradas</div>
         </div>
-        <div class="info-item">
-          <div class="info-label">🎁 Probabilidades</div>
-          <div class="info-value" id="totalPrizes">¡Suerte!</div>
+        <div class="stat-card">
+          <span class="stat-icon">💰</span>
+          <div class="stat-number" id="totalRevenue">$0</div>
+          <div class="stat-label">Ingresos Totales</div>
         </div>
-        <div class="info-item">
-          <div class="info-label">💵 Tu Saldo</div>
-          <div class="info-value" id="userBalance">Cargando...</div>
+        <div class="stat-card">
+          <span class="stat-icon">🎉</span>
+          <div class="stat-number" id="totalPrizes">0</div>
+          <div class="stat-label">Premios Entregados</div>
+        </div>
+        <div class="stat-card">
+          <span class="stat-icon">👥</span>
+          <div class="stat-number" id="activeUsers">0</div>
+          <div class="stat-label">Usuarios Activos</div>
         </div>
       </div>
 
-      <div class="treasure-chest-container">
-        <div class="treasure-chest" id="treasureChest">
-          <div class="magical-aura"></div>
-          <div class="light-explosion" id="lightExplosion"></div>
-          <div class="floating-coins" id="floatingCoins"></div>
+      <!-- Configuración de Premios -->
+      <div class="section">
+        <h2 class="section-title">
+          <i class="fas fa-cog"></i>
+          Configuración de Premios
+        </h2>
+
+        <div id="alertContainer"></div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="cashPrizes">💰 Premios en Efectivo</label>
+            <input type="number" id="cashPrizes" placeholder="Cantidad de premios" min="0" value="0">
+          </div>
+          <div class="form-group">
+            <label for="cashAmount">💵 Monto por Premio</label>
+            <input type="number" id="cashAmount" placeholder="Ej: 2000" min="0" value="2000">
+          </div>
+          <div class="form-group">
+            <label for="triviaPrizes">🎯 Entradas Trivia</label>
+            <input type="number" id="triviaPrizes" placeholder="Cantidad de entradas" min="0" value="0">
+          </div>
+          <div class="form-group">
+            <label for="minipoolPrizes">🔥 Entradas Mini Pool</label>
+            <input type="number" id="minipoolPrizes" placeholder="Cantidad de entradas" min="0" value="0">
+          </div>
+          <div class="form-group">
+            <label for="emptyBoxes">😔 Cajas Vacías</label>
+            <input type="number" id="emptyBoxes" placeholder="Cantidad sin premio" min="0" value="0">
+          </div>
+          <div class="form-group">
+            <label for="boxCost">💳 Costo por Caja</label>
+            <input type="number" id="boxCost" placeholder="Ej: 5000" min="0" value="5000">
+          </div>
+        </div>
+
+        <div class="actions-container">
+          <button class="btn btn-success" id="saveBtn" onclick="savePrizeConfig()">
+            <i class="fas fa-save"></i> Guardar Configuración
+          </button>
+          <button class="btn btn-warning" onclick="loadCurrentConfig()">
+            <i class="fas fa-sync"></i> Cargar Actual
+          </button>
+          <button class="btn" onclick="previewPrizes()">
+            <i class="fas fa-eye"></i> Vista Previa
+          </button>
+        </div>
+      </div>
+
+      <!-- Vista Previa de Premios -->
+      <div class="section">
+        <div class="prize-preview">
+          <div class="preview-title">🎁 Vista Previa de Premios Configurados</div>
           
-          <div class="chest-base">
-            <div class="chest-bands">
-              <div class="band"></div>
-              <div class="band"></div>
+          <div class="preview-grid">
+            <div class="preview-item">
+              <span class="preview-icon">💰</span>
+              <div class="preview-count" id="previewCash">0</div>
+              <div class="preview-label">Premios en Efectivo</div>
+              <div style="font-size: 0.8rem; color: #FFD700; margin-top: 5px;" id="previewCashAmount">$0</div>
             </div>
-            <div class="chest-lock" id="chestLock"></div>
+            <div class="preview-item">
+              <span class="preview-icon">🎯</span>
+              <div class="preview-count" id="previewTrivia">0</div>
+              <div class="preview-label">Entradas Trivia</div>
+            </div>
+            <div class="preview-item">
+              <span class="preview-icon">🔥</span>
+              <div class="preview-count" id="previewMinipool">0</div>
+              <div class="preview-label">Entradas Mini Pool</div>
+            </div>
+            <div class="preview-item">
+              <span class="preview-icon">😔</span>
+              <div class="preview-count" id="previewEmpty">0</div>
+              <div class="preview-label">Cajas Vacías</div>
+            </div>
           </div>
           
-          <div class="chest-lid" id="chestLid"></div>
+          <div class="total-prizes">
+            Total de Premios Configurados: <span id="totalConfigured">0</span>
+          </div>
+          <div style="text-align: center; margin-top: 10px; color: #00a8ff; font-size: 1.1rem;">
+            Costo por Caja: $<span id="previewCost">5000</span>
+          </div>
         </div>
       </div>
 
-      <button class="open-button" id="openButton" onclick="abrirCaja()">
-        <i class="fas fa-key"></i> <span id="buttonText">Cargando...</span>
-      </button>
+      <!-- Acciones Administrativas -->
+      <div class="section">
+        <h2 class="section-title">
+          <i class="fas fa-tools"></i>
+          Acciones Administrativas
+        </h2>
+        
+        <div class="actions-container">
+          <button class="btn btn-danger" onclick="resetAllPrizes()">
+            <i class="fas fa-trash"></i> Resetear Premios
+          </button>
+          <button class="btn" onclick="exportStats()">
+            <i class="fas fa-download"></i> Exportar Estadísticas
+          </button>
+          <button class="btn btn-warning" onclick="refreshStats()">
+            <i class="fas fa-refresh"></i> Actualizar Stats
+          </button>
+        </div>
+      </div>
     </div>
   </div>
-
-  <div class="prize-reveal" id="prizeReveal">
-    <div class="prize-container">
-      <span class="prize-icon" id="prizeIcon">🎉</span>
-      <div class="prize-title" id="prizeTitle">¡Felicitaciones!</div>
-      <div class="prize-description" id="prizeDescription">Has ganado un premio increíble</div>
-      <button class="close-btn" onclick="resetChest()">Cerrar</button>
-    </div>
-  </div>
-
-  <div class="particles-container" id="particlesContainer"></div>
-
-</body>
-</html>
 
 <script>
-  // ✅ CONFIGURACIÓN IGUAL A TRIVIA - CORREGIDA
-  const supabaseUrl = "https://ovulezkcxwrjvyxlxsdv.supabase.co";
-  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI";
-  const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+  const client = supabase.createClient(
+    'https://ovulezkcxwrjvyxlxsdv.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI'
+  );
 
   // Variables globales
-  let userBalance = 0;
-  let isOpening = false;
-  let usuarioActual = null;
-
-  // ✅ CONFIGURACIÓN DINÁMICA - CORREGIDA PARA LEER DE LA BASE DE DATOS
-  let mysteryBoxConfig = {
-    cost: 5000, // Valor por defecto, se actualiza desde la DB
-    prizes: [
-      // Premios en efectivo (30% probabilidad)
-      { 
-        type: 'cash', 
-        icon: '💰', 
-        title: '¡Premio en Efectivo!', 
-        description: 'Has ganado $2,500 ARS', 
-        value: 2500, 
-        weight: 15 
-      },
-      { 
-        type: 'cash', 
-        icon: '💎', 
-        title: '¡Gran Premio!', 
-        description: 'Has ganado $10,000 ARS', 
-        value: 10000, 
-        weight: 5 
-      },
-      { 
-        type: 'cash', 
-        icon: '🏆', 
-        title: '¡JACKPOT!', 
-        description: 'Has ganado $25,000 ARS', 
-        value: 25000, 
-        weight: 2 
-      },
-      
-      // Entradas gratis (20% probabilidad)
-      { 
-        type: 'trivia_entry', 
-        icon: '🎯', 
-        title: '¡Entrada Gratis!', 
-        description: 'Entrada gratis a Trivia Básica', 
-        value: 0, 
-        weight: 10 
-      },
-      { 
-        type: 'minipool_entry', 
-        icon: '🏊‍♂️', 
-        title: '¡Minipool Gratis!', 
-        description: 'Entrada gratis a Minipool Básico', 
-        value: 0, 
-        weight: 10 
-      },
-      
-      // Bonificaciones (25% probabilidad)
-      { 
-        type: 'bonus', 
-        icon: '🎁', 
-        title: '¡Bonificación!', 
-        description: 'Has ganado $1,000 ARS de bonificación', 
-        value: 1000, 
-        weight: 15 
-      },
-      { 
-        type: 'bonus', 
-        icon: '✨', 
-        title: '¡Bonus Especial!', 
-        description: 'Has ganado $3,000 ARS de bonus', 
-        value: 3000, 
-        weight: 10 
-      },
-      
-      // Cajas vacías (25% probabilidad)
-      { 
-        type: 'empty', 
-        icon: '😔', 
-        title: 'Caja Vacía', 
-        description: '¡Mejor suerte la próxima vez!', 
-        value: 0, 
-        weight: 25 
-      }
-    ]
+  let currentConfig = {
+    id: null,
+    cash_prizes: 0,
+    cash_amount: 2000,
+    trivia_prizes: 0,
+    minipool_prizes: 0,
+    empty_boxes: 0,
+    box_cost: 5000
   };
 
-  // ✅ NUEVA FUNCIÓN: Cargar configuración desde base de datos
-  async function cargarConfiguracionMysteryBox() {
+  // Función para mostrar alertas
+  function showAlert(message, type = 'success') {
+    const alertContainer = document.getElementById('alertContainer');
+    const alertClass = type === 'success' ? 'alert-success' : type === 'warning' ? 'alert-warning' : 'alert-error';
+    
+    alertContainer.innerHTML = `
+      <div class="alert ${alertClass}">
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : 'times-circle'}"></i>
+        ${message}
+      </div>
+    `;
+    
+    setTimeout(() => {
+      alertContainer.innerHTML = '';
+    }, 5000);
+  }
+
+  // Función para mostrar loading
+  function setLoading(btnId, loading) {
+    const btn = document.getElementById(btnId);
+    if (loading) {
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner"></div> Guardando...';
+    } else {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-save"></i> Guardar Configuración';
+    }
+  }
+
+  // Función para guardar configuración de premios
+  async function savePrizeConfig() {
     try {
-      console.log('🔄 Cargando configuración de Mystery Box...');
+      setLoading('saveBtn', true);
+
+      const cashPrizes = parseInt(document.getElementById('cashPrizes').value) || 0;
+      const cashAmount = parseInt(document.getElementById('cashAmount').value) || 2000;
+      const triviaPrizes = parseInt(document.getElementById('triviaPrizes').value) || 0;
+      const minipoolPrizes = parseInt(document.getElementById('minipoolPrizes').value) || 0;
+      const emptyBoxes = parseInt(document.getElementById('emptyBoxes').value) || 0;
+      const boxCost = parseInt(document.getElementById('boxCost').value) || 5000;
+
+      const totalPrizes = cashPrizes + triviaPrizes + minipoolPrizes + emptyBoxes;
       
-      const { data, error } = await supabaseClient
+      if (totalPrizes === 0) {
+        showAlert('Debe configurar al menos un premio', 'warning');
+        setLoading('saveBtn', false);
+        return;
+      }
+
+      // Desactivar configuración anterior
+      const { error: deactivateError } = await client
+        .from('mystery_box_config')
+        .update({ is_active: false })
+        .eq('is_active', true);
+
+      if (deactivateError) {
+        console.error('Error desactivando configuración anterior:', deactivateError);
+      }
+
+      // Insertar nueva configuración
+      const { data, error } = await client
+        .from('mystery_box_config')
+        .insert([{
+          cash_prizes: cashPrizes,
+          cash_amount: cashAmount,
+          trivia_prizes: triviaPrizes,
+          minipool_prizes: minipoolPrizes,
+          empty_boxes: emptyBoxes,
+          box_cost: boxCost,
+          total_configured: totalPrizes,
+          is_active: true
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      currentConfig = data;
+      previewPrizes();
+      
+      showAlert(`✅ Configuración guardada correctamente. Total de premios: ${totalPrizes}`, 'success');
+      
+    } catch (error) {
+      console.error('Error al guardar configuración:', error);
+      showAlert('❌ Error al guardar la configuración: ' + error.message, 'error');
+    } finally {
+      setLoading('saveBtn', false);
+    }
+  }
+
+  // Función para cargar configuración actual
+  async function loadCurrentConfig() {
+    try {
+      const { data, error } = await client
         .from('mystery_box_config')
         .select('*')
         .eq('is_active', true)
         .order('created_at', { ascending: false })
         .limit(1)
-        .maybeSingle();
+        .single();
 
       if (error) {
-        console.error('Error cargando configuración:', error);
-        // Usar valores por defecto si hay error
-        return;
+        if (error.code === 'PGRST116') {
+          showAlert('⚠️ No hay configuración guardada', 'warning');
+          return;
+        }
+        throw error;
       }
 
       if (data) {
-        // ✅ ACTUALIZAR COSTO DINÁMICAMENTE
-        mysteryBoxConfig.cost = data.box_cost || 5000;
+        document.getElementById('cashPrizes').value = data.cash_prizes || 0;
+        document.getElementById('cashAmount').value = data.cash_amount || 2000;
+        document.getElementById('triviaPrizes').value = data.trivia_prizes || 0;
+        document.getElementById('minipoolPrizes').value = data.minipool_prizes || 0;
+        document.getElementById('emptyBoxes').value = data.empty_boxes || 0;
+        document.getElementById('boxCost').value = data.box_cost || 5000;
         
-        console.log('✅ Configuración cargada:', {
-          costo: mysteryBoxConfig.cost,
-          premios_efectivo: data.cash_prizes,
-          total_configurado: data.total_configured
-        });
+        currentConfig = data;
+        previewPrizes();
         
-        // Actualizar interfaz con el nuevo precio
-        updateUI();
-      } else {
-        console.warn('⚠️ No se encontró configuración activa, usando valores por defecto');
-        updateUI();
+        showAlert('✅ Configuración cargada correctamente', 'success');
       }
-      
     } catch (error) {
-      console.error('💥 Error cargando configuración:', error);
-      // Usar valores por defecto en caso de error
-      updateUI();
+      console.error('Error al cargar configuración:', error);
+      showAlert('❌ Error al cargar la configuración: ' + error.message, 'error');
     }
   }
 
-  // ✅ FUNCIÓN VERIFICAR USUARIO - IGUAL A TRIVIA
-  async function verificarUsuario() {
-    const { data: { user }, error } = await supabaseClient.auth.getUser();
+// Función para vista previa de premios
+  function previewPrizes() {
+    const cashPrizes = parseInt(document.getElementById('cashPrizes').value) || 0;
+    const cashAmount = parseInt(document.getElementById('cashAmount').value) || 2000;
+    const triviaPrizes = parseInt(document.getElementById('triviaPrizes').value) || 0;
+    const minipoolPrizes = parseInt(document.getElementById('minipoolPrizes').value) || 0;
+    const emptyBoxes = parseInt(document.getElementById('emptyBoxes').value) || 0;
+    const boxCost = parseInt(document.getElementById('boxCost').value) || 5000;
     
-    if (error || !user) {
-      showError('No estás autenticado. Por favor, inicia sesión.');
-      setTimeout(() => {
-        window.location.href = 'index.html';
-      }, 3000);
-      return;
-    }
-
-    // Obtener datos del usuario desde profiles
-    const { data: profile, error: profileError } = await supabaseClient
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-
-    if (profileError || !profile) {
-      showError('Error al obtener datos del usuario.');
-      return;
-    }
-
-    usuarioActual = {
-      id: user.id,
-      email: user.email,
-      nombre: profile.username || profile.email || 'Usuario'
-    };
+    document.getElementById('previewCash').textContent = cashPrizes;
+    document.getElementById('previewCashAmount').textContent = `$${cashAmount.toLocaleString()}`;
+    document.getElementById('previewTrivia').textContent = triviaPrizes;
+    document.getElementById('previewMinipool').textContent = minipoolPrizes;
+    document.getElementById('previewEmpty').textContent = emptyBoxes;
+    document.getElementById('previewCost').textContent = boxCost.toLocaleString();
+    
+    const total = cashPrizes + triviaPrizes + minipoolPrizes + emptyBoxes;
+    document.getElementById('totalConfigured').textContent = total;
   }
 
-  // ✅ FUNCIÓN CARGAR SALDO - IGUAL A TRIVIA (CORREGIDA)
-  async function cargarSaldoUsuario() {
+  // Función para resetear todos los premios
+  function resetAllPrizes() {
+    if (confirm('¿Estás seguro de que quieres resetear toda la configuración de premios?')) {
+      document.getElementById('cashPrizes').value = 0;
+      document.getElementById('cashAmount').value = 2000;
+      document.getElementById('triviaPrizes').value = 0;
+      document.getElementById('minipoolPrizes').value = 0;
+      document.getElementById('emptyBoxes').value = 0;
+      document.getElementById('boxCost').value = 5000;
+      
+      previewPrizes();
+      
+      showAlert('✅ Configuración reseteada correctamente', 'success');
+    }
+  }
+
+  // Función para actualizar estadísticas
+  async function refreshStats() {
     try {
-      const { data: balance, error } = await supabaseClient
-        .from('balances') // ✅ MISMA TABLA QUE TRIVIA
-        .select('saldo')
-        .eq('usuario_id', usuarioActual.id)
-        .maybeSingle(); // ✅ IGUAL A TRIVIA
-
-      if (error) {
-        console.error('Error al cargar saldo:', error);
-        userBalance = 0;
-      } else {
-        userBalance = balance?.saldo || 0;
-      }
-
-      // Actualizar UI
-      document.getElementById('userBalance').textContent = `$${userBalance.toLocaleString()}`;
-      
-    } catch (error) {
-      console.error('Error cargando saldo:', error);
-      userBalance = 0;
-      document.getElementById('userBalance').textContent = '$0';
-    }
-  }
-
-  // ✅ FUNCIÓN DESCONTAR SALDO - IGUAL A TRIVIA (CORREGIDA)
-  async function descontarSaldo(precio) {
-    try {
-      const nuevoSaldo = userBalance - precio;
-      
-      const { error } = await supabaseClient
-        .from('balances') // ✅ MISMA TABLA QUE TRIVIA
-        .update({ saldo: nuevoSaldo }) // ✅ SIN updated_at - CORREGIDO
-        .eq('usuario_id', usuarioActual.id);
-
-      if (error) {
-        throw new Error('Error al descontar saldo: ' + error.message);
-      }
-
-      userBalance = nuevoSaldo;
-      document.getElementById('userBalance').textContent = `$${userBalance.toLocaleString()}`;
-      
-      return true;
-    } catch (error) {
-      console.error('Error descontando saldo:', error);
-      throw error;
-    }
-  }
-
-  // ✅ FUNCIÓN AGREGAR PREMIO AL SALDO - IGUAL A TRIVIA (CORREGIDA)
-  async function agregarPremioAlSaldo(premio) {
-    try {
-      const nuevoSaldo = userBalance + premio;
-      
-      const { error } = await supabaseClient
-        .from('balances') // ✅ MISMA TABLA QUE TRIVIA
-        .update({ saldo: nuevoSaldo }) // ✅ SIN updated_at - CORREGIDO
-        .eq('usuario_id', usuarioActual.id);
-
-      if (error) {
-        throw new Error('Error al agregar premio: ' + error.message);
-      }
-
-      userBalance = nuevoSaldo;
-      document.getElementById('userBalance').textContent = `$${userBalance.toLocaleString()}`;
-      
-      return true;
-    } catch (error) {
-      console.error('Error agregando premio:', error);
-      throw error;
-    }
-  }
-
-  // Función para formatear moneda
-  function formatCurrency(amount) {
-    return new Intl.NumberFormat('es-AR', {
-      style: 'currency',
-      currency: 'ARS',
-      minimumFractionDigits: 0
-    }).format(amount);
-  }
-
-  // Función para mostrar errores
-  function showError(message) {
-    const errorDiv = document.getElementById('errorMessage');
-    errorDiv.textContent = message;
-    errorDiv.style.display = 'block';
-    setTimeout(() => {
-      errorDiv.style.display = 'none';
-    }, 5000);
-  }
-
-  // ✅ FUNCIÓN REGISTRAR COMPRA - CORREGIDA
-  async function registerMysteryBoxPurchase() {
-    try {
-      const { data, error } = await supabaseClient
-        .from('recompensas')
-        .insert({
-          usuario_id: usuarioActual.id,
-          meta: null, // ✅ CORREGIDO: null para evitar constraint error
-          fecha: new Date().toISOString(),
-          monto: -mysteryBoxConfig.cost, // ✅ USA EL COSTO DINÁMICO
-          moneda: 'ARS',
-          aprobado: true, // Auto-aprobado
-          tipo: 'mysterybox_compra'
-        })
-        .select()
+      // Obtener estadísticas de hoy
+      const { data: statsData, error: statsError } = await client
+        .from('mystery_box_stats')
+        .select('*')
+        .eq('date', new Date().toISOString().split('T')[0])
         .single();
 
-      if (error) throw error;
-      return data;
+      if (statsError && statsError.code !== 'PGRST116') {
+        throw statsError;
+      }
 
+      // Contar usuarios únicos que han comprado cajas
+      const { count: uniqueUsers, error: usersError } = await client
+        .from('mystery_box_purchases')
+        .select('user_id', { count: 'exact', head: true })
+        .eq('created_at::date', new Date().toISOString().split('T')[0]);
+
+      if (usersError) {
+        console.error('Error contando usuarios:', usersError);
+      }
+
+      const stats = statsData || {
+        total_boxes_sold: 0,
+        total_revenue: 0,
+        total_prizes_given: 0,
+        active_users: 0
+      };
+
+      document.getElementById('totalBoxes').textContent = stats.total_boxes_sold || 0;
+      document.getElementById('totalRevenue').textContent = `$${(stats.total_revenue || 0).toLocaleString()}`;
+      document.getElementById('totalPrizes').textContent = stats.total_prizes_given || 0;
+      document.getElementById('activeUsers').textContent = uniqueUsers || 0;
+      
+      showAlert('✅ Estadísticas actualizadas', 'success');
+      
     } catch (error) {
-      console.error('Error registrando compra:', error);
-      throw error;
+      console.error('Error al obtener estadísticas:', error);
+      // Mostrar datos de ejemplo si hay error
+      document.getElementById('totalBoxes').textContent = '0';
+      document.getElementById('totalRevenue').textContent = '$0';
+      document.getElementById('totalPrizes').textContent = '0';
+      document.getElementById('activeUsers').textContent = '0';
+      
+      showAlert('⚠️ Error al cargar estadísticas, mostrando datos base', 'warning');
     }
   }
 
- // ✅ FUNCIÓN REGISTRAR PREMIO - CORREGIDA
-  async function registerPrizeWon(prize) {
+  // Función para exportar estadísticas
+  async function exportStats() {
     try {
-      // Solo registrar si es premio con valor monetario
-      if (prize.value > 0 && (prize.type === 'cash' || prize.type === 'bonus')) {
-        const { data, error } = await supabaseClient
-          .from('recompensas')
-          .insert({
-            usuario_id: usuarioActual.id,
-            meta: null, // ✅ CORREGIDO: null para evitar constraint error
-            fecha: new Date().toISOString(),
-            monto: prize.value,
-            moneda: 'ARS',
-            aprobado: true, // Auto-aprobado
-            tipo: `mysterybox_${prize.type}`
-          })
-          .select()
-          .single();
+      const { data: configData, error: configError } = await client
+        .from('mystery_box_config')
+        .select('*')
+        .eq('is_active', true)
+        .single();
 
-        if (error) throw error;
-        return data;
-      }
+      const { data: statsData, error: statsError } = await client
+        .from('mystery_box_stats')
+        .select('*')
+        .order('date', { ascending: false })
+        .limit(30);
 
-      // Para entradas gratis, solo registrar en historial sin valor monetario
-      if (prize.type === 'trivia_entry' || prize.type === 'minipool_entry') {
-        const { data, error } = await supabaseClient
-          .from('recompensas')
-          .insert({
-            usuario_id: usuarioActual.id,
-            meta: null, // ✅ CORREGIDO: null para evitar constraint error
-            fecha: new Date().toISOString(),
-            monto: 0,
-            moneda: 'ARS',
-            aprobado: true,
-            tipo: `mysterybox_${prize.type}`
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-        return data;
-      }
-
-      return null;
-
-    } catch (error) {
-      console.error('Error registrando premio:', error);
-      throw error;
-    }
-  }
-
-  // Función para generar premio aleatorio basado en pesos
-  function generateRandomPrize() {
-    const prizes = mysteryBoxConfig.prizes;
-    const totalWeight = prizes.reduce((sum, prize) => sum + prize.weight, 0);
-    let random = Math.random() * totalWeight;
-    
-    for (const prize of prizes) {
-      random -= prize.weight;
-      if (random <= 0) {
-        return { ...prize }; // Retornar copia del premio
-      }
-    }
-    
-    // Fallback a caja vacía si algo sale mal
-    return prizes.find(p => p.type === 'empty') || prizes[0];
-  }
-
-  // ✅ FUNCIÓN ACTUALIZAR UI - CORREGIDA PARA USAR COSTO DINÁMICO
-  function updateUI() {
-    document.getElementById('boxCost').textContent = formatCurrency(mysteryBoxConfig.cost);
-    document.getElementById('userBalance').textContent = formatCurrency(userBalance);
-    document.getElementById('buttonText').textContent = `Abrir Caja (${formatCurrency(mysteryBoxConfig.cost)})`;
-
-    // Verificar si el usuario puede comprar
-    const openButton = document.getElementById('openButton');
-    if (userBalance < mysteryBoxConfig.cost) {
-      openButton.disabled = true;
-      openButton.style.opacity = '0.5';
-      openButton.title = 'Saldo insuficiente';
-    } else {
-      openButton.disabled = false;
-      openButton.style.opacity = '1';
-      openButton.title = '';
-    }
-  }
-
-  // Función para crear explosión de luz
-  function createLightExplosion() {
-    const lightExplosion = document.getElementById('lightExplosion');
-    lightExplosion.innerHTML = '';
-    
-    for (let i = 0; i < 16; i++) {
-      const ray = document.createElement('div');
-      ray.className = 'light-ray';
-      ray.style.transform = `translate(-50%, -50%) rotate(${i * 22.5}deg)`;
-      ray.style.animationDelay = `${i * 0.05}s`;
-      lightExplosion.appendChild(ray);
-    }
-    
-    lightExplosion.classList.add('active');
-  }
-
-  // Función para crear explosión de partículas
-  function createParticleExplosion() {
-    const container = document.getElementById('particlesContainer');
-    container.innerHTML = '';
-    
-    const colors = ['#FFD700', '#FFA500', '#00a8ff', '#FF6347', '#32CD32', '#9370DB', '#FF1493'];
-    
-    for (let i = 0; i < 150; i++) {
-      const particle = document.createElement('div');
-      particle.className = 'particle';
-      
-      const color = colors[Math.floor(Math.random() * colors.length)];
-      const size = Math.random() * 8 + 4;
-      particle.style.backgroundColor = color;
-      particle.style.width = size + 'px';
-      particle.style.height = size + 'px';
-      particle.style.boxShadow = `0 0 15px ${color}`;
-      
-      const startX = window.innerWidth / 2;
-      const startY = window.innerHeight / 2;
-      particle.style.left = startX + 'px';
-      particle.style.top = startY + 'px';
-      
-      const angle = (i / 150) * Math.PI * 2;
-      const velocity = 150 + Math.random() * 400;
-      const gravity = 600;
-      const life = 2500 + Math.random() * 2000;
-
-      particle.animate([
-        {
-          transform: 'translate(0, 0) scale(0)',
-          opacity: 1
-        },
-        {
-          transform: `translate(${Math.cos(angle) * velocity * 0.4}px, ${Math.sin(angle) * velocity * 0.4 - gravity * 0.3}px) scale(1)`,
-          opacity: 1,
-          offset: 0.4
-        },
-        {
-          transform: `translate(${Math.cos(angle) * velocity}px, ${Math.sin(angle) * velocity + gravity}px) scale(0.2)`,
-          opacity: 0
+      const exportData = {
+        fecha_exportacion: new Date().toISOString(),
+        configuracion_actual: configData || null,
+        estadisticas_recientes: statsData || [],
+        resumen: {
+          cajas_compradas: document.getElementById('totalBoxes').textContent,
+          ingresos_totales: document.getElementById('totalRevenue').textContent,
+          premios_entregados: document.getElementById('totalPrizes').textContent,
+          usuarios_activos: document.getElementById('activeUsers').textContent
         }
-      ], {
-        duration: life,
-        easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
-      });
+      };
       
-      container.appendChild(particle);
-    }
-  }
-
-  // Función para crear monedas flotantes
-  function createFloatingCoins() {
-    const container = document.getElementById('floatingCoins');
-    container.innerHTML = '';
-    
-    const coinEmojis = ['🪙', '💰', '💎', '⭐', '✨', '🎁'];
-    
-    for (let i = 0; i < 25; i++) {
-      const coin = document.createElement('div');
-      coin.className = 'coin';
-      coin.textContent = coinEmojis[Math.floor(Math.random() * coinEmojis.length)];
+      const dataStr = JSON.stringify(exportData, null, 2);
+      const dataBlob = new Blob([dataStr], {type: 'application/json'});
       
-      coin.style.left = Math.random() * 100 + '%';
-      coin.style.animationDelay = Math.random() * 3 + 's';
-      coin.style.animationDuration = (3 + Math.random() * 2) + 's';
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(dataBlob);
+      link.download = `mysterybox_stats_${new Date().toISOString().split('T')[0]}.json`;
+      link.click();
       
-      container.appendChild(coin);
-    }
-  }
-
-  // ✅ FUNCIÓN PRINCIPAL ABRIR CAJA - CORREGIDA
-  async function abrirCaja() {
-    if (isOpening) return;
-    
-    try {
-      // Verificar saldo
-      if (userBalance < mysteryBoxConfig.cost) {
-        showError('❌ Saldo insuficiente para abrir la caja');
-        return;
-      }
-
-      isOpening = true;
-      const chest = document.getElementById('treasureChest');
-      const lid = document.getElementById('chestLid');
-      const lock = document.getElementById('chestLock');
-      const button = document.getElementById('openButton');
-      const prizeReveal = document.getElementById('prizeReveal');
-      
-      // Actualizar botón
-      button.disabled = true;
-      button.innerHTML = '<div class="spinner"></div> Abriendo...';
-      
-      // ✅ REGISTRAR COMPRA Y DESCONTAR SALDO - CORREGIDO
-      await registerMysteryBoxPurchase();
-      await descontarSaldo(mysteryBoxConfig.cost); // ✅ USA LA FUNCIÓN CORREGIDA
-      
-      // Animación de temblor
-      chest.classList.add('opening');
-      
-      setTimeout(() => {
-        // Ocultar el candado con animación
-        lock.style.opacity = '0';
-        lock.style.transform = 'translateX(-50%) scale(0) rotate(180deg)';
-        
-        // Abrir la tapa del cofre
-        lid.classList.add('open');
-        
-        // Crear efectos visuales
-        createLightExplosion();
-        createFloatingCoins();
-        
-        setTimeout(() => {
-          createParticleExplosion();
-        }, 800);
-        
-      }, 1000);
-      
-      // Generar premio
-      const prize = generateRandomPrize();
-      console.log('Premio generado:', prize);
-      
-      // Registrar premio
-      await registerPrizeWon(prize);
-      
-      // ✅ SI ES PREMIO MONETARIO, AÑADIR AL SALDO - CORREGIDO
-      if (prize.value > 0 && (prize.type === 'cash' || prize.type === 'bonus')) {
-        await agregarPremioAlSaldo(prize.value); // ✅ USA LA FUNCIÓN CORREGIDA
-      }
-      
-      setTimeout(() => {
-        // Mostrar premio
-        document.getElementById('prizeIcon').textContent = prize.icon;
-        document.getElementById('prizeTitle').textContent = prize.title;
-        document.getElementById('prizeDescription').textContent = prize.description;
-        
-        prizeReveal.classList.add('show');
-      }, 2800);
+      showAlert('✅ Estadísticas exportadas correctamente', 'success');
       
     } catch (error) {
-      console.error('Error abriendo caja:', error);
-      showError('❌ Error al abrir la caja: ' + error.message);
-      resetChest();
+      console.error('Error al exportar:', error);
+      showAlert('❌ Error al exportar estadísticas', 'error');
     }
-  }
-
-  // Función para resetear el cofre
-  function resetChest() {
-    const chest = document.getElementById('treasureChest');
-    const lid = document.getElementById('chestLid');
-    const lock = document.getElementById('chestLock');
-    const button = document.getElementById('openButton');
-    const prizeReveal = document.getElementById('prizeReveal');
-    const lightExplosion = document.getElementById('lightExplosion');
-    const floatingCoins = document.getElementById('floatingCoins');
-    const particlesContainer = document.getElementById('particlesContainer');
-    
-    // Reset todas las animaciones
-    chest.classList.remove('opening');
-    lid.classList.remove('open');
-    lightExplosion.classList.remove('active');
-    prizeReveal.classList.remove('show');
-    
-    // Restaurar el candado
-    lock.style.opacity = '1';
-    lock.style.transform = 'translateX(-50%) scale(1) rotate(0deg)';
-    
-    // Limpiar efectos
-    lightExplosion.innerHTML = '';
-    floatingCoins.innerHTML = '';
-    particlesContainer.innerHTML = '';
-    
-    // Restaurar botón correctamente
-    const costText = formatCurrency(mysteryBoxConfig.cost);
-    button.disabled = false;
-    button.innerHTML = `<i class="fas fa-key"></i> <span id="buttonText">Abrir Caja (${costText})</span>`;
-    isOpening = false;
-    
-    // Actualizar UI
-    updateUI();
-    
-    // Recrear monedas flotantes
-    setTimeout(() => {
-      createFloatingCoins();
-    }, 500);
   }
 
   // Funciones del sidebar
@@ -1360,65 +833,24 @@
 
   // Función de logout
   async function logout() {
-    await supabaseClient.auth.signOut();
+    await client.auth.signOut();
     window.location.href = "index.html";
   }
 
-  // ✅ FUNCIÓN INICIALIZAR - CORREGIDA IGUAL A TRIVIA
-  async function initializePage() {
-    try {
-      console.log('🎁 Iniciando Mystery Box...');
-      
-      // ✅ VERIFICAR USUARIO IGUAL A TRIVIA
-      await verificarUsuario();
-      
-      console.log('✅ Usuario autenticado:', usuarioActual.email);
-      
-      // ✅ CARGAR CONFIGURACIÓN DESDE BASE DE DATOS
-      await cargarConfiguracionMysteryBox();
-      
-      // ✅ CARGAR SALDO IGUAL A TRIVIA
-      await cargarSaldoUsuario();
-      console.log('💰 Saldo cargado:', userBalance);
-      
-      // Actualizar interfaz
-      updateUI();
-      
-      // Crear monedas flotantes iniciales
-      createFloatingCoins();
-      
-      // Recrear monedas cada 8 segundos
-      setInterval(() => {
-        if (!isOpening) {
-          createFloatingCoins();
-        }
-      }, 8000);
-      
-      // ✅ RECARGAR CONFIGURACIÓN CADA 30 SEGUNDOS PARA DETECTAR CAMBIOS DEL ADMIN
-      setInterval(async () => {
-        if (!isOpening) {
-          console.log('🔄 Verificando cambios en configuración...');
-          await cargarConfiguracionMysteryBox();
-        }
-      }, 30000);
-      
-      console.log('🎁 Mystery Box inicializado correctamente');
-      
-    } catch (error) {
-      console.error('Error inicializando página:', error);
-      showError('❌ Error al cargar la página: ' + error.message);
-    }
-  }
+  // Event listeners para actualizar vista previa en tiempo real
+  document.getElementById('cashPrizes').addEventListener('input', previewPrizes);
+  document.getElementById('cashAmount').addEventListener('input', previewPrizes);
+  document.getElementById('triviaPrizes').addEventListener('input', previewPrizes);
+  document.getElementById('minipoolPrizes').addEventListener('input', previewPrizes);
+  document.getElementById('emptyBoxes').addEventListener('input', previewPrizes);
+  document.getElementById('boxCost').addEventListener('input', previewPrizes);
 
-  // Event listeners
-  document.addEventListener('DOMContentLoaded', initializePage);
-  
-  // Agregar click listener al cofre también
-  document.getElementById('treasureChest').addEventListener('click', abrirCaja);
-
-  console.log('🎁 Mystery Box - Sistema cargado correctamente');
-  console.log('💰 Configuración dinámica habilitada');
-
+  // Inicializar página
+  document.addEventListener('DOMContentLoaded', function() {
+    loadCurrentConfig();
+    refreshStats();
+    previewPrizes();
+  });
 </script>
 </body>
 </html>
