@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sistema de Tickets - Panel Administrador</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: white;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+      overflow: hidden;
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 30px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+      animation: rotate 20s linear infinite;
+    }
+
+    @keyframes rotate {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      font-weight: 900;
+      text-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      position: relative;
+      z-index: 2;
+    }
+
+    .header p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+      margin-top: 10px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .main-content {
+      padding: 30px;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr auto;
+      gap: 15px;
+      margin-bottom: 30px;
+      align-items: end;
+    }
+
+    .search-box {
+      position: relative;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 12px 20px 12px 45px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+
+    .search-box input:focus {
+      outline: none;
+      border-color: #667eea;
+      background: rgba(255, 255, 255, 0.15);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    .search-box i {
+      position: absolute;
+      left: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .filter-select, .sort-select {
+      padding: 12px 15px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .filter-select:focus, .sort-select:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    .filter-select option, .sort-select option {
+      background: #1a1a2e;
+      color: white;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 20px;
+      border-radius: 15px;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .stat-number {
+      font-size: 2.5rem;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .stat-label {
+      font-size: 0.9rem;
+      opacity: 0.8;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .stat-pendientes .stat-number { color: #ffa726; }
+    .stat-proceso .stat-number { color: #42a5f5; }
+    .stat-resueltos .stat-number { color: #66bb6a; }
+    .stat-total .stat-number { color: #ab47bc; }
+
+    .tickets-container {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 15px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+.ticket-item {
+      background: rgba(255, 255, 255, 0.05);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 20px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .ticket-item:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateX(5px);
+    }
+
+    .ticket-item:last-child {
+      border-bottom: none;
+    }
+
+    .ticket-header {
+      display: grid;
+      grid-template-columns: 1fr auto auto auto;
+      gap: 15px;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .ticket-info h3 {
+      font-size: 1.1rem;
+      margin-bottom: 5px;
+      color: #667eea;
+    }
+
+    .ticket-meta {
+      font-size: 0.9rem;
+      opacity: 0.7;
+    }
+
+    .ticket-status {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .status-pendiente {
+      background: rgba(255, 167, 38, 0.2);
+      color: #ffa726;
+      border: 1px solid #ffa726;
+    }
+
+    .status-en_proceso {
+      background: rgba(66, 165, 245, 0.2);
+      color: #42a5f5;
+      border: 1px solid #42a5f5;
+    }
+
+    .status-resuelto {
+      background: rgba(102, 187, 106, 0.2);
+      color: #66bb6a;
+      border: 1px solid #66bb6a;
+    }
+
+    .ticket-priority {
+      padding: 4px 8px;
+      border-radius: 10px;
+      font-size: 0.75rem;
+      font-weight: bold;
+    }
+
+    .priority-alta {
+      background: rgba(244, 67, 54, 0.2);
+      color: #f44336;
+      border: 1px solid #f44336;
+    }
+
+    .priority-media {
+      background: rgba(255, 193, 7, 0.2);
+      color: #ffc107;
+      border: 1px solid #ffc107;
+    }
+
+    .priority-baja {
+      background: rgba(76, 175, 80, 0.2);
+      color: #4caf50;
+      border: 1px solid #4caf50;
+    }
+
+    .ticket-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-small {
+      padding: 6px 12px;
+      font-size: 0.8rem;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 600;
+    }
+
+    .btn-responder {
+      background: linear-gradient(135deg, #42a5f5, #1976d2);
+      color: white;
+    }
+
+    .btn-cambiar {
+      background: linear-gradient(135deg, #ff9800, #f57c00);
+      color: white;
+    }
+
+    .btn-small:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    .ticket-content {
+      background: rgba(0, 0, 0, 0.2);
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 15px;
+      border-left: 4px solid #667eea;
+    }
+
+    .no-tickets {
+      text-align: center;
+      padding: 60px 20px;
+      opacity: 0.7;
+    }
+
+    .no-tickets i {
+      font-size: 4rem;
+      margin-bottom: 20px;
+      opacity: 0.5;
+    }
+
+    /* Modal Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.8);
+      backdrop-filter: blur(5px);
+    }
+
+    .modal-content {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      margin: 2% auto;
+      padding: 30px;
+      border-radius: 20px;
+      width: 90%;
+      max-width: 800px;
+      max-height: 90vh;
+      overflow-y: auto;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .modal-title {
+      font-size: 1.5rem;
+      color: #667eea;
+    }
+
+    .close {
+      color: #aaa;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .close:hover {
+      color: white;
+      transform: scale(1.1);
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .form-group textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 15px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 14px;
+      resize: vertical;
+      transition: all 0.3s ease;
+    }
+
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #667eea;
+      background: rgba(255, 255, 255, 0.15);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    @media (max-width: 768px) {
+      .controls {
+        grid-template-columns: 1fr;
+        gap: 15px;
+      }
+      
+      .stats {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .ticket-header {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      
+      .ticket-actions {
+        justify-content: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1><i class="fas fa-headset"></i> Sistema de Tickets</h1>
+    <p>Panel de Administración - Gestión de Soporte y Consultas</p>
+  </div>
+
+  <div class="main-content">
+    <!-- Controles -->
+    <div class="controls">
+      <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input type="text" id="searchInput" placeholder="Buscar por email, asunto o mensaje...">
+      </div>
+      <select id="filterStatus" class="filter-select">
+        <option value="">Todos los estados</option>
+        <option value="pendiente">Pendientes</option>
+        <option value="en_proceso">En Proceso</option>
+        <option value="resuelto">Resueltos</option>
+      </select>
+      <select id="sortOrder" class="sort-select">
+        <option value="fecha_desc">Más recientes</option>
+        <option value="fecha_asc">Más antiguos</option>
+        <option value="estado">Por estado</option>
+      </select>
+      <button class="btn" onclick="cargarTickets()">
+        <i class="fas fa-sync-alt"></i> Actualizar
+      </button>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="stats">
+      <div class="stat-card stat-pendientes">
+        <div class="stat-number" id="statPendientes">0</div>
+        <div class="stat-label">Pendientes</div>
+      </div>
+      <div class="stat-card stat-proceso">
+        <div class="stat-number" id="statProceso">0</div>
+        <div class="stat-label">En Proceso</div>
+      </div>
+      <div class="stat-card stat-resueltos">
+        <div class="stat-number" id="statResueltos">0</div>
+        <div class="stat-label">Resueltos</div>
+      </div>
+      <div class="stat-card stat-total">
+        <div class="stat-number" id="statTotal">0</div>
+        <div class="stat-label">Total</div>
+      </div>
+    </div>
+
+    <!-- Lista de Tickets -->
+    <div class="tickets-container" id="ticketsContainer">
+      <div class="no-tickets">
+        <i class="fas fa-inbox"></i>
+        <h3>Cargando tickets...</h3>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para Responder Ticket -->
+<div id="modalRespuesta" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 class="modal-title">
+        <i class="fas fa-reply"></i> Responder Ticket
+      </h2>
+      <span class="close" onclick="cerrarModal()">&times;</span>
+    </div>
+    
+    <div id="ticketOriginal" class="ticket-content">
+      <!-- Aquí se cargará el ticket original -->
+    </div>
+    
+    <div class="form-group">
+      <label for="respuestaAdmin">
+        <i class="fas fa-comment-dots"></i> Tu respuesta:
+      </label>
+      <textarea id="respuestaAdmin" placeholder="Escribe tu respuesta aquí..."></textarea>
+    </div>
+    
+    <div class="form-group">
+      <label for="nuevoEstado">
+        <i class="fas fa-flag"></i> Cambiar estado a:
+      </label>
+      <select id="nuevoEstado" class="filter-select">
+        <option value="en_proceso">En Proceso</option>
+        <option value="resuelto">Resuelto</option>
+        <option value="pendiente">Pendiente</option>
+      </select>
+    </div>
+    
+    <div style="text-align: center; margin-top: 25px;">
+      <button class="btn" onclick="enviarRespuesta()" style="margin-right: 10px;">
+        <i class="fas fa-paper-plane"></i> Enviar Respuesta
+      </button>
+      <button class="btn" onclick="cerrarModal()" style="background: linear-gradient(135deg, #6c757d, #495057);">
+        <i class="fas fa-times"></i> Cancelar
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const supabaseClient = supabase.createClient(
+    'https://ovulezkcxwrjvyxlxsdv.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI'
+  );
+
+  let tickets = [];
+  let ticketSeleccionado = null;
+  let currentUser = null;
+
+  // Verificar autenticación y rol de admin
+  async function verificarAuth() {
+    const { data: { user }, error } = await supabaseClient.auth.getUser();
+    
+    if (error || !user) {
+      alert('Debes iniciar sesión para acceder al panel de administración');
+      window.location.href = 'index.html';
+      return false;
+    }
+
+    // Verificar si es administrador
+    const { data: profile, error: profileError } = await supabaseClient
+      .from('profiles')
+      .select('rol')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError || !profile || profile.rol !== 'admi') {
+      alert('No tienes permisos para acceder a este panel');
+      window.location.href = 'principal.html';
+      return false;
+    }
+
+    currentUser = user;
+    return true;
+  }
+
+  // Formatear fecha
+  function formatearFecha(fecha) {
+    const date = new Date(fecha);
+    return date.toLocaleDateString('es-AR', {
+      day: '2-digit',
+      month: '2-digit', 
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  // Obtener información del usuario por ID
+  async function obtenerInfoUsuario(usuarioId) {
+    const { data, error } = await supabaseClient
+      .from('profiles')
+      .select('nombre, apellido, email')
+      .eq('id', usuarioId)
+      .single();
+
+    if (error || !data) {
+      return { nombre: 'Usuario', apellido: 'Desconocido', email: 'Sin email' };
+    }
+
+    return {
+      nombre: data.nombre || 'Sin nombre',
+      apellido: data.apellido || '',
+      email: data.email || 'Sin email'
+    };
+  }
+
+  // Cargar tickets desde la base de datos
+  async function cargarTickets() {
+    try {
+      const { data, error } = await supabaseClient
+        .from('tickets')
+        .select('*')
+        .order('fecha', { ascending: false });
+
+      if (error) {
+        console.error('Error cargando tickets:', error);
+        mostrarMensaje('Error al cargar tickets', 'error');
+        return;
+      }
+
+      tickets = data || [];
+      await aplicarFiltros();
+      actualizarEstadisticas();
+      
+    } catch (error) {
+      console.error('Error en cargarTickets:', error);
+      mostrarMensaje('Error al cargar tickets', 'error');
+    }
+  }
+
+  // Aplicar filtros y búsqueda
+  async function aplicarFiltros() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const statusFilter = document.getElementById('filterStatus').value;
+    const sortOrder = document.getElementById('sortOrder').value;
+
+    let ticketsFiltrados = [...tickets];
+
+    // Filtrar por búsqueda
+    if (searchTerm) {
+      ticketsFiltrados = ticketsFiltrados.filter(ticket => 
+        ticket.email.toLowerCase().includes(searchTerm) ||
+        ticket.asunto.toLowerCase().includes(searchTerm) ||
+        ticket.mensaje.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    // Filtrar por estado
+    if (statusFilter) {
+      ticketsFiltrados = ticketsFiltrados.filter(ticket => ticket.estado === statusFilter);
+    }
+
+    // Ordenar
+    ticketsFiltrados.sort((a, b) => {
+      switch(sortOrder) {
+        case 'fecha_asc':
+          return new Date(a.fecha) - new Date(b.fecha);
+        case 'fecha_desc':
+          return new Date(b.fecha) - new Date(a.fecha);
+        case 'estado':
+          return a.estado.localeCompare(b.estado);
+        default:
+          return new Date(b.fecha) - new Date(a.fecha);
+      }
+    });
+
+    await mostrarTickets(ticketsFiltrados);
+  }
+
+  // Mostrar tickets en la interfaz
+  async function mostrarTickets(ticketsToShow) {
+    const container = document.getElementById('ticketsContainer');
+    
+    if (!ticketsToShow || ticketsToShow.length === 0) {
+      container.innerHTML = `
+        <div class="no-tickets">
+          <i class="fas fa-inbox"></i>
+          <h3>No hay tickets que mostrar</h3>
+          <p>No se encontraron tickets con los filtros aplicados</p>
+        </div>
+      `;
+      return;
+    }
+
+    let html = '';
+    
+    for (const ticket of ticketsToShow) {
+      const userInfo = await obtenerInfoUsuario(ticket.usuario_id);
+      const fechaFormatted = formatearFecha(ticket.fecha);
+      
+      // Determinar prioridad (basada en tiempo sin respuesta)
+      const horasDesdeCreacion = (new Date() - new Date(ticket.fecha)) / (1000 * 60 * 60);
+      let prioridad = 'baja';
+      if (ticket.estado === 'pendiente' && horasDesdeCreacion > 24) prioridad = 'alta';
+      else if (ticket.estado === 'pendiente' && horasDesdeCreacion > 8) prioridad = 'media';
+
+      html += `
+        <div class="ticket-item" onclick="seleccionarTicket('${ticket.id}')">
+          <div class="ticket-header">
+            <div class="ticket-info">
+              <h3><i class="fas fa-envelope"></i> ${ticket.asunto}</h3>
+              <div class="ticket-meta">
+                <strong>${userInfo.nombre} ${userInfo.apellido}</strong> • 
+                ${userInfo.email} • 
+                ${fechaFormatted}
+              </div>
+            </div>
+            <div class="ticket-status status-${ticket.estado}">
+              ${ticket.estado.replace('_', ' ')}
+            </div>
+            <div class="ticket-priority priority-${prioridad}">
+              ${prioridad.toUpperCase()}
+            </div>
+            <div class="ticket-actions" onclick="event.stopPropagation()">
+              <button class="btn-small btn-responder" onclick="abrirModalRespuesta('${ticket.id}')">
+                <i class="fas fa-reply"></i> Responder
+              </button>
+              <button class="btn-small btn-cambiar" onclick="cambiarEstadoRapido('${ticket.id}')">
+                <i class="fas fa-exchange-alt"></i> Estado
+              </button>
+            </div>
+          </div>
+          <div class="ticket-content">
+            <strong>Mensaje:</strong><br>
+            ${ticket.mensaje}
+            ${ticket.respuesta_admin ? `
+              <hr style="margin: 15px 0; border: 1px solid rgba(255,255,255,0.1);">
+              <strong style="color: #42a5f5;">Respuesta del administrador:</strong><br>
+              ${ticket.respuesta_admin}
+              <br><small style="opacity: 0.7;">Respondido el: ${formatearFecha(ticket.fecha_respuesta)}</small>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }
+    
+    container.innerHTML = html;
+  }
+
+  // Actualizar estadísticas
+  function actualizarEstadisticas() {
+    const stats = {
+      pendientes: tickets.filter(t => t.estado === 'pendiente').length,
+      proceso: tickets.filter(t => t.estado === 'en_proceso').length,
+      resueltos: tickets.filter(t => t.estado === 'resuelto').length,
+      total: tickets.length
+    };
+
+    document.getElementById('statPendientes').textContent = stats.pendientes;
+    document.getElementById('statProceso').textContent = stats.proceso;
+    document.getElementById('statResueltos').textContent = stats.resueltos;
+    document.getElementById('statTotal').textContent = stats.total;
+  }
+
+  // Seleccionar ticket (para destacar)
+  function seleccionarTicket(ticketId) {
+    // Remover selección previa
+    document.querySelectorAll('.ticket-item').forEach(item => {
+      item.style.borderLeft = 'none';
+    });
+    
+    // Agregar selección al ticket actual
+    event.currentTarget.style.borderLeft = '4px solid #667eea';
+    ticketSeleccionado = tickets.find(t => t.id === ticketId);
+  }
+
+  // Abrir modal para responder ticket
+  async function abrirModalRespuesta(ticketId) {
+    const ticket = tickets.find(t => t.id === ticketId);
+    if (!ticket) return;
+
+    ticketSeleccionado = ticket;
+    const userInfo = await obtenerInfoUsuario(ticket.usuario_id);
+
+    // Mostrar información del ticket original
+    document.getElementById('ticketOriginal').innerHTML = `
+      <h4><i class="fas fa-info-circle"></i> Ticket Original</h4>
+      <p><strong>De:</strong> ${userInfo.nombre} ${userInfo.apellido} (${userInfo.email})</p>
+      <p><strong>Asunto:</strong> ${ticket.asunto}</p>
+      <p><strong>Fecha:</strong> ${formatearFecha(ticket.fecha)}</p>
+      <p><strong>Estado actual:</strong> <span class="ticket-status status-${ticket.estado}">${ticket.estado.replace('_', ' ')}</span></p>
+      <hr style="margin: 15px 0; border: 1px solid rgba(255,255,255,0.1);">
+      <p><strong>Mensaje:</strong></p>
+      <p>${ticket.mensaje}</p>
+    `;
+
+    // Establecer estado actual en el select
+    document.getElementById('nuevoEstado').value = ticket.estado;
+    
+    // Limpiar respuesta anterior
+    document.getElementById('respuestaAdmin').value = '';
+
+    // Mostrar modal
+    document.getElementById('modalRespuesta').style.display = 'block';
+  }
+
+  // Cerrar modal
+  function cerrarModal() {
+    document.getElementById('modalRespuesta').style.display = 'none';
+    ticketSeleccionado = null;
+  }
+
+  // Enviar respuesta
+  async function enviarRespuesta() {
+    if (!ticketSeleccionado) return;
+
+    const respuesta = document.getElementById('respuestaAdmin').value.trim();
+    const nuevoEstado = document.getElementById('nuevoEstado').value;
+
+    if (!respuesta) {
+      mostrarMensaje('Por favor escribe una respuesta', 'error');
+      return;
+    }
+
+    try {
+      const { error } = await supabaseClient
+        .from('tickets')
+        .update({
+          respuesta_admin: respuesta,
+          estado: nuevoEstado,
+          fecha_respuesta: new Date().toISOString(),
+          admin_id: currentUser.id
+        })
+        .eq('id', ticketSeleccionado.id);
+
+      if (error) {
+        console.error('Error enviando respuesta:', error);
+        mostrarMensaje('Error al enviar respuesta', 'error');
+        return;
+      }
+
+      mostrarMensaje('Respuesta enviada correctamente', 'success');
+      cerrarModal();
+      await cargarTickets();
+
+    } catch (error) {
+      console.error('Error en enviarRespuesta:', error);
+      mostrarMensaje('Error al enviar respuesta', 'error');
+    }
+  }
+
+  // Cambiar estado rápido
+  async function cambiarEstadoRapido(ticketId) {
+    const ticket = tickets.find(t => t.id === ticketId);
+    if (!ticket) return;
+
+    const estados = ['pendiente', 'en_proceso', 'resuelto'];
+    const estadoActual = ticket.estado;
+    const indexActual = estados.indexOf(estadoActual);
+    const nuevoEstado = estados[(indexActual + 1) % estados.length];
+
+    try {
+      const { error } = await supabaseClient
+        .from('tickets')
+        .update({ 
+          estado: nuevoEstado,
+          admin_id: currentUser.id 
+        })
+        .eq('id', ticketId);
+
+      if (error) {
+        console.error('Error cambiando estado:', error);
+        mostrarMensaje('Error al cambiar estado', 'error');
+        return;
+      }
+
+      mostrarMensaje(`Estado cambiado a: ${nuevoEstado.replace('_', ' ')}`, 'success');
+      await cargarTickets();
+
+    } catch (error) {
+      console.error('Error en cambiarEstadoRapido:', error);
+      mostrarMensaje('Error al cambiar estado', 'error');
+    }
+  }
+
+  // Mostrar mensaje de notificación
+  function mostrarMensaje(mensaje, tipo = 'success') {
+    // Remover mensaje anterior si existe
+    const mensajeAnterior = document.querySelector('.notification-message');
+    if (mensajeAnterior) {
+      mensajeAnterior.remove();
+    }
+
+    const div = document.createElement('div');
+    div.className = 'notification-message';
+    div.innerHTML = `
+      <i class="fas fa-${tipo === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>
+      ${mensaje}
+    `;
+    
+    div.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: ${tipo === 'success' ? 'linear-gradient(135deg, #66bb6a, #4caf50)' : 'linear-gradient(135deg, #ef5350, #f44336)'};
+      color: white;
+      padding: 15px 20px;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      z-index: 10000;
+      font-weight: 600;
+      backdrop-filter: blur(10px);
+      animation: slideIn 0.3s ease;
+    `;
+
+    document.body.appendChild(div);
+
+    // Remover después de 4 segundos
+    setTimeout(() => {
+      div.style.animation = 'slideOut 0.3s ease';
+      setTimeout(() => div.remove(), 300);
+    }, 4000);
+  }
+
+  // Event Listeners
+  document.getElementById('searchInput').addEventListener('input', aplicarFiltros);
+  document.getElementById('filterStatus').addEventListener('change', aplicarFiltros);
+  document.getElementById('sortOrder').addEventListener('change', aplicarFiltros);
+
+  // Cerrar modal al hacer clic fuera
+  window.onclick = function(event) {
+    const modal = document.getElementById('modalRespuesta');
+    if (event.target === modal) {
+      cerrarModal();
+    }
+  }
+
+  // Agregar estilos para animaciones
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOut {
+      from { transform: translateX(0); opacity: 1; }
+      to { transform: translateX(100%); opacity: 0; }
+    }
+  `;
+  document.head.appendChild(style);
+
+  // Inicializar aplicación
+  document.addEventListener('DOMContentLoaded', async function() {
+    const authValid = await verificarAuth();
+    if (authValid) {
+      await cargarTickets();
+      
+      // Auto-refresh cada 30 segundos
+      setInterval(cargarTickets, 30000);
+    }
+  });
+
+</script>
+</body>
+</html>
