@@ -312,7 +312,7 @@
       color: white;
     }
 
-    .winners-section {
+.winners-section {
       background: rgba(0, 0, 0, 0.4);
       border-radius: 12px;
       padding: 20px;
@@ -397,7 +397,7 @@
         gap: 20px;
       }
 
-.admin-title {
+      .admin-title {
         font-size: 2rem;
       }
 
@@ -416,7 +416,7 @@
     PANEL ADMIN - SORTEOS
   </div>
   <div class="admin-subtitle">
-    Gestiona sorteos, participantes y ganadores
+    Gestiona sorteos, participantes y ganadores • Los premios se suman automáticamente al saldo
   </div>
 </div>
 
@@ -444,7 +444,7 @@
           <i class="fas fa-money-bill-wave"></i>
           Monto del Premio (ARS)
         </label>
-        <input type="number" id="montoSorteo" class="form-input" min="1" step="1" placeholder="Ej: 50000" required>
+        <input type="number" id="montoSorteo" class="form-input" min="1" step="1" placeholder="Ej: 100000" required>
       </div>
 
       <button type="submit" class="btn btn-primary" style="width: 100%;">
@@ -482,6 +482,9 @@
       </label>
       <textarea id="ganadoresEmails" class="form-textarea" 
                 placeholder="usuario1@email.com, usuario2@email.com, usuario3@email.com"></textarea>
+      <small style="color: #00ffcc; font-size: 0.9rem; margin-top: 5px; display: block;">
+        💡 Los premios se dividirán entre los ganadores y se sumarán automáticamente a sus saldos
+      </small>
     </div>
 
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
@@ -533,7 +536,7 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
 
   // Inicializar
   async function init() {
-    console.log('🚀 Iniciando Panel Admin de Sorteos');
+    console.log('🚀 Iniciando Panel Admin de Sorteos Integrado');
     await cargarConfiguracion();
     await cargarParticipantes();
     await cargarGanadores();
@@ -577,7 +580,7 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
         
         document.getElementById('sorteoStatus').innerHTML = `
           📅 <strong>Fecha:</strong> ${fechaFormateada}<br>
-          💰 <strong>Premio:</strong> $${data.monto.toLocaleString()} ARS<br>
+          💰 <strong>Premio Total:</strong> $${data.monto.toLocaleString()} ARS<br>
           ⏰ <strong>Estado:</strong> ${fecha > new Date() ? '🟡 Programado' : '🔴 Finalizado'}
         `;
       } else {
@@ -589,14 +592,14 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
     }
   }
 
-  // Cargar participantes
+  // Cargar participantes con join a profiles
   async function cargarParticipantes() {
     try {
       const { data, error } = await client
         .from('sorteo_participantes')
         .select(`
           *,
-          profiles:profiles!inner(username, email)
+          profiles!inner(username, email)
         `)
         .order('created_at', { ascending: false });
 
@@ -647,16 +650,16 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
     `).join('');
   }
 
-  // Cargar ganadores
+  // Cargar ganadores con join a profiles
   async function cargarGanadores() {
     try {
       const { data, error } = await client
         .from('sorteo_ganadores')
         .select(`
           *,
-          profiles:profiles!inner(username, email)
+          profiles!inner(username, email)
         `)
-        .order('created_at', { ascending: false });
+        .order('posicion', { ascending: true });
 
       if (error) throw error;
 
@@ -680,16 +683,16 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
       return;
     }
     
-    container.innerHTML = ganadoresActuales.map((g, index) => `
+    container.innerHTML = ganadoresActuales.map((g) => `
       <div class="winner-item">
         <div>
           <div class="winner-email">${g.profiles.email}</div>
           <div style="font-size: 0.8rem; color: #ccc;">
-            ${g.profiles.username || 'Sin nombre'} • ${new Date(g.created_at).toLocaleDateString('es-AR')}
+            ${g.profiles.username || 'Sin nombre'} • Premio agregado al saldo
           </div>
         </div>
         <div class="winner-prize">
-          🏆 ${index + 1}° Lugar - $${g.premio.toLocaleString()}
+          🏆 ${g.posicion}° Lugar - $${g.premio.toLocaleString()}
         </div>
       </div>
     `).join('');
@@ -699,7 +702,6 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
   document.getElementById('sorteoConfigForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    const formData = new FormData(e.target);
     const fecha = document.getElementById('fechaSorteo').value;
     const monto = parseInt(document.getElementById('montoSorteo').value);
     
@@ -735,7 +737,79 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
     }
   });
 
-  // Procesar ganadores
+// ✅ FUNCIÓN NUEVA: Sumar premio al saldo del usuario
+  async function sumarPremioAlSaldo(usuarioId, premio) {
+    try {
+      console.log(`💰 Sumando ${premio} al saldo del usuario ${usuarioId}`);
+      
+      // Obtener saldo actual
+      const { data: balance, error: balanceError } = await client
+        .from('balances')
+        .select('saldo')
+        .eq('usuario_id', usuarioId)
+        .maybeSingle();
+      
+      if (balanceError) throw balanceError;
+      
+      if (balance) {
+        // Usuario ya tiene balance, actualizar
+        const nuevoSaldo = balance.saldo + premio;
+        
+        const { error: updateError } = await client
+          .from('balances')
+          .update({ saldo: nuevoSaldo })
+          .eq('usuario_id', usuarioId);
+        
+        if (updateError) throw updateError;
+        
+        console.log(`✅ Saldo actualizado: ${balance.saldo} + ${premio} = ${nuevoSaldo}`);
+      } else {
+        // Usuario no tiene balance, crear nuevo
+        const { error: insertError } = await client
+          .from('balances')
+          .insert([{
+            usuario_id: usuarioId,
+            saldo: premio
+          }]);
+        
+        if (insertError) throw insertError;
+        
+        console.log(`✅ Nuevo balance creado con ${premio}`);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error sumando premio al saldo:', error);
+      throw error;
+    }
+  }
+
+  // ✅ FUNCIÓN NUEVA: Registrar premio en recompensas
+  async function registrarPremioEnRecompensas(usuarioId, premio, posicion) {
+    try {
+      const { error } = await client
+        .from('recompensas')
+        .insert([{
+          usuario_id: usuarioId,
+          meta: null,
+          fecha: new Date().toISOString(),
+          monto: premio,
+          moneda: 'ARS',
+          aprobado: true,
+          tipo: `sorteo_premio_${posicion}`
+        }]);
+      
+      if (error) throw error;
+      
+      console.log(`📝 Premio registrado en recompensas: ${premio} ARS`);
+      return true;
+    } catch (error) {
+      console.error('Error registrando premio en recompensas:', error);
+      throw error;
+    }
+  }
+
+  // ✅ FUNCIÓN ACTUALIZADA: Procesar ganadores con suma automática al saldo
   async function procesarGanadores() {
     const emailsText = document.getElementById('ganadoresEmails').value.trim();
     
@@ -757,12 +831,14 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
     }
     
     try {
+      mostrarAlerta('🔄 Procesando ganadores...', 'warning');
+      
       // Verificar que todos los emails existan y califiquen
       const { data: participantes, error: participantesError } = await client
         .from('sorteo_participantes')
         .select(`
           *,
-          profiles:profiles!inner(email)
+          profiles!inner(email)
         `)
         .in('profiles.email', emails)
         .eq('califica', true);
@@ -783,21 +859,35 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
       // Calcular premios (dividir el monto total entre los ganadores)
       const premioIndividual = Math.floor(currentConfig.monto / emails.length);
       
-      // Insertar nuevos ganadores
-      const ganadoresData = participantes.map((p, index) => ({
-        usuario_id: p.usuario_id,
-        sorteo_config_id: currentConfig.id,
-        premio: premioIndividual,
-        posicion: index + 1
-      }));
+      // ✅ PROCESO COMPLETO: Insertar ganadores + Sumar al saldo + Registrar en recompensas
+      for (let i = 0; i < participantes.length; i++) {
+        const participante = participantes[i];
+        const posicion = i + 1;
+        
+        console.log(`🏆 Procesando ganador ${posicion}: ${participante.profiles.email}`);
+        
+        // 1. Insertar en sorteo_ganadores
+        const { error: insertError } = await client
+          .from('sorteo_ganadores')
+          .insert([{
+            usuario_id: participante.usuario_id,
+            sorteo_config_id: currentConfig.id,
+            premio: premioIndividual,
+            posicion: posicion
+          }]);
+        
+        if (insertError) throw insertError;
+        
+        // 2. ✅ SUMAR PREMIO AL SALDO
+        await sumarPremioAlSaldo(participante.usuario_id, premioIndividual);
+        
+        // 3. ✅ REGISTRAR EN RECOMPENSAS
+        await registrarPremioEnRecompensas(participante.usuario_id, premioIndividual, posicion);
+      }
       
-      const { error: insertError } = await client
-        .from('sorteo_ganadores')
-        .insert(ganadoresData);
-      
-      if (insertError) throw insertError;
-      
-      mostrarAlerta(`✅ ${emails.length} ganador(es) procesado(s) exitosamente. Premio individual: $${premioIndividual.toLocaleString()}`, 'success');
+      mostrarAlerta(`🎉 ¡${emails.length} ganador(es) procesado(s) exitosamente! 
+        Premio individual: $${premioIndividual.toLocaleString()} 
+        💰 Los premios se sumaron automáticamente a los saldos de los ganadores`, 'success');
       
       // Limpiar el textarea
       document.getElementById('ganadoresEmails').value = '';
@@ -812,7 +902,7 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
 
   // Limpiar ganadores
   async function limpiarGanadores() {
-    if (!confirm('¿Estás seguro de que quieres eliminar todos los ganadores?')) {
+    if (!confirm('⚠️ ¿Estás seguro de que quieres eliminar todos los ganadores?\n\nNOTA: Esto NO revertirá los premios ya sumados a los saldos.')) {
       return;
     }
     
@@ -824,7 +914,7 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
       
       if (error) throw error;
       
-      mostrarAlerta('✅ Ganadores eliminados exitosamente', 'success');
+      mostrarAlerta('✅ Ganadores eliminados de la lista.\n💡 Los premios ya sumados a los saldos NO se revierten.', 'success');
       await cargarGanadores();
       
     } catch (error) {
@@ -833,9 +923,9 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
     }
   }
 
-  // Actualizar participación (recalcular quién califica)
+  // ✅ FUNCIÓN ACTUALIZADA: Actualizar participación con lógica de saldo
   async function actualizarParticipacion() {
-    if (!confirm('¿Estás seguro de que quieres recalcular la participación de todos los usuarios?')) {
+    if (!confirm('¿Estás seguro de que quieres recalcular la participación de todos los usuarios?\n\nCriterio: Usuarios con saldo > 0 califican para el sorteo.')) {
       return;
     }
     
@@ -865,11 +955,11 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
           continue;
         }
         
-        // Lógica para determinar si califica (puedes personalizar esto)
+        // ✅ LÓGICA DE CALIFICACIÓN: Usuario con saldo > 0
         const calificaParaSorteo = await verificarCalificacionUsuario(usuario.id);
         
         if (existeParticipante) {
-          // Actualizar participante existente
+          // Actualizar participante existente solo si cambió
           if (existeParticipante.califica !== calificaParaSorteo) {
             const { error: updateError } = await client
               .from('sorteo_participantes')
@@ -900,7 +990,7 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
         if (calificaParaSorteo) califican++;
       }
       
-      mostrarAlerta(`✅ Participación actualizada: ${procesados} usuarios procesados, ${califican} califican`, 'success');
+      mostrarAlerta(`✅ Participación actualizada: ${procesados} usuarios procesados, ${califican} califican para el sorteo`, 'success');
       await cargarParticipantes();
       
     } catch (error) {
@@ -909,11 +999,9 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
     }
   }
 
-  // Verificar si un usuario califica para el sorteo
+  // ✅ LÓGICA DE CALIFICACIÓN: Usuario califica si tiene saldo > 0
   async function verificarCalificacionUsuario(usuarioId) {
     try {
-      // Ejemplo de lógica: califica si tiene saldo mayor a 0
-      // Puedes personalizar esta lógica según tus criterios
       const { data: balance, error } = await client
         .from('balances')
         .select('saldo')
@@ -925,9 +1013,7 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
         return false;
       }
       
-      // Criterios de calificación (personalizable):
-      // 1. Tiene saldo mayor a 0
-      // 2. Puede agregar más criterios aquí
+      // Califica si tiene saldo mayor a 0
       const tieneSaldo = balance && balance.saldo > 0;
       
       return tieneSaldo;
@@ -958,7 +1044,7 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
     
     alertsContainer.insertAdjacentHTML('beforeend', alertHTML);
     
-    // Auto-remover después de 5 segundos
+    // Auto-remover después de 8 segundos para mensajes largos
     setTimeout(() => {
       const alertElement = document.getElementById(alertId);
       if (alertElement) {
@@ -966,10 +1052,10 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
         alertElement.style.transform = 'translateY(-20px)';
         setTimeout(() => alertElement.remove(), 300);
       }
-    }, 5000);
+    }, 8000);
   }
 
-  // Exportar datos (función adicional útil)
+  // ✅ FUNCIÓN NUEVA: Exportar datos completos
   async function exportarDatos() {
     try {
       const data = {
@@ -980,6 +1066,9 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
           total_participantes: participantesList.length,
           califican: participantesList.filter(p => p.califica).length,
           total_ganadores: ganadoresActuales.length,
+          premio_total: currentConfig?.monto || 0,
+          premio_individual: currentConfig && ganadoresActuales.length > 0 ? 
+            Math.floor(currentConfig.monto / ganadoresActuales.length) : 0,
           fecha_exportacion: new Date().toISOString()
         }
       };
@@ -1002,30 +1091,10 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
     }
   }
 
-  // Funciones de utilidad para formatear fechas
-  function formatearFecha(fecha) {
-    return new Date(fecha).toLocaleDateString('es-AR', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  }
-
-  function formatearMoneda(monto) {
-    return new Intl.NumberFormat('es-AR', {
-      style: 'currency',
-      currency: 'ARS',
-      minimumFractionDigits: 0
-    }).format(monto);
-  }
-
   // Inicializar cuando cargue la página
   document.addEventListener('DOMContentLoaded', init);
 
-  // Agregar botón de exportar al panel
+  // Agregar botón de exportar al final
   document.addEventListener('DOMContentLoaded', () => {
     // Crear botón de exportar
     const exportButton = document.createElement('button');
@@ -1042,14 +1111,14 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
     }
   });
 
-  console.log('🎮 Panel Admin de Sorteos cargado');
-  console.log('🔗 Conectado con la base de datos');
-  console.log('📋 Funcionalidades disponibles:');
-  console.log('  ✅ Configurar fechas y montos de sorteos');
-  console.log('  ✅ Ver participantes en tiempo real');
-  console.log('  ✅ Seleccionar ganadores por email');
-  console.log('  ✅ Actualizar criterios de participación');
-  console.log('  ✅ Exportar datos para reportes');
+  console.log('🎮 Panel Admin de Sorteos INTEGRADO cargado');
+  console.log('🔗 Conectado con sistema completo:');
+  console.log('  ✅ sorteo_config, sorteo_participantes, sorteo_ganadores');
+  console.log('  ✅ balances (suma automática de premios)');
+  console.log('  ✅ recompensas (registro de premios)');
+  console.log('  ✅ profiles (datos de usuarios)');
+  console.log('  💰 Los premios se suman automáticamente al saldo del ganador');
+  console.log('  📊 Integración completa con panel de usuario');
 </script>
 
 </body>
