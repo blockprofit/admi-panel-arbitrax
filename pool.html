@@ -254,6 +254,20 @@
       font-size: 1.2rem;
       font-weight: bold;
     }
+    .debug-panel {
+      position: fixed;
+      bottom: 10px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.9);
+      color: #00ff00;
+      padding: 10px;
+      border-radius: 5px;
+      font-family: monospace;
+      font-size: 11px;
+      max-width: 350px;
+      z-index: 9999;
+      border: 1px solid #30363d;
+    }
     @media (max-width: 768px) {
       .controls-row {
         flex-direction: column;
@@ -264,6 +278,10 @@
       .pool-config {
         grid-template-columns: 1fr;
       }
+      .debug-panel {
+        position: relative;
+        margin: 10px auto;
+      }
     }
   </style>
 </head>
@@ -273,7 +291,7 @@
 
   <!-- Alerta de solicitudes pendientes -->
   <div class="pending-requests" id="pendingAlert" style="display: none;">
-    <span class="pending-count" id="pendingCount">0</span> solicitudes de minipool pendientes de aprobación.
+    <span class="pending-count" id="pendingCount">0</span> solicitudes de minipool pendientes de aprobacion.
   </div>
 
   <!-- Selector de Semana -->
@@ -285,9 +303,9 @@
     </div>
   </div>
 
-  <!-- Estadísticas -->
+ <!-- Estadísticas -->
   <div class="seccion">
-    <h2>📊 Estadísticas de la Semana</h2>
+    <h2>Estadisticas de la Semana</h2>
     <div class="stats-grid">
       <div class="stat-card">
         <h3 id="totalParticipants">0</h3>
@@ -299,7 +317,7 @@
       </div>
       <div class="stat-card">
         <h3 id="pendingPayments">$0</h3>
-        <p>Pendientes de Aprobación</p>
+        <p>Pendientes de Aprobacion</p>
       </div>
       <div class="stat-card">
         <h3 id="weekProfit">$0</h3>
@@ -310,31 +328,31 @@
 
   <!-- Configuración de Precios -->
   <div class="seccion">
-    <h2>💰 Configurar Precios de Minipools</h2>
+    <h2>Configurar Precios de Minipools</h2>
     <div class="pool-config">
       <div class="pool-card">
-        <h4>🥉 Minipool Básico</h4>
+        <h4>Minipool Basico</h4>
         <div class="price-input">
           <input type="number" id="priceBasico" placeholder="10000" value="10000">
-          <button class="btn-edit" onclick="updatePoolPrice('basico')">💾 Guardar</button>
+          <button class="btn-edit" onclick="updatePoolPrice('basico')">Guardar</button>
         </div>
         <p>Precio actual: <span id="currentPriceBasico">$10,000</span></p>
       </div>
       
       <div class="pool-card">
-        <h4>🥈 Minipool Medio</h4>
+        <h4>Minipool Medio</h4>
         <div class="price-input">
           <input type="number" id="priceMedio" placeholder="25000" value="25000">
-          <button class="btn-edit" onclick="updatePoolPrice('medio')">💾 Guardar</button>
+          <button class="btn-edit" onclick="updatePoolPrice('medio')">Guardar</button>
         </div>
         <p>Precio actual: <span id="currentPriceMedio">$25,000</span></p>
       </div>
       
       <div class="pool-card">
-        <h4>🥇 Minipool Avanzado</h4>
+        <h4>Minipool Avanzado</h4>
         <div class="price-input">
           <input type="number" id="priceAvanzado" placeholder="50000" value="50000">
-          <button class="btn-edit" onclick="updatePoolPrice('avanzado')">💾 Guardar</button>
+          <button class="btn-edit" onclick="updatePoolPrice('avanzado')">Guardar</button>
         </div>
         <p>Precio actual: <span id="currentPriceAvanzado">$50,000</span></p>
       </div>
@@ -343,7 +361,7 @@
 
   <!-- Controles de Búsqueda y Filtros -->
   <div class="seccion">
-    <h2>🔍 Gestión de Solicitudes</h2>
+    <h2>Gestion de Solicitudes</h2>
     <div class="controls-row">
       <div class="control-group">
         <label for="searchInput">Buscar por Usuario o Email:</label>
@@ -364,20 +382,20 @@
         <label for="levelFilter">Filtrar por Nivel:</label>
         <select id="levelFilter" onchange="filterParticipants()">
           <option value="">Todos los niveles</option>
-          <option value="basico">Básico</option>
+          <option value="basico">Basico</option>
           <option value="medio">Medio</option>
           <option value="avanzado">Avanzado</option>
         </select>
       </div>
     </div>
     
-    <button onclick="processAllPendingRequests()">✅ Aprobar Todas las Solicitudes Pendientes</button>
-    <button onclick="refreshData()" class="btn-secondary">🔄 Actualizar Datos</button>
+    <button onclick="processAllPendingRequests()">Aprobar Todas las Solicitudes Pendientes</button>
+    <button onclick="refreshData()" class="btn-secondary">Actualizar Datos</button>
   </div>
 
   <!-- Tabla de Solicitudes -->
   <div class="seccion">
-    <h2>🏊‍♂️ Solicitudes de Minipools</h2>
+    <h2>Solicitudes de Minipools</h2>
     <div id="loadingMessage" class="loading">Cargando solicitudes...</div>
     <div id="errorMessage" class="error" style="display: none;"></div>
     <div id="successMessage" class="success" style="display: none;"></div>
@@ -404,7 +422,7 @@
 
   <!-- Historial de Transacciones -->
   <div class="seccion">
-    <h2>📋 Historial de Pagos Procesados</h2>
+    <h2>Historial de Pagos Procesados</h2>
     <table id="historyTable">
       <thead>
         <tr>
@@ -423,8 +441,11 @@
     </table>
   </div>
 
-</body>
-</html>
+  <!-- Panel de debugging -->
+  <div class="debug-panel" id="debugPanel">
+    <strong>Admin Debug Panel</strong><br>
+    <div id="debugInfo">Cargando...</div>
+  </div>
 
 <script>
   const supabaseUrl = "https://ovulezkcxwrjvyxlxsdv.supabase.co";
@@ -436,8 +457,9 @@
   let currentWeekOffset = 0;
   let allRequests = [];
   let currentUser = null;
+  let debugInfo = [];
 
-  // Configuración de pools (EDITABLE - Se guarda en memoria durante la sesión)
+  // Configuración de pools (SINCRONIZADA CON USUARIO) - Ahora se guarda en base de datos
   let poolConfig = {
     'basico': { 
       name: 'Minipool Básico', 
@@ -459,8 +481,20 @@
     }
   };
 
+  // === FUNCIONES DE DEBUG ===
+  function updateDebugPanel(message) {
+    debugInfo.push(`${new Date().toLocaleTimeString()}: ${message}`);
+    const debugPanel = document.getElementById('debugInfo');
+    if (debugPanel) {
+      debugPanel.innerHTML = debugInfo.slice(-8).join('<br>');
+    }
+    console.log(`🔧 [ADMIN DEBUG] ${message}`);
+  }
+
   // Funciones de utilidad
   function showMessage(message, type = 'success') {
+    updateDebugPanel(`Mostrando mensaje ${type}: ${message.substring(0, 40)}...`);
+    
     const successEl = document.getElementById('successMessage');
     const errorEl = document.getElementById('errorMessage');
     
@@ -477,7 +511,7 @@
     setTimeout(() => {
       successEl.style.display = 'none';
       errorEl.style.display = 'none';
-    }, 5000);
+    }, 6000);
   }
 
   function formatDate(dateString) {
@@ -521,15 +555,19 @@
 
   // Verificar permisos de usuario
   async function obtenerRolUsuario() {
+    updateDebugPanel('Verificando rol de usuario...');
+    
     try {
       const { data: authData, error: authError } = await supabaseClient.auth.getUser();
       if (authError || !authData.user) {
+        updateDebugPanel('❌ Error de autenticación');
         showMessage("Error de autenticación. Por favor inicia sesión.", 'error');
         throw new Error("No autenticado");
       }
       
       currentUser = authData.user;
       const userId = authData.user.id;
+      updateDebugPanel(`Usuario ID: ${userId}`);
 
       const { data: perfilData, error: perfilError } = await supabaseClient
         .from("profiles")
@@ -538,20 +576,76 @@
         .single();
 
       if (perfilError || !perfilData) {
+        updateDebugPanel('❌ Error obteniendo perfil');
         showMessage("Error obteniendo perfil de usuario.", 'error');
         throw new Error("Error perfil");
       }
 
       rolUsuario = perfilData.rol;
+      updateDebugPanel(`✅ Rol: ${rolUsuario}`);
       return rolUsuario;
     } catch (e) {
       console.error('Error obteniendo rol:', e);
+      updateDebugPanel(`❌ Error rol: ${e.message}`);
       return null;
     }
   }
 
-  // Actualizar precios de pools (guardado en memoria durante la sesión)
+  // Cargar configuración de precios desde BD (NUEVA FUNCIONALIDAD)
+  async function loadPoolConfiguration() {
+    updateDebugPanel('Cargando configuración de precios...');
+    
+    try {
+      // Intentar cargar desde tabla pool_config (si existe)
+      const { data, error } = await supabaseClient
+        .from('pool_config')
+        .select('*')
+        .maybeSingle();
+
+      if (data) {
+        // Actualizar configuración desde BD
+        if (data.basico_price) poolConfig.basico.amount = data.basico_price;
+        if (data.medio_price) poolConfig.medio.amount = data.medio_price;
+        if (data.avanzado_price) poolConfig.avanzado.amount = data.avanzado_price;
+        updateDebugPanel('✅ Precios cargados desde BD');
+      } else {
+        updateDebugPanel('⚠️ Usando precios por defecto');
+      }
+    } catch (error) {
+      updateDebugPanel('⚠️ Tabla pool_config no existe, usando defaults');
+    }
+  }
+
+  // Guardar configuración de precios en BD (NUEVA FUNCIONALIDAD)
+  async function savePoolConfiguration() {
+    updateDebugPanel('Guardando configuración en BD...');
+    
+    try {
+      const configData = {
+        basico_price: poolConfig.basico.amount,
+        medio_price: poolConfig.medio.amount,
+        avanzado_price: poolConfig.avanzado.amount,
+        updated_at: new Date().toISOString()
+      };
+
+      const { error } = await supabaseClient
+        .from('pool_config')
+        .upsert(configData);
+
+      if (error) {
+        updateDebugPanel(`❌ Error guardando config: ${error.message}`);
+      } else {
+        updateDebugPanel('✅ Configuración guardada en BD');
+      }
+    } catch (error) {
+      updateDebugPanel(`❌ Error BD config: ${error.message}`);
+    }
+  }
+
+ // Actualizar precios de pools (MEJORADO - ahora guarda en BD)
   async function updatePoolPrice(nivel) {
+    updateDebugPanel(`Actualizando precio ${nivel}...`);
+    
     try {
       const rol = await obtenerRolUsuario();
       if (rol !== "admi") {
@@ -589,24 +683,29 @@
     }
 
     try {
-      // Actualizar configuración en memoria (persiste durante la sesión)
+      // Actualizar configuración en memoria
       poolConfig[nivel].amount = newPrice;
+      
+      // Guardar en base de datos
+      await savePoolConfiguration();
       
       // Actualizar interfaz
       document.getElementById(spanId).textContent = formatCurrency(newPrice);
       
       showMessage(`✅ Precio del ${poolConfig[nivel].name} actualizado a ${formatCurrency(newPrice)}`);
-      
-      console.log('✅ Nueva configuración de precios:', poolConfig);
+      updateDebugPanel(`✅ Precio ${nivel} actualizado: ${newPrice}`);
       
     } catch (error) {
       console.error('Error actualizando precio:', error);
+      updateDebugPanel(`❌ Error actualizando: ${error.message}`);
       showMessage('Error actualizando precio: ' + error.message, 'error');
     }
   }
 
   // Actualizar interfaz de precios
   function updatePriceInterface() {
+    updateDebugPanel('Actualizando interfaz de precios...');
+    
     Object.keys(poolConfig).forEach(nivel => {
       const inputMap = {
         'basico': 'priceBasico',
@@ -635,6 +734,8 @@
 
   // Cargar solicitudes desde mini_pool
   async function loadRequests() {
+    updateDebugPanel('Cargando solicitudes...');
+    
     try {
       document.getElementById('loadingMessage').style.display = 'block';
       document.getElementById('requestsTable').style.display = 'none';
@@ -649,6 +750,8 @@
       }
 
       allRequests = data || [];
+      updateDebugPanel(`✅ ${allRequests.length} solicitudes cargadas`);
+      
       renderRequestsTable();
       updateStatistics();
       updatePendingAlert();
@@ -658,6 +761,7 @@
 
     } catch (error) {
       console.error('Error cargando solicitudes:', error);
+      updateDebugPanel(`❌ Error cargando: ${error.message}`);
       showMessage('Error cargando datos: ' + error.message, 'error');
       document.getElementById('loadingMessage').style.display = 'none';
     }
@@ -677,6 +781,8 @@
       const row = createRequestRow(request);
       tbody.appendChild(row);
     });
+    
+    updateDebugPanel(`✅ Tabla renderizada con ${allRequests.length} filas`);
   }
 
   function createRequestRow(request) {
@@ -744,8 +850,10 @@
     if (pendingRequests.length > 0) {
       countSpan.textContent = pendingRequests.length;
       alertDiv.style.display = 'block';
+      updateDebugPanel(`⚠️ ${pendingRequests.length} solicitudes pendientes`);
     } else {
       alertDiv.style.display = 'none';
+      updateDebugPanel('✅ No hay solicitudes pendientes');
     }
   }
 
@@ -776,12 +884,15 @@
     document.getElementById('totalInvested').textContent = formatCurrency(totalInvested);
     document.getElementById('pendingPayments').textContent = formatCurrency(pendingAmount);
     document.getElementById('weekProfit').textContent = formatCurrency(paidAmount);
+    
+    updateDebugPanel(`📊 Stats: ${totalParticipants} participantes, ${formatCurrency(totalInvested)} invertido`);
   }
 
   // Navegación de semanas
   function changeWeek(direction) {
     currentWeekOffset += direction;
     updateStatistics();
+    updateDebugPanel(`📅 Semana cambiada: offset ${currentWeekOffset}`);
   }
 
   // Filtrar solicitudes
@@ -791,6 +902,7 @@
     const levelFilter = document.getElementById('levelFilter').value;
     
     const rows = document.querySelectorAll('#requestsTableBody tr');
+    let visibleRows = 0;
     
     rows.forEach(row => {
       const userId = row.getAttribute('data-user-id') || '';
@@ -805,14 +917,19 @@
 
       if (matchesSearch && matchesStatus && matchesLevel) {
         row.style.display = '';
+        visibleRows++;
       } else {
         row.style.display = 'none';
       }
     });
+    
+    updateDebugPanel(`🔍 Filtro aplicado: ${visibleRows} filas visibles`);
   }
 
-// Aprobar solicitud de minipool
+// Aprobar solicitud de minipool (MEJORADO - con mejor manejo de errores)
   async function approveRequest(requestId) {
+    updateDebugPanel(`Aprobando solicitud ${requestId}...`);
+    
     try {
       const rol = await obtenerRolUsuario();
       if (rol !== "admi") {
@@ -827,16 +944,21 @@
     const request = allRequests.find(req => req.id === requestId);
     if (!request) {
       showMessage('Solicitud no encontrada', 'error');
+      updateDebugPanel(`❌ Solicitud ${requestId} no encontrada`);
       return;
     }
 
     const montoAPagar = request.monto * 2; // Duplicar la inversión
+    updateDebugPanel(`💰 Monto a pagar: ${montoAPagar} (${request.monto} x2)`);
     
     if (!confirm(`¿Aprobar solicitud de ${request.email}?\n\nNivel: ${request.nivel}\nMonto original: ${formatCurrency(request.monto)}\nMonto a pagar: ${formatCurrency(montoAPagar)}`)) {
+      updateDebugPanel('❌ Usuario canceló aprobación');
       return;
     }
 
     try {
+      updateDebugPanel('🔄 Procesando aprobación...');
+      
       // 1. Actualizar estado en mini_pool
       const { error: updateError } = await supabaseClient
         .from('mini_pool')
@@ -847,6 +969,7 @@
         .eq('id', requestId);
 
       if (updateError) throw updateError;
+      updateDebugPanel('✅ Estado actualizado en mini_pool');
 
       // 2. Actualizar/crear balance del usuario
       const { data: currentBalance, error: balanceError } = await supabaseClient
@@ -859,7 +982,9 @@
         throw balanceError;
       }
 
-      const newBalance = (currentBalance?.saldo || 0) + montoAPagar;
+      const oldBalance = currentBalance?.saldo || 0;
+      const newBalance = oldBalance + montoAPagar;
+      updateDebugPanel(`💳 Balance: ${oldBalance} + ${montoAPagar} = ${newBalance}`);
 
       const { error: balanceUpdateError } = await supabaseClient
         .from('balances')
@@ -869,6 +994,7 @@
         });
 
       if (balanceUpdateError) throw balanceUpdateError;
+      updateDebugPanel('✅ Balance actualizado');
 
       // 3. Registrar en recompensas para historial
       const { error: recompensaError } = await supabaseClient
@@ -884,20 +1010,28 @@
         });
 
       if (recompensaError) {
+        updateDebugPanel(`⚠️ Error recompensas (no crítico): ${recompensaError.message}`);
         console.warn('Error registrando en recompensas (no crítico):', recompensaError);
+      } else {
+        updateDebugPanel('✅ Registrado en recompensas');
       }
 
       showMessage(`✅ Solicitud aprobada exitosamente.\n${request.email} recibió ${formatCurrency(montoAPagar)} en su balance.`);
+      updateDebugPanel(`🎉 Aprobación completada para ${request.email}`);
+      
       await refreshData();
 
     } catch (error) {
       console.error('Error aprobando solicitud:', error);
+      updateDebugPanel(`❌ Error aprobación: ${error.message}`);
       showMessage('Error aprobando solicitud: ' + error.message, 'error');
     }
   }
 
   // Rechazar solicitud de minipool
   async function rejectRequest(requestId) {
+    updateDebugPanel(`Rechazando solicitud ${requestId}...`);
+    
     try {
       const rol = await obtenerRolUsuario();
       if (rol !== "admi") {
@@ -916,6 +1050,7 @@
     }
 
     if (!confirm(`¿Rechazar solicitud de ${request.email}?\n\nEsta acción se puede revertir posteriormente.`)) {
+      updateDebugPanel('❌ Usuario canceló rechazo');
       return;
     }
 
@@ -928,10 +1063,13 @@
       if (error) throw error;
 
       showMessage(`❌ Solicitud de ${request.email} rechazada.`);
+      updateDebugPanel(`✅ Solicitud ${requestId} rechazada`);
+      
       await refreshData();
 
     } catch (error) {
       console.error('Error rechazando solicitud:', error);
+      updateDebugPanel(`❌ Error rechazo: ${error.message}`);
       showMessage('Error rechazando solicitud: ' + error.message, 'error');
     }
   }
@@ -948,6 +1086,8 @@
     const montoAPagar = request.monto * 2;
     const poolInfo = poolConfig[request.nivel] || { name: request.nivel, icon: '🏊‍♂️' };
     
+    updateDebugPanel(`👁️ Viendo detalles de solicitud ${requestId}`);
+    
     alert(`📋 Detalles de la Solicitud
     
 ID: ${request.id}
@@ -962,8 +1102,10 @@ Estado: ${request.estado_pago || 'pendiente'}
 ${request.fecha_pago ? `Fecha Pago: ${formatDate(request.fecha_pago)}` : ''}`);
   }
 
-  // Procesar todas las solicitudes pendientes
+  // Procesar todas las solicitudes pendientes (MEJORADO)
   async function processAllPendingRequests() {
+    updateDebugPanel('🚀 Iniciando procesamiento masivo...');
+    
     try {
       const rol = await obtenerRolUsuario();
       if (rol !== "admi") {
@@ -979,18 +1121,23 @@ ${request.fecha_pago ? `Fecha Pago: ${formatDate(request.fecha_pago)}` : ''}`);
 
     if (pendingRequests.length === 0) {
       showMessage('No hay solicitudes pendientes para procesar');
+      updateDebugPanel('ℹ️ No hay solicitudes pendientes');
       return;
     }
 
     const totalAmount = pendingRequests.reduce((sum, req) => sum + (req.monto * 2), 0);
+    updateDebugPanel(`💰 Total a procesar: ${totalAmount} (${pendingRequests.length} solicitudes)`);
 
     if (!confirm(`¿Aprobar TODAS las solicitudes pendientes?\n\nTotal: ${pendingRequests.length} solicitudes\nMonto total a pagar: ${formatCurrency(totalAmount)}`)) {
+      updateDebugPanel('❌ Usuario canceló procesamiento masivo');
       return;
     }
 
     try {
       let processed = 0;
       let errors = 0;
+
+      updateDebugPanel('🔄 Procesando solicitudes en lote...');
 
       for (const request of pendingRequests) {
         try {
@@ -1039,23 +1186,31 @@ ${request.fecha_pago ? `Fecha Pago: ${formatDate(request.fecha_pago)}` : ''}`);
             });
 
           processed++;
+          updateDebugPanel(`✅ Procesada ${processed}/${pendingRequests.length}: ${request.email}`);
+
         } catch (error) {
           console.error(`Error procesando solicitud ${request.id}:`, error);
+          updateDebugPanel(`❌ Error en ${request.id}: ${error.message}`);
           errors++;
         }
       }
 
       showMessage(`✅ Procesamiento completado:\n- Aprobadas: ${processed}\n- Errores: ${errors}\n\nTotal pagado: ${formatCurrency(totalAmount)}`);
+      updateDebugPanel(`🎉 Procesamiento completado: ${processed} aprobadas, ${errors} errores`);
+      
       await refreshData();
 
     } catch (error) {
       console.error('Error en procesamiento masivo:', error);
+      updateDebugPanel(`❌ Error procesamiento masivo: ${error.message}`);
       showMessage('Error en procesamiento masivo: ' + error.message, 'error');
     }
   }
 
   // Cargar historial de pagos procesados
   async function loadHistory() {
+    updateDebugPanel('📋 Cargando historial...');
+    
     try {
       const { data, error } = await supabaseClient
         .from('mini_pool')
@@ -1071,8 +1226,11 @@ ${request.fecha_pago ? `Fecha Pago: ${formatDate(request.fecha_pago)}` : ''}`);
 
       if (!data || data.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No hay pagos procesados</td></tr>';
+        updateDebugPanel('ℹ️ No hay historial de pagos');
         return;
       }
+
+      updateDebugPanel(`✅ ${data.length} registros de historial cargados`);
 
       data.forEach(item => {
         const row = document.createElement('tr');
@@ -1096,6 +1254,7 @@ ${request.fecha_pago ? `Fecha Pago: ${formatDate(request.fecha_pago)}` : ''}`);
 
     } catch (error) {
       console.error('Error cargando historial:', error);
+      updateDebugPanel(`❌ Error historial: ${error.message}`);
       const tbody = document.getElementById('historyTableBody');
       tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #f85149;">Error cargando historial</td></tr>';
     }
@@ -1103,21 +1262,28 @@ ${request.fecha_pago ? `Fecha Pago: ${formatDate(request.fecha_pago)}` : ''}`);
 
   // Refrescar todos los datos
   async function refreshData() {
+    updateDebugPanel('🔄 Refrescando todos los datos...');
+    
     try {
       await Promise.all([
         loadRequests(),
-        loadHistory()
+        loadHistory(),
+        loadPoolConfiguration()
       ]);
       updatePriceInterface();
       showMessage('Datos actualizados correctamente');
+      updateDebugPanel('✅ Refresh completado');
     } catch (error) {
       console.error('Error refrescando datos:', error);
+      updateDebugPanel(`❌ Error refresh: ${error.message}`);
       showMessage('Error actualizando datos: ' + error.message, 'error');
     }
   }
 
-  // Inicializar aplicación
+// Inicializar aplicación
   async function initializeApp() {
+    updateDebugPanel('🚀 === INICIANDO PANEL ADMIN ===');
+    
     try {
       console.log('🏊‍♂️ Iniciando Panel de Minipools Admin...');
       
@@ -1125,6 +1291,7 @@ ${request.fecha_pago ? `Fecha Pago: ${formatDate(request.fecha_pago)}` : ''}`);
       const rol = await obtenerRolUsuario();
       if (!rol) {
         showMessage('Error de autenticación. Por favor inicia sesión nuevamente.', 'error');
+        updateDebugPanel('❌ Sin autenticación - redirigiendo');
         // Redirigir después de un momento
         setTimeout(() => {
           window.location.href = 'index.html';
@@ -1134,45 +1301,147 @@ ${request.fecha_pago ? `Fecha Pago: ${formatDate(request.fecha_pago)}` : ''}`);
 
       if (rol !== 'admi') {
         showMessage('No tienes permisos de administrador para acceder a este panel.', 'error');
+        updateDebugPanel(`❌ Rol insuficiente: ${rol} (necesita: admi)`);
         return;
       }
 
+      updateDebugPanel(`✅ Usuario autenticado como admin: ${currentUser.email}`);
       console.log('✅ Usuario autenticado como admin:', currentUser.email);
+
+      // Cargar configuración y datos iniciales
+      updateDebugPanel('📊 Cargando datos iniciales...');
+      await Promise.all([
+        loadPoolConfiguration(),
+        refreshData()
+      ]);
 
       // Inicializar interfaz de precios
       updatePriceInterface();
-
-      // Cargar datos iniciales
-      await refreshData();
       
       console.log('📊 Panel de Minipools Admin cargado correctamente');
       console.log('💰 Configuración de precios:', poolConfig);
+      updateDebugPanel('🎉 === PANEL ADMIN INICIALIZADO ===');
       
     } catch (error) {
       console.error('Error inicializando aplicación:', error);
+      updateDebugPanel(`❌ ERROR CRÍTICO: ${error.message}`);
       showMessage('Error inicializando el sistema: ' + error.message, 'error');
     }
   }
 
-  // Event listeners
-  document.addEventListener('DOMContentLoaded', initializeApp);
+  // Configurar suscripciones en tiempo real
+  function setupRealtimeSubscriptions() {
+    updateDebugPanel('🔄 Configurando suscripciones tiempo real...');
+    
+    try {
+      // Suscripción a cambios en mini_pool
+      const realtimeSubscription = supabaseClient
+        .channel('minipool_admin_changes')
+        .on('postgres_changes', 
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'mini_pool'
+          }, 
+          (payload) => {
+            console.log('📡 Cambio detectado en mini_pool:', payload);
+            updateDebugPanel(`📡 Cambio BD: ${payload.eventType} en mini_pool`);
+            // Recargar datos después de un cambio
+            setTimeout(() => refreshData(), 1000);
+          }
+        )
+        .subscribe();
 
-  // Suscripción a cambios en tiempo real para mini_pool
-  const realtimeSubscription = supabaseClient
-    .channel('minipool_changes')
-    .on('postgres_changes', 
-      { 
-        event: '*', 
-        schema: 'public', 
-        table: 'mini_pool'
-      }, 
-      (payload) => {
-        console.log('📡 Cambio detectado en mini_pool:', payload);
-        // Recargar datos después de un cambio
-        setTimeout(() => refreshData(), 1000);
+      // Suscripción a cambios en balances
+      const balanceSubscription = supabaseClient
+        .channel('balance_admin_changes')
+        .on('postgres_changes', 
+          { 
+            event: '*', 
+            schema: 'public', 
+            table: 'balances'
+          }, 
+          (payload) => {
+            console.log('💰 Cambio detectado en balances:', payload);
+            updateDebugPanel(`💰 Cambio BD: ${payload.eventType} en balances`);
+          }
+        )
+        .subscribe();
+
+      updateDebugPanel('✅ Suscripciones configuradas');
+      
+      // Limpiar suscripciones al salir
+      window.addEventListener('beforeunload', () => {
+        updateDebugPanel('👋 Limpiando suscripciones...');
+        realtimeSubscription.unsubscribe();
+        balanceSubscription.unsubscribe();
+      });
+
+    } catch (error) {
+      updateDebugPanel(`⚠️ Error configurando suscripciones: ${error.message}`);
+      console.warn('Error configurando suscripciones:', error);
+    }
+  }
+
+  // Test de conectividad completa
+  async function testSystemConnectivity() {
+    updateDebugPanel('🧪 === PRUEBAS DE SISTEMA ===');
+    
+    try {
+      // Test 1: Conexión Supabase
+      const { error: testError } = await supabaseClient
+        .from('mini_pool')
+        .select('count', { count: 'exact' })
+        .limit(1);
+        
+      if (testError) {
+        updateDebugPanel(`❌ Test Supabase: ${testError.message}`);
+      } else {
+        updateDebugPanel('✅ Test Supabase: OK');
       }
-    )
-    .subscribe();
+
+      // Test 2: Autenticación
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      updateDebugPanel(`🔐 Sesión: ${session ? 'Activa' : 'Inactiva'}`);
+
+      // Test 3: Permisos
+      const rol = await obtenerRolUsuario();
+      updateDebugPanel(`👤 Rol: ${rol || 'Sin rol'}`);
+
+      // Test 4: Elementos DOM críticos
+      const elementos = ['requestsTable', 'historyTable', 'currentWeek', 'pendingAlert'];
+      elementos.forEach(id => {
+        const existe = !!document.getElementById(id);
+        updateDebugPanel(`${existe ? '✅' : '❌'} DOM ${id}`);
+      });
+
+    } catch (error) {
+      updateDebugPanel(`❌ Error en tests: ${error.message}`);
+    }
+  }
+
+  // Event listeners principales
+  document.addEventListener('DOMContentLoaded', async () => {
+    updateDebugPanel('📄 DOM Cargado - Iniciando tests...');
+    
+    // Ejecutar tests de conectividad
+    await testSystemConnectivity();
+    
+    // Inicializar aplicación
+    await initializeApp();
+    
+    // Configurar suscripciones en tiempo real
+    setupRealtimeSubscriptions();
+    
+    // Diagnóstico final
+    setTimeout(() => {
+      updateDebugPanel('🔍 === DIAGNÓSTICO FINAL ===');
+      updateDebugPanel(`Pool config: ${Object.keys(poolConfig).length} niveles`);
+      updateDebugPanel(`Requests: ${allRequests.length} solicitudes`);
+      updateDebugPanel(`Usuario: ${currentUser?.email || 'N/A'}`);
+      updateDebugPanel(`Rol: ${rolUsuario || 'N/A'}`);
+    }, 3000);
+  });
 
   // Funciones globales para acceso desde HTML
   window.changeWeek = changeWeek;
@@ -1187,6 +1456,11 @@ ${request.fecha_pago ? `Fecha Pago: ${formatDate(request.fecha_pago)}` : ''}`);
   console.log('🎯 Sistema de Minipools Admin - Listo para usar');
   console.log('📋 Funciones disponibles: aprobar, rechazar, procesar masivamente');
   console.log('💰 Sistema de balances integrado');
+  console.log('🔗 Perfectamente vinculado con panel de usuario');
+  console.log('📡 Real-time updates habilitados');
+  console.log('🔧 Panel de debugging activado (esquina inferior derecha)');
+
+  updateDebugPanel('🎉 Sistema Admin cargado completamente');
 
 </script>
 </body>
