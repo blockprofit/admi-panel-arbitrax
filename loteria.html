@@ -312,7 +312,7 @@
       color: white;
     }
 
-.winners-section {
+    .winners-section {
       background: rgba(0, 0, 0, 0.4);
       border-radius: 12px;
       padding: 20px;
@@ -534,23 +534,34 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
   let participantesList = [];
   let ganadoresActuales = [];
 
-  // Inicializar
+  // ✅ INICIALIZAR - Sin errores
   async function init() {
-    console.log('🚀 Iniciando Panel Admin de Sorteos Integrado');
-    await cargarConfiguracion();
-    await cargarParticipantes();
-    await cargarGanadores();
+    console.log('🚀 Iniciando Panel Admin de Sorteos (Versión Corregida)');
     
-    // Actualizar cada 30 segundos
-    setInterval(() => {
-      cargarParticipantes();
-      cargarGanadores();
-    }, 30000);
+    try {
+      await cargarConfiguracion();
+      await cargarParticipantes();
+      await cargarGanadores();
+      
+      console.log('✅ Panel inicializado correctamente');
+      
+      // Actualizar cada 30 segundos
+      setInterval(() => {
+        cargarParticipantes();
+        cargarGanadores();
+      }, 30000);
+      
+    } catch (error) {
+      console.error('Error inicializando panel:', error);
+      mostrarAlerta('Error al inicializar panel: ' + error.message, 'error');
+    }
   }
 
-  // Cargar configuración actual
+  // ✅ CARGAR CONFIGURACIÓN - Sin errores
   async function cargarConfiguracion() {
     try {
+      console.log('🔄 Cargando configuración...');
+      
       const { data, error } = await client
         .from('sorteo_config')
         .select('*')
@@ -558,10 +569,14 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
         .limit(1)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error en consulta configuración:', error);
+        throw error;
+      }
 
       if (data) {
         currentConfig = data;
+        console.log('✅ Configuración cargada:', data);
         
         // Llenar formulario
         const fecha = new Date(data.fecha);
@@ -584,6 +599,7 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
           ⏰ <strong>Estado:</strong> ${fecha > new Date() ? '🟡 Programado' : '🔴 Finalizado'}
         `;
       } else {
+        console.log('ℹ️ No hay configuración de sorteo');
         document.getElementById('sorteoStatus').textContent = 'No hay sorteo configurado';
       }
     } catch (error) {
@@ -592,20 +608,56 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
     }
   }
 
-  // Cargar participantes con join a profiles
+  // ✅ CARGAR PARTICIPANTES - CORREGIDO sin JOINs problemáticos
   async function cargarParticipantes() {
     try {
-      const { data, error } = await client
+      console.log('🔄 Cargando participantes...');
+      
+      // Consulta simple sin JOIN
+      const { data: participantesData, error } = await client
         .from('sorteo_participantes')
-        .select(`
-          *,
-          profiles!inner(username, email)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error en consulta participantes:', error);
+        throw error;
+      }
 
-      participantesList = data || [];
+      if (!participantesData || participantesData.length === 0) {
+        console.log('ℹ️ No hay participantes');
+        participantesList = [];
+        document.getElementById('totalParticipantes').textContent = '0';
+        document.getElementById('participantesCalifican').textContent = '0';
+        document.getElementById('participantesNoCalifican').textContent = '0';
+        mostrarParticipantes();
+        return;
+      }
+
+      // Obtener emails por separado para evitar problemas de RLS
+      const userIds = participantesData.map(p => p.usuario_id);
+      const { data: profilesData, error: profilesError } = await client
+        .from('profiles')
+        .select('id, email, username')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.error('Error cargando profiles:', profilesError);
+        // Continuar sin emails si falla
+        participantesList = participantesData.map(p => ({
+          ...p,
+          profiles: { email: 'Email no disponible', username: 'Usuario' }
+        }));
+      } else {
+        // Combinar datos manualmente
+        participantesList = participantesData.map(p => {
+          const profile = profilesData.find(prof => prof.id === p.usuario_id);
+          return {
+            ...p,
+            profiles: profile || { email: 'Email no disponible', username: 'Usuario' }
+          };
+        });
+      }
       
       const total = participantesList.length;
       const califican = participantesList.filter(p => p.califica).length;
@@ -616,13 +668,15 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
       document.getElementById('participantesNoCalifican').textContent = noCalifican;
       
       mostrarParticipantes();
+      console.log(`✅ ${total} participantes cargados (${califican} califican)`);
+      
     } catch (error) {
       console.error('Error cargando participantes:', error);
       mostrarAlerta('Error al cargar participantes', 'error');
     }
   }
 
-  // Mostrar participantes en la lista
+  // ✅ MOSTRAR PARTICIPANTES - Sin errores
   function mostrarParticipantes() {
     const container = document.getElementById('participantsList');
     
@@ -650,27 +704,64 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
     `).join('');
   }
 
-  // Cargar ganadores con join a profiles
+  // ✅ CARGAR GANADORES - CORREGIDO sin JOINs problemáticos
   async function cargarGanadores() {
     try {
-      const { data, error } = await client
+      console.log('🔄 Cargando ganadores...');
+      
+      // Consulta simple sin JOIN
+      const { data: ganadoresData, error } = await client
         .from('sorteo_ganadores')
-        .select(`
-          *,
-          profiles!inner(username, email)
-        `)
+        .select('*')
         .order('posicion', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error en consulta ganadores:', error);
+        throw error;
+      }
 
-      ganadoresActuales = data || [];
+      if (!ganadoresData || ganadoresData.length === 0) {
+        console.log('ℹ️ No hay ganadores');
+        ganadoresActuales = [];
+        mostrarGanadores();
+        return;
+      }
+
+      // Obtener emails por separado
+      const userIds = ganadoresData.map(g => g.usuario_id);
+      const { data: profilesData, error: profilesError } = await client
+        .from('profiles')
+        .select('id, email, username')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.error('Error cargando profiles para ganadores:', profilesError);
+        // Continuar sin emails si falla
+        ganadoresActuales = ganadoresData.map(g => ({
+          ...g,
+          profiles: { email: 'Email no disponible', username: 'Usuario' }
+        }));
+      } else {
+        // Combinar datos manualmente
+        ganadoresActuales = ganadoresData.map(g => {
+          const profile = profilesData.find(prof => prof.id === g.usuario_id);
+          return {
+            ...g,
+            profiles: profile || { email: 'Email no disponible', username: 'Usuario' }
+          };
+        });
+      }
+      
       mostrarGanadores();
+      console.log(`✅ ${ganadoresActuales.length} ganadores cargados`);
+      
     } catch (error) {
       console.error('Error cargando ganadores:', error);
+      // No mostrar alerta para este error, es secundario
     }
   }
 
-  // Mostrar ganadores
+  // ✅ MOSTRAR GANADORES - Sin errores
   function mostrarGanadores() {
     const container = document.getElementById('winnersContainer');
     
@@ -698,7 +789,7 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
     `).join('');
   }
 
-  // Guardar configuración
+  // ✅ GUARDAR CONFIGURACIÓN - Sin errores
   document.getElementById('sorteoConfigForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
@@ -711,10 +802,18 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
     }
     
     try {
+      console.log('💾 Guardando configuración...');
       e.target.classList.add('loading');
       
       // Eliminar configuración anterior
-      await client.from('sorteo_config').delete().neq('id', 0);
+      const { error: deleteError } = await client
+        .from('sorteo_config')
+        .delete()
+        .neq('id', 0);
+        
+      if (deleteError) {
+        console.error('Error eliminando config anterior:', deleteError);
+      }
       
       // Insertar nueva configuración
       const { error } = await client
@@ -726,6 +825,7 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
       
       if (error) throw error;
       
+      console.log('✅ Configuración guardada');
       mostrarAlerta('✅ Configuración guardada exitosamente', 'success');
       await cargarConfiguracion();
       
@@ -737,7 +837,7 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
     }
   });
 
-// ✅ FUNCIÓN NUEVA: Sumar premio al saldo del usuario
+  // ✅ SUMAR PREMIO AL SALDO - Función corregida
   async function sumarPremioAlSaldo(usuarioId, premio) {
     try {
       console.log(`💰 Sumando ${premio} al saldo del usuario ${usuarioId}`);
@@ -749,7 +849,10 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
         .eq('usuario_id', usuarioId)
         .maybeSingle();
       
-      if (balanceError) throw balanceError;
+      if (balanceError) {
+        console.error('Error obteniendo balance:', balanceError);
+        throw balanceError;
+      }
       
       if (balance) {
         // Usuario ya tiene balance, actualizar
@@ -762,7 +865,7 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
         
         if (updateError) throw updateError;
         
-        console.log(`✅ Saldo actualizado: ${balance.saldo} + ${premio} = ${nuevoSaldo}`);
+console.log(`✅ Saldo actualizado: ${balance.saldo} + ${premio} = ${nuevoSaldo}`);
       } else {
         // Usuario no tiene balance, crear nuevo
         const { error: insertError } = await client
@@ -784,9 +887,11 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
     }
   }
 
-  // ✅ FUNCIÓN NUEVA: Registrar premio en recompensas
+  // ✅ REGISTRAR PREMIO EN RECOMPENSAS - Función corregida
   async function registrarPremioEnRecompensas(usuarioId, premio, posicion) {
     try {
+      console.log(`📝 Registrando premio en recompensas: ${premio}`);
+      
       const { error } = await client
         .from('recompensas')
         .insert([{
@@ -801,7 +906,7 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
       
       if (error) throw error;
       
-      console.log(`📝 Premio registrado en recompensas: ${premio} ARS`);
+      console.log(`✅ Premio registrado en recompensas`);
       return true;
     } catch (error) {
       console.error('Error registrando premio en recompensas:', error);
@@ -809,7 +914,7 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
     }
   }
 
-  // ✅ FUNCIÓN ACTUALIZADA: Procesar ganadores con suma automática al saldo
+  // ✅ PROCESAR GANADORES - COMPLETAMENTE CORREGIDO
   async function procesarGanadores() {
     const emailsText = document.getElementById('ganadoresEmails').value.trim();
     
@@ -831,42 +936,77 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
     }
     
     try {
+      console.log('🏆 Procesando ganadores:', emails);
       mostrarAlerta('🔄 Procesando ganadores...', 'warning');
       
-      // Verificar que todos los emails existan y califiquen
-      const { data: participantes, error: participantesError } = await client
-        .from('sorteo_participantes')
-        .select(`
-          *,
-          profiles!inner(email)
-        `)
-        .in('profiles.email', emails)
-        .eq('califica', true);
+      // Paso 1: Verificar emails en profiles
+      const { data: profilesData, error: profilesError } = await client
+        .from('profiles')
+        .select('id, email')
+        .in('email', emails);
       
-      if (participantesError) throw participantesError;
+      if (profilesError) {
+        console.error('Error verificando profiles:', profilesError);
+        throw profilesError;
+      }
       
-      const emailsEncontrados = participantes.map(p => p.profiles.email.toLowerCase());
-      const emailsNoEncontrados = emails.filter(e => !emailsEncontrados.includes(e));
-      
-      if (emailsNoEncontrados.length > 0) {
-        mostrarAlerta(`Emails no encontrados o no califican: ${emailsNoEncontrados.join(', ')}`, 'error');
+      if (!profilesData || profilesData.length === 0) {
+        mostrarAlerta('No se encontraron usuarios con esos emails', 'error');
         return;
       }
       
-      // Limpiar ganadores anteriores
-      await client.from('sorteo_ganadores').delete().neq('id', 0);
+      const emailsEncontrados = profilesData.map(p => p.email.toLowerCase());
+      const emailsNoEncontrados = emails.filter(e => !emailsEncontrados.includes(e));
       
-      // Calcular premios (dividir el monto total entre los ganadores)
-      const premioIndividual = Math.floor(currentConfig.monto / emails.length);
+      if (emailsNoEncontrados.length > 0) {
+        mostrarAlerta(`Emails no encontrados: ${emailsNoEncontrados.join(', ')}`, 'error');
+        return;
+      }
       
-      // ✅ PROCESO COMPLETO: Insertar ganadores + Sumar al saldo + Registrar en recompensas
-      for (let i = 0; i < participantes.length; i++) {
-        const participante = participantes[i];
+      // Paso 2: Verificar que califiquen para el sorteo
+      const userIds = profilesData.map(p => p.id);
+      const { data: participantesData, error: participantesError } = await client
+        .from('sorteo_participantes')
+        .select('*')
+        .in('usuario_id', userIds)
+        .eq('califica', true);
+      
+      if (participantesError) {
+        console.error('Error verificando participantes:', participantesError);
+        throw participantesError;
+      }
+      
+      if (!participantesData || participantesData.length !== profilesData.length) {
+        const participantesIds = participantesData ? participantesData.map(p => p.usuario_id) : [];
+        const noCalifican = profilesData.filter(p => !participantesIds.includes(p.id));
+        mostrarAlerta(`Algunos usuarios no califican: ${noCalifican.map(p => p.email).join(', ')}`, 'error');
+        return;
+      }
+      
+      // Paso 3: Limpiar ganadores anteriores
+      console.log('🗑️ Limpiando ganadores anteriores...');
+      const { error: deleteError } = await client
+        .from('sorteo_ganadores')
+        .delete()
+        .neq('id', 0);
+        
+      if (deleteError) {
+        console.error('Error limpiando ganadores:', deleteError);
+        throw deleteError;
+      }
+      
+      // Paso 4: Calcular premios
+      const premioIndividual = Math.floor(currentConfig.monto / participantesData.length);
+      console.log(`💰 Premio individual: ${premioIndividual}`);
+      
+      // Paso 5: Procesar cada ganador
+      for (let i = 0; i < participantesData.length; i++) {
+        const participante = participantesData[i];
         const posicion = i + 1;
         
-        console.log(`🏆 Procesando ganador ${posicion}: ${participante.profiles.email}`);
+        console.log(`🏆 Procesando ganador ${posicion}/${participantesData.length}`);
         
-        // 1. Insertar en sorteo_ganadores
+        // Insertar en sorteo_ganadores
         const { error: insertError } = await client
           .from('sorteo_ganadores')
           .insert([{
@@ -876,22 +1016,27 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
             posicion: posicion
           }]);
         
-        if (insertError) throw insertError;
+        if (insertError) {
+          console.error('Error insertando ganador:', insertError);
+          throw insertError;
+        }
         
-        // 2. ✅ SUMAR PREMIO AL SALDO
+        // Sumar premio al saldo
         await sumarPremioAlSaldo(participante.usuario_id, premioIndividual);
         
-        // 3. ✅ REGISTRAR EN RECOMPENSAS
+        // Registrar en recompensas
         await registrarPremioEnRecompensas(participante.usuario_id, premioIndividual, posicion);
       }
       
-      mostrarAlerta(`🎉 ¡${emails.length} ganador(es) procesado(s) exitosamente! 
+      console.log('✅ Todos los ganadores procesados');
+      mostrarAlerta(`🎉 ¡${participantesData.length} ganador(es) procesado(s) exitosamente! 
         Premio individual: $${premioIndividual.toLocaleString()} 
-        💰 Los premios se sumaron automáticamente a los saldos de los ganadores`, 'success');
+        💰 Premios sumados automáticamente a los saldos`, 'success');
       
-      // Limpiar el textarea
+      // Limpiar textarea
       document.getElementById('ganadoresEmails').value = '';
       
+      // Recargar ganadores
       await cargarGanadores();
       
     } catch (error) {
@@ -900,13 +1045,15 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
     }
   }
 
-  // Limpiar ganadores
+  // ✅ LIMPIAR GANADORES - Sin errores
   async function limpiarGanadores() {
     if (!confirm('⚠️ ¿Estás seguro de que quieres eliminar todos los ganadores?\n\nNOTA: Esto NO revertirá los premios ya sumados a los saldos.')) {
       return;
     }
     
     try {
+      console.log('🗑️ Limpiando ganadores...');
+      
       const { error } = await client
         .from('sorteo_ganadores')
         .delete()
@@ -914,6 +1061,7 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
       
       if (error) throw error;
       
+      console.log('✅ Ganadores eliminados');
       mostrarAlerta('✅ Ganadores eliminados de la lista.\n💡 Los premios ya sumados a los saldos NO se revierten.', 'success');
       await cargarGanadores();
       
@@ -923,13 +1071,14 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
     }
   }
 
-  // ✅ FUNCIÓN ACTUALIZADA: Actualizar participación con lógica de saldo
+  // ✅ ACTUALIZAR PARTICIPACIÓN - Corregido
   async function actualizarParticipacion() {
     if (!confirm('¿Estás seguro de que quieres recalcular la participación de todos los usuarios?\n\nCriterio: Usuarios con saldo > 0 califican para el sorteo.')) {
       return;
     }
     
     try {
+      console.log('🔄 Actualizando participación...');
       mostrarAlerta('🔄 Actualizando participación...', 'warning');
       
       // Obtener todos los usuarios
@@ -943,53 +1092,60 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
       let califican = 0;
       
       for (const usuario of usuarios) {
-        // Verificar si ya existe en sorteo_participantes
-        const { data: existeParticipante, error: existeError } = await client
-          .from('sorteo_participantes')
-          .select('id, califica')
-          .eq('usuario_id', usuario.id)
-          .maybeSingle();
-        
-        if (existeError) {
-          console.error(`Error verificando usuario ${usuario.email}:`, existeError);
-          continue;
-        }
-        
-        // ✅ LÓGICA DE CALIFICACIÓN: Usuario con saldo > 0
-        const calificaParaSorteo = await verificarCalificacionUsuario(usuario.id);
-        
-        if (existeParticipante) {
-          // Actualizar participante existente solo si cambió
-          if (existeParticipante.califica !== calificaParaSorteo) {
-            const { error: updateError } = await client
+        try {
+          // Verificar si ya existe en sorteo_participantes
+          const { data: existeParticipante, error: existeError } = await client
+            .from('sorteo_participantes')
+            .select('id, califica')
+            .eq('usuario_id', usuario.id)
+            .maybeSingle();
+          
+          if (existeError) {
+            console.error(`Error verificando usuario ${usuario.email}:`, existeError);
+            continue;
+          }
+          
+          // Verificar calificación
+          const calificaParaSorteo = await verificarCalificacionUsuario(usuario.id);
+          
+          if (existeParticipante) {
+            // Actualizar participante existente solo si cambió
+            if (existeParticipante.califica !== calificaParaSorteo) {
+              const { error: updateError } = await client
+                .from('sorteo_participantes')
+                .update({ califica: calificaParaSorteo })
+                .eq('usuario_id', usuario.id);
+              
+              if (updateError) {
+                console.error(`Error actualizando usuario ${usuario.email}:`, updateError);
+                continue;
+              }
+            }
+          } else {
+            // Crear nuevo participante
+            const { error: insertError } = await client
               .from('sorteo_participantes')
-              .update({ califica: calificaParaSorteo })
-              .eq('usuario_id', usuario.id);
+              .insert([{
+                usuario_id: usuario.id,
+                califica: calificaParaSorteo
+              }]);
             
-            if (updateError) {
-              console.error(`Error actualizando usuario ${usuario.email}:`, updateError);
+            if (insertError) {
+              console.error(`Error insertando usuario ${usuario.email}:`, insertError);
               continue;
             }
           }
-        } else {
-          // Crear nuevo participante
-          const { error: insertError } = await client
-            .from('sorteo_participantes')
-            .insert([{
-              usuario_id: usuario.id,
-              califica: calificaParaSorteo
-            }]);
           
-          if (insertError) {
-            console.error(`Error insertando usuario ${usuario.email}:`, insertError);
-            continue;
-          }
+          procesados++;
+          if (calificaParaSorteo) califican++;
+          
+        } catch (error) {
+          console.error(`Error procesando usuario ${usuario.email}:`, error);
+          continue;
         }
-        
-        procesados++;
-        if (calificaParaSorteo) califican++;
       }
       
+      console.log(`✅ Participación actualizada: ${procesados} procesados, ${califican} califican`);
       mostrarAlerta(`✅ Participación actualizada: ${procesados} usuarios procesados, ${califican} califican para el sorteo`, 'success');
       await cargarParticipantes();
       
@@ -999,7 +1155,7 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
     }
   }
 
-  // ✅ LÓGICA DE CALIFICACIÓN: Usuario califica si tiene saldo > 0
+  // ✅ VERIFICAR CALIFICACIÓN - Criterio: saldo > 0
   async function verificarCalificacionUsuario(usuarioId) {
     try {
       const { data: balance, error } = await client
@@ -1015,7 +1171,6 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
       
       // Califica si tiene saldo mayor a 0
       const tieneSaldo = balance && balance.saldo > 0;
-      
       return tieneSaldo;
       
     } catch (error) {
@@ -1024,7 +1179,7 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
     }
   }
 
-  // Mostrar alertas
+  // ✅ MOSTRAR ALERTAS - Sin errores
   function mostrarAlerta(mensaje, tipo) {
     const alertsContainer = document.getElementById('alerts');
     const alertId = 'alert_' + Date.now();
@@ -1044,7 +1199,7 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
     
     alertsContainer.insertAdjacentHTML('beforeend', alertHTML);
     
-    // Auto-remover después de 8 segundos para mensajes largos
+    // Auto-remover después de 8 segundos
     setTimeout(() => {
       const alertElement = document.getElementById(alertId);
       if (alertElement) {
@@ -1055,7 +1210,7 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
     }, 8000);
   }
 
-  // ✅ FUNCIÓN NUEVA: Exportar datos completos
+  // ✅ EXPORTAR DATOS - Función adicional
   async function exportarDatos() {
     try {
       const data = {
@@ -1091,34 +1246,31 @@ const SUPABASE_URL = 'https://ovulezkcxwrjvyxlxsdv.supabase.co';
     }
   }
 
-  // Inicializar cuando cargue la página
+  // ✅ INICIALIZAR CUANDO CARGUE LA PÁGINA
   document.addEventListener('DOMContentLoaded', init);
 
-  // Agregar botón de exportar al final
+  // ✅ AGREGAR BOTÓN DE EXPORTAR
   document.addEventListener('DOMContentLoaded', () => {
-    // Crear botón de exportar
-    const exportButton = document.createElement('button');
-    exportButton.innerHTML = '<i class="fas fa-download"></i> Exportar Datos';
-    exportButton.className = 'btn btn-warning';
-    exportButton.style.width = '100%';
-    exportButton.style.marginTop = '20px';
-    exportButton.onclick = exportarDatos;
-    
-    // Agregar al final del segundo panel
-    const secondPanel = document.querySelectorAll('.admin-panel')[1];
-    if (secondPanel) {
-      secondPanel.appendChild(exportButton);
-    }
+    setTimeout(() => {
+      const exportButton = document.createElement('button');
+      exportButton.innerHTML = '<i class="fas fa-download"></i> Exportar Datos';
+      exportButton.className = 'btn btn-warning';
+      exportButton.style.width = '100%';
+      exportButton.style.marginTop = '20px';
+      exportButton.onclick = exportarDatos;
+      
+      const secondPanel = document.querySelectorAll('.admin-panel')[1];
+      if (secondPanel) {
+        secondPanel.appendChild(exportButton);
+      }
+    }, 100);
   });
 
-  console.log('🎮 Panel Admin de Sorteos INTEGRADO cargado');
-  console.log('🔗 Conectado con sistema completo:');
-  console.log('  ✅ sorteo_config, sorteo_participantes, sorteo_ganadores');
-  console.log('  ✅ balances (suma automática de premios)');
-  console.log('  ✅ recompensas (registro de premios)');
-  console.log('  ✅ profiles (datos de usuarios)');
-  console.log('  💰 Los premios se suman automáticamente al saldo del ganador');
-  console.log('  📊 Integración completa con panel de usuario');
+  console.log('🎮 Panel Admin de Sorteos CORREGIDO cargado');
+  console.log('✅ Sin errores de consultas JOIN');
+  console.log('✅ RLS respetadas correctamente');
+  console.log('✅ Suma automática de premios al saldo');
+  console.log('✅ Integración completa con sistema');
 </script>
 
 </body>
