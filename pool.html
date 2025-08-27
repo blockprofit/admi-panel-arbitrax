@@ -414,6 +414,7 @@
       background: rgba(255, 193, 7, 0.1);
     }
 
+    /* ✅ NUEVO: Estilo especial para contador principal de cajas */
     .inventory-item.main-counter {
       border: 2px solid #FFD700;
       background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 193, 7, 0.1));
@@ -461,6 +462,7 @@
       color: #ffc107;
     }
 
+    /* ✅ NUEVO: Estilo para contador principal */
     .stock-number.main {
       font-size: 2rem;
       color: #FFD700;
@@ -543,6 +545,7 @@
       to { transform: rotate(360deg); }
     }
 
+    /* Tabla de actividad reciente */
     .activity-table {
       background: rgba(255, 255, 255, 0.05);
       border-radius: 8px;
@@ -594,6 +597,7 @@
       }
     }
 
+    /* Estilos adicionales para mejor UX */
     .pulse {
       animation: pulse 2s infinite;
     }
@@ -632,6 +636,7 @@
       to { transform: translateX(0); opacity: 1; }
     }
 
+    /* Indicadores de estado */
     .status-indicator {
       display: inline-block;
       width: 10px;
@@ -655,6 +660,7 @@
       box-shadow: 0 0 10px #dc3545;
     }
 
+    /* Mejorar la tabla de actividad */
     .activity-table tbody tr:hover {
       background: rgba(255, 255, 255, 0.05);
     }
@@ -693,6 +699,7 @@
       border: 1px solid #6c757d;
     }
 
+    /* Efectos de hover mejorados */
     .inventory-item:hover {
       transform: translateY(-2px);
       box-shadow: 0 5px 15px rgba(0, 168, 255, 0.2);
@@ -775,22 +782,15 @@
         <div id="alertContainer"></div>
 
         <div class="form-grid">
-          <!-- ✅ CAMPO MEJORADO: Total de cajas disponibles con mejor explicación -->
-          <div class="form-group" style="grid-column: 1/-1;">
-            <label for="totalBoxes" style="color: #FFD700; font-weight: bold; font-size: 1.1rem;">
-              <i class="fas fa-box"></i> Total de Cajas Disponibles (CONTADOR PRINCIPAL)
+          <!-- ✅ NUEVO: Campo para total de cajas disponibles -->
+          <div class="form-group">
+            <label for="totalBoxes" style="color: #FFD700; font-weight: bold;">
+              <i class="fas fa-box"></i> Total de Cajas Disponibles
             </label>
-            <input type="number" id="totalBoxes" placeholder="Ej: 100" min="0" value="0" style="border: 3px solid #FFD700; font-size: 1.1rem; text-align: center; font-weight: bold;">
-            <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid #ffc107; border-radius: 8px; padding: 10px; margin-top: 8px;">
-              <small style="color: #ffc107; font-size: 0.85rem; display: block;">
-                <i class="fas fa-info-circle"></i> <strong>IMPORTANTE:</strong> Este es el contador principal que controla todo el sistema.
-              </small>
-              <small style="color: rgba(255, 255, 255, 0.8); font-size: 0.8rem; display: block; margin-top: 5px;">
-                • Al llegar a 0, el sistema se pausa automáticamente<br>
-                • Cada compra decrementa este contador<br>
-                • Debe ser mayor o igual a la suma de todos los premios
-              </small>
-            </div>
+            <input type="number" id="totalBoxes" placeholder="Ej: 100" min="0" value="0" style="border: 2px solid #FFD700;">
+            <small style="color: #ffc107; margin-top: 5px; font-size: 0.8rem;">
+              <i class="fas fa-info-circle"></i> Contador principal - Al llegar a 0 se pausa todo el sistema
+            </small>
           </div>
           <div class="form-group">
             <label for="boxCost">💳 Costo por Caja (ARS)</label>
@@ -818,12 +818,6 @@
           </div>
         </div>
 
-        <!-- ✅ NUEVO: Validación visual en tiempo real -->
-        <div id="validationWarning" style="display: none; background: rgba(255, 193, 7, 0.2); border: 2px solid #ffc107; color: #ffc107; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center; font-weight: bold;">
-          <i class="fas fa-exclamation-triangle"></i>
-          <span id="validationText">Mensaje de validación</span>
-        </div>
-
         <div class="actions-container">
           <button class="btn btn-success" id="saveBtn" onclick="savePrizeConfig()">
             <i class="fas fa-save"></i> Guardar Configuración
@@ -837,7 +831,8 @@
           <button class="btn btn-danger" onclick="resetInventory()">
             <i class="fas fa-refresh"></i> Resetear Inventario
           </button>
-          <button class="btn btn-warning" onclick="addMoreBoxes()" id="addBoxesBtn">
+          <!-- ✅ NUEVO: Botón para agregar más cajas -->
+          <button class="btn btn-warning" onclick="addMoreBoxes()">
             <i class="fas fa-plus"></i> Agregar Más Cajas
           </button>
         </div>
@@ -882,12 +877,12 @@
           <div style="text-align: center; margin-top: 10px; color: #00a8ff; font-size: 1.1rem;">
             Costo por Caja: $<span id="previewCost">5000</span>
           </div>
-          <!-- ✅ MEJORADO: Vista previa del contador principal con validación -->
-          <div id="boxCounterPreview" style="text-align: center; margin-top: 15px; padding: 15px; background: rgba(255, 215, 0, 0.1); border: 2px solid #FFD700; border-radius: 10px;">
-            <div style="color: #FFD700; font-size: 1.4rem; font-weight: bold; margin-bottom: 8px;">
+          <!-- ✅ NUEVO: Mostrar total de cajas disponibles -->
+          <div style="text-align: center; margin-top: 15px; padding: 15px; background: rgba(255, 215, 0, 0.1); border: 2px solid #FFD700; border-radius: 10px;">
+            <div style="color: #FFD700; font-size: 1.3rem; font-weight: bold;">
               <i class="fas fa-box"></i> Cajas Disponibles: <span id="previewTotalBoxes">0</span>
             </div>
-            <div id="boxCounterStatus" style="color: rgba(255, 255, 255, 0.7); font-size: 0.9rem;">
+            <div style="color: rgba(255, 255, 255, 0.7); font-size: 0.9rem; margin-top: 5px;">
               Sistema se pausa automáticamente cuando llegue a 0
             </div>
           </div>
@@ -977,32 +972,19 @@
     </div>
   </div>
 
-  <!-- ✅ MODAL MEJORADO: Agregar más cajas con mejor UX -->
+  <!-- ✅ NUEVO: Modal para agregar más cajas -->
   <div id="addBoxesModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; align-items: center; justify-content: center;">
-    <div style="background: rgba(0,0,0,0.9); padding: 30px; border-radius: 15px; border: 2px solid #FFD700; max-width: 600px; text-align: center;">
+    <div style="background: rgba(0,0,0,0.9); padding: 30px; border-radius: 15px; border: 2px solid #FFD700; max-width: 500px; text-align: center;">
       <h3 style="color: #FFD700; margin-bottom: 20px;">
-        <i class="fas fa-plus"></i> Agregar Más Cajas al Sistema
+        <i class="fas fa-plus"></i> Agregar Más Cajas
       </h3>
-      <div style="background: rgba(0, 195, 255, 0.1); border: 2px solid #00c3ff; border-radius: 10px; padding: 15px; margin-bottom: 20px;">
-        <p style="color: #00c3ff; margin-bottom: 10px; font-weight: bold;">
-          📊 Estado Actual del Sistema:
-        </p>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: left;">
-          <div style="color: white;">
-            <strong>Cajas Disponibles:</strong> <span id="modalCurrentBoxes" style="color: #FFD700;">0</span>
-          </div>
-          <div style="color: white;">
-            <strong>Premios Configurados:</strong> <span id="modalCurrentPrizes" style="color: #00ffcc;">0</span>
-          </div>
-        </div>
-      </div>
       <p style="color: white; margin-bottom: 20px;">
-        ¿Cuántas cajas adicionales quieres agregar?
+        ¿Cuántas cajas quieres agregar al inventario?
       </p>
       <div class="form-group" style="margin-bottom: 25px;">
-        <input type="number" id="additionalBoxes" placeholder="Número de cajas a agregar" min="1" max="1000" style="width: 100%; text-align: center; font-size: 1.2rem; border: 2px solid #FFD700; font-weight: bold;">
+        <input type="number" id="additionalBoxes" placeholder="Número de cajas a agregar" min="1" max="1000" style="width: 100%; text-align: center; font-size: 1.2rem; border: 2px solid #FFD700;">
         <small style="color: rgba(255, 255, 255, 0.7); margin-top: 10px; display: block;">
-          <i class="fas fa-info-circle"></i> Las nuevas cajas se distribuirán proporcionalmente según la configuración actual
+          Las nuevas cajas se distribuirán según la configuración actual de premios
         </small>
       </div>
       <div style="display: flex; gap: 15px; justify-content: center;">
@@ -1023,7 +1005,7 @@ const client = supabase.createClient(
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im92dWxlemtjeHdyanZ5eGx4c2R2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNzY5OTksImV4cCI6MjA2NDY1Mjk5OX0.ac82tkUR7AT0QVsuzuAGA8SXLkgnM9OX62meYNGnToI'
   );
 
-  // ✅ Variables globales - CORREGIDO: cajas_disponibles
+  // ✅ Variables globales - AGREGADO: cajas_disponibles
   let currentConfig = {
     id: null,
     cash_prizes: 0,
@@ -1037,7 +1019,7 @@ const client = supabase.createClient(
     trivia_remaining: 0,
     minipool_remaining: 0,
     empty_remaining: 0,
-    // ✅ CORREGIDO: Contador principal de cajas
+    // ✅ NUEVO: Contador principal de cajas
     cajas_disponibles: 0
   };
 
@@ -1070,55 +1052,6 @@ const client = supabase.createClient(
         }
       }, duration);
     }
-  }
-
-  // ✅ NUEVA FUNCIÓN: Validación en tiempo real
-  function validateConfiguration() {
-    const totalBoxes = parseInt(document.getElementById('totalBoxes').value) || 0;
-    const cashPrizes = parseInt(document.getElementById('cashPrizes').value) || 0;
-    const triviaPrizes = parseInt(document.getElementById('triviaPrizes').value) || 0;
-    const minipoolPrizes = parseInt(document.getElementById('minipoolPrizes').value) || 0;
-    const emptyBoxes = parseInt(document.getElementById('emptyBoxes').value) || 0;
-
-    const totalPrizes = cashPrizes + triviaPrizes + minipoolPrizes + emptyBoxes;
-    const validationWarning = document.getElementById('validationWarning');
-    const validationText = document.getElementById('validationText');
-    const saveBtn = document.getElementById('saveBtn');
-
-    // Limpiar estado anterior
-    validationWarning.style.display = 'none';
-    saveBtn.disabled = false;
-    saveBtn.style.opacity = '1';
-
-    // ✅ VALIDACIÓN 1: Total de cajas debe ser mayor a 0
-    if (totalBoxes <= 0) {
-      validationWarning.style.display = 'block';
-      validationText.textContent = 'El contador principal debe tener al menos 1 caja disponible';
-      saveBtn.disabled = true;
-      saveBtn.style.opacity = '0.6';
-      return false;
-    }
-
-    // ✅ VALIDACIÓN 2: Debe haber al menos 1 premio configurado
-    if (totalPrizes <= 0) {
-      validationWarning.style.display = 'block';
-      validationText.textContent = 'Debe configurar al menos 1 premio (efectivo, trivia, minipool o caja vacía)';
-      saveBtn.disabled = true;
-      saveBtn.style.opacity = '0.6';
-      return false;
-    }
-
-    // ✅ VALIDACIÓN 3: Las cajas deben ser suficientes para los premios
-    if (totalBoxes < totalPrizes) {
-      validationWarning.style.display = 'block';
-      validationText.textContent = `El contador principal (${totalBoxes}) debe ser mayor o igual a los premios configurados (${totalPrizes})`;
-      saveBtn.disabled = true;
-      saveBtn.style.opacity = '0.6';
-      return false;
-    }
-
-    // ✅ TODO VÁLIDO
-    return true;
   }
 
   // ✅ FUNCIÓN MEJORADA: Loading con animaciones
@@ -1211,20 +1144,20 @@ const client = supabase.createClient(
         return;
       }
 
-      // ✅ CORREGIDO: Determinar estado del contador principal
+      // ✅ NUEVO: Determinar estado del contador principal
       const mainCounterState = currentConfig.cajas_disponibles <= 0 ? 'critical' : 
                               currentConfig.cajas_disponibles <= 5 ? 'warning' : '';
       
       const inventoryHTML = `
-        <!-- ✅ CONTADOR PRINCIPAL: Siempre visible -->
+        <!-- ✅ NUEVO: Contador principal de cajas -->
         <div class="inventory-item main-counter ${mainCounterState}" style="grid-column: 1/-1;">
           <div class="inventory-info">
             <h4><i class="fas fa-box-open" style="color: #FFD700;"></i> CAJAS DISPONIBLES (CONTADOR PRINCIPAL)</h4>
-            <p style="color: #ffc107;">Este contador controla todo el sistema - Al llegar a 0 se pausa automáticamente</p>
+            <p style="color: #ffc107;">Al llegar a 0 se pausa todo el sistema automáticamente</p>
           </div>
           <div class="inventory-stock">
             <div class="stock-number main ${currentConfig.cajas_disponibles <= 0 ? 'critical' : ''}">${currentConfig.cajas_disponibles || 0}</div>
-            <small style="color: #FFD700;">${currentConfig.cajas_disponibles <= 0 ? '🚨 SISTEMA PAUSADO' : 'Cajas restantes'}</small>
+            <small style="color: #FFD700;">Cajas restantes</small>
           </div>
         </div>
         
@@ -1287,20 +1220,19 @@ const client = supabase.createClient(
   function showSystemAlerts() {
     const alerts = [];
     
-    // ✅ ALERTA PRINCIPAL: Estado del contador de cajas
+    // ✅ NUEVO: Alerta principal si no hay cajas
     if (currentConfig.cajas_disponibles <= 0) {
       alerts.push({
         type: 'error',
-        message: '🚨 ¡SISTEMA PAUSADO! No hay cajas disponibles - Los usuarios no pueden comprar hasta que agregues más cajas'
+        message: '🚨 ¡SISTEMA PAUSADO! No hay cajas disponibles - Los usuarios no pueden comprar'
       });
     } else if (currentConfig.cajas_disponibles <= 5) {
       alerts.push({
         type: 'warning',
-        message: `⚠️ ¡ALERTA! Quedan solo ${currentConfig.cajas_disponibles} cajas disponibles - El sistema se pausará pronto`
+        message: `⚠️ ¡ALERTA! Quedan solo ${currentConfig.cajas_disponibles} cajas disponibles`
       });
     }
     
-    // Alertas de premios individuales
     if (currentConfig.cash_remaining <= 0) {
       alerts.push({
         type: 'error',
@@ -1349,23 +1281,16 @@ const client = supabase.createClient(
       alertsContainer.innerHTML = `
         <div class="alert alert-success">
           <i class="fas fa-check-circle"></i>
-          ✅ Sistema funcionando correctamente - ${currentConfig.cajas_disponibles} cajas disponibles y todos los premios tienen stock
+          ✅ Todos los premios tienen stock disponible y hay ${currentConfig.cajas_disponibles} cajas listas
         </div>
       `;
     }
   }
 
-  // ✅ FUNCIÓN CORREGIDA: Guardar configuración con contador de cajas
+  // ✅ FUNCIÓN MEJORADA: Guardar configuración con contador de cajas
   async function savePrizeConfig() {
     try {
       setLoading('saveBtn', true);
-
-      // ✅ VALIDAR ANTES DE PROCEDER
-      if (!validateConfiguration()) {
-        setLoading('saveBtn', false);
-        showAlert('❌ Corrige los errores de configuración antes de guardar', 'error');
-        return;
-      }
 
       const totalBoxes = parseInt(document.getElementById('totalBoxes').value) || 0;
       const cashPrizes = parseInt(document.getElementById('cashPrizes').value) || 0;
@@ -1376,15 +1301,19 @@ const client = supabase.createClient(
       const boxCost = parseInt(document.getElementById('boxCost').value) || 5000;
 
       const totalPrizes = cashPrizes + triviaPrizes + minipoolPrizes + emptyBoxes;
+      
+      if (totalPrizes === 0) {
+        showAlert('⚠️ Debe configurar al menos un premio', 'warning');
+        setLoading('saveBtn', false);
+        return;
+      }
 
-      console.log('💾 Guardando configuración:', {
-        totalBoxes,
-        totalPrizes,
-        cashPrizes,
-        triviaPrizes,
-        minipoolPrizes,
-        emptyBoxes
-      });
+      // ✅ NUEVA VALIDACIÓN: Verificar que hay cajas disponibles
+      if (totalBoxes === 0) {
+        showAlert('⚠️ Debe configurar al menos 1 caja disponible', 'warning');
+        setLoading('saveBtn', false);
+        return;
+      }
 
       // Desactivar configuración anterior
       const { error: deactivateError } = await client
@@ -1396,7 +1325,7 @@ const client = supabase.createClient(
         console.error('Error desactivando configuración anterior:', deactivateError);
       }
 
-      // ✅ INSERTAR CON CONTADOR DE CAJAS CORRECTO
+      // ✅ NUEVO: Insertar con campo cajas_disponibles
       const { data, error } = await client
         .from('mystery_box_config')
         .insert([{
@@ -1408,12 +1337,12 @@ const client = supabase.createClient(
           box_cost: boxCost,
           total_configured: totalPrizes,
           is_active: true,
-          // ✅ STOCK INICIAL = PREMIOS CONFIGURADOS
+          // Stock restante = stock inicial
           cash_remaining: cashPrizes,
           trivia_remaining: triviaPrizes,
           minipool_remaining: minipoolPrizes,
           empty_remaining: emptyBoxes,
-          // ✅ CONTADOR PRINCIPAL = VALOR INGRESADO
+          // ✅ NUEVO: Contador principal de cajas
           cajas_disponibles: totalBoxes
         }])
         .select()
@@ -1427,7 +1356,7 @@ const client = supabase.createClient(
       previewPrizes();
       updateInventoryDisplay();
       
-      showAlert(`✅ Configuración guardada correctamente. ${totalPrizes} premios configurados en ${totalBoxes} cajas disponibles`, 'success');
+      showAlert(`✅ Configuración guardada correctamente. Total: ${totalPrizes} premios en ${totalBoxes} cajas`, 'success');
       
       // Efecto visual de éxito
       document.getElementById('saveBtn').classList.add('bounce');
@@ -1443,7 +1372,7 @@ const client = supabase.createClient(
     }
   }
 
-  // ✅ FUNCIÓN CORREGIDA: Cargar configuración con contador de cajas
+  // ✅ FUNCIÓN MEJORADA: Cargar configuración con contador de cajas
   async function loadCurrentConfig() {
     try {
       const { data, error } = await client
@@ -1463,7 +1392,6 @@ const client = supabase.createClient(
       }
 
       if (data) {
-        // ✅ CARGAR TODOS LOS CAMPOS CORRECTAMENTE
         document.getElementById('totalBoxes').value = data.cajas_disponibles || 0;
         document.getElementById('cashPrizes').value = data.cash_prizes || 0;
         document.getElementById('cashAmount').value = data.cash_amount || 1500;
@@ -1473,16 +1401,8 @@ const client = supabase.createClient(
         document.getElementById('boxCost').value = data.box_cost || 5000;
         
         currentConfig = data;
-        
-        console.log('✅ Configuración cargada:', {
-          cajas_disponibles: currentConfig.cajas_disponibles,
-          cash_remaining: currentConfig.cash_remaining,
-          total_premios: currentConfig.cash_prizes + currentConfig.trivia_prizes + currentConfig.minipool_prizes + currentConfig.empty_boxes
-        });
-        
         previewPrizes();
         updateInventoryDisplay();
-        validateConfiguration(); // ✅ VALIDAR AL CARGAR
         
         showAlert('✅ Configuración cargada correctamente', 'success');
       }
@@ -1492,7 +1412,7 @@ const client = supabase.createClient(
     }
   }
 
-// ✅ FUNCIÓN CORREGIDA: Vista previa con contador de cajas
+// ✅ FUNCIÓN MEJORADA: Vista previa con contador de cajas
   function previewPrizes() {
     const totalBoxes = parseInt(document.getElementById('totalBoxes').value) || 0;
     const cashPrizes = parseInt(document.getElementById('cashPrizes').value) || 0;
@@ -1502,7 +1422,7 @@ const client = supabase.createClient(
     const emptyBoxes = parseInt(document.getElementById('emptyBoxes').value) || 0;
     const boxCost = parseInt(document.getElementById('boxCost').value) || 5000;
     
-    // Actualizar vista previa de premios
+    // Actualizar vista previa
     document.getElementById('previewCash').textContent = cashPrizes;
     document.getElementById('previewCashAmount').textContent = `$${cashAmount.toLocaleString()}`;
     document.getElementById('previewTrivia').textContent = triviaPrizes;
@@ -1510,29 +1430,8 @@ const client = supabase.createClient(
     document.getElementById('previewEmpty').textContent = emptyBoxes;
     document.getElementById('previewCost').textContent = boxCost.toLocaleString();
     
-    // ✅ CORREGIDO: Mostrar contador de cajas con validación
+    // ✅ NUEVO: Mostrar contador de cajas
     document.getElementById('previewTotalBoxes').textContent = totalBoxes.toLocaleString();
-    
-    const totalPrizes = cashPrizes + triviaPrizes + minipoolPrizes + emptyBoxes;
-    document.getElementById('totalConfigured').textContent = totalPrizes;
-    
-    // ✅ NUEVO: Actualizar estado del contador en la vista previa
-    const boxCounterStatus = document.getElementById('boxCounterStatus');
-    const boxCounterPreview = document.getElementById('boxCounterPreview');
-    
-    if (totalBoxes <= 0) {
-      boxCounterStatus.innerHTML = '<i class="fas fa-times-circle" style="color: #dc3545;"></i> Sistema pausado - No hay cajas disponibles';
-      boxCounterPreview.style.borderColor = '#dc3545';
-      boxCounterPreview.style.background = 'rgba(220, 53, 69, 0.1)';
-    } else if (totalBoxes < totalPrizes) {
-      boxCounterStatus.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: #ffc107;"></i> Error: Cajas insuficientes para los premios configurados';
-      boxCounterPreview.style.borderColor = '#ffc107';
-      boxCounterPreview.style.background = 'rgba(255, 193, 7, 0.1)';
-    } else {
-      boxCounterStatus.innerHTML = '<i class="fas fa-check-circle" style="color: #28a745;"></i> Sistema funcionando correctamente';
-      boxCounterPreview.style.borderColor = '#FFD700';
-      boxCounterPreview.style.background = 'rgba(255, 215, 0, 0.1)';
-    }
     
     // Mostrar stock restante si hay configuración activa
     if (currentConfig && currentConfig.id) {
@@ -1547,9 +1446,12 @@ const client = supabase.createClient(
       updatePreviewStockStatus('previewMinipoolContainer', 'previewMinipoolStock', currentConfig.minipool_remaining);
       updatePreviewStockStatus('previewEmptyContainer', 'previewEmptyStock', currentConfig.empty_remaining);
     }
+    
+    const total = cashPrizes + triviaPrizes + minipoolPrizes + emptyBoxes;
+    document.getElementById('totalConfigured').textContent = total;
   }
 
-  // ✅ FUNCIÓN: Actualizar estado visual del stock
+  // ✅ NUEVA FUNCIÓN: Actualizar estado visual del stock
   function updatePreviewStockStatus(containerId, stockId, remaining) {
     const container = document.getElementById(containerId);
     const stockElement = document.getElementById(stockId);
@@ -1568,18 +1470,13 @@ const client = supabase.createClient(
     }
   }
 
-  // ✅ FUNCIÓN CORREGIDA: Agregar más cajas
+  // ✅ NUEVA FUNCIÓN: Agregar más cajas
   function addMoreBoxes() {
     if (!currentConfig || !currentConfig.id) {
       showAlert('⚠️ No hay configuración activa. Primero guarda una configuración.', 'warning');
       return;
     }
 
-    // ✅ ACTUALIZAR INFORMACIÓN DEL MODAL
-    document.getElementById('modalCurrentBoxes').textContent = currentConfig.cajas_disponibles || 0;
-    document.getElementById('modalCurrentPrizes').textContent = 
-      (currentConfig.cash_prizes + currentConfig.trivia_prizes + currentConfig.minipool_prizes + currentConfig.empty_boxes) || 0;
-    
     document.getElementById('addBoxesModal').style.display = 'flex';
     document.getElementById('additionalBoxes').value = '';
     document.getElementById('additionalBoxes').focus();
@@ -1589,7 +1486,7 @@ const client = supabase.createClient(
     document.getElementById('addBoxesModal').style.display = 'none';
   }
 
-  // ✅ FUNCIÓN COMPLETAMENTE CORREGIDA: Confirmar agregar cajas
+  // ✅ NUEVA FUNCIÓN: Confirmar agregar cajas
   async function confirmAddBoxes() {
     try {
       const additionalBoxes = parseInt(document.getElementById('additionalBoxes').value);
@@ -1604,13 +1501,7 @@ const client = supabase.createClient(
         return;
       }
 
-      console.log('📦 Agregando cajas adicionales:', {
-        cajas_actuales: currentConfig.cajas_disponibles,
-        cajas_a_agregar: additionalBoxes,
-        configuracion_actual: currentConfig
-      });
-
-      // ✅ OBTENER CONFIGURACIÓN ACTUAL DE PREMIOS
+      // Calcular nuevos stock basados en la configuración actual
       const totalCurrentPrizes = currentConfig.cash_prizes + currentConfig.trivia_prizes + 
                                  currentConfig.minipool_prizes + currentConfig.empty_boxes;
 
@@ -1619,28 +1510,19 @@ const client = supabase.createClient(
         return;
       }
 
-      // ✅ DISTRIBUIR PROPORCIONALMENTE (SI HAY PREMIOS CONFIGURADOS)
+      // Distribuir las nuevas cajas proporcionalmente
       const cashToAdd = Math.floor((currentConfig.cash_prizes / totalCurrentPrizes) * additionalBoxes);
       const triviaToAdd = Math.floor((currentConfig.trivia_prizes / totalCurrentPrizes) * additionalBoxes);
       const minipoolToAdd = Math.floor((currentConfig.minipool_prizes / totalCurrentPrizes) * additionalBoxes);
       const emptyToAdd = additionalBoxes - cashToAdd - triviaToAdd - minipoolToAdd;
 
-      // ✅ CALCULAR NUEVOS VALORES
       const newCajasDisponibles = currentConfig.cajas_disponibles + additionalBoxes;
       const newCashRemaining = currentConfig.cash_remaining + cashToAdd;
       const newTriviaRemaining = currentConfig.trivia_remaining + triviaToAdd;
       const newMinipoolRemaining = currentConfig.minipool_remaining + minipoolToAdd;
       const newEmptyRemaining = currentConfig.empty_remaining + emptyToAdd;
 
-      console.log('🔄 Actualizando inventario:', {
-        cajas_disponibles: currentConfig.cajas_disponibles + ' → ' + newCajasDisponibles,
-        cash_remaining: currentConfig.cash_remaining + ' → ' + newCashRemaining,
-        trivia_remaining: currentConfig.trivia_remaining + ' → ' + newTriviaRemaining,
-        minipool_remaining: currentConfig.minipool_remaining + ' → ' + newMinipoolRemaining,
-        empty_remaining: currentConfig.empty_remaining + ' → ' + newEmptyRemaining
-      });
-
-      // ✅ ACTUALIZAR EN LA BASE DE DATOS - TRANSACCIÓN ATÓMICA
+      // Actualizar en la base de datos
       const { error } = await client
         .from('mystery_box_config')
         .update({
@@ -1652,31 +1534,23 @@ const client = supabase.createClient(
         })
         .eq('id', currentConfig.id);
 
-      if (error) {
-        console.error('❌ Error actualizando inventario:', error);
-        throw error;
-      }
+      if (error) throw error;
 
-      // ✅ ACTUALIZAR CONFIGURACIÓN LOCAL
+      // Actualizar configuración local
       currentConfig.cajas_disponibles = newCajasDisponibles;
       currentConfig.cash_remaining = newCashRemaining;
       currentConfig.trivia_remaining = newTriviaRemaining;
       currentConfig.minipool_remaining = newMinipoolRemaining;
       currentConfig.empty_remaining = newEmptyRemaining;
 
-      // ✅ ACTUALIZAR CAMPO EN EL FORMULARIO
-      document.getElementById('totalBoxes').value = newCajasDisponibles;
-
       closeAddBoxesModal();
       updateInventoryDisplay();
       previewPrizes();
       
-      showAlert(`✅ Se agregaron ${additionalBoxes} cajas correctamente al sistema!\n\n📊 Distribución:\n• ${cashToAdd} premios en efectivo\n• ${triviaToAdd} entradas trivia\n• ${minipoolToAdd} entradas minipool\n• ${emptyToAdd} cajas vacías\n\n🎯 Total de cajas disponibles: ${newCajasDisponibles}`, 'success', 10000);
-
-      console.log('✅ Cajas agregadas exitosamente');
+      showAlert(`✅ Se agregaron ${additionalBoxes} cajas correctamente. Distribución: ${cashToAdd} efectivo, ${triviaToAdd} trivia, ${minipoolToAdd} minipool, ${emptyToAdd} vacías`, 'success', 8000);
 
     } catch (error) {
-      console.error('💥 Error agregando cajas:', error);
+      console.error('Error agregando cajas:', error);
       showAlert('❌ Error al agregar cajas: ' + error.message, 'error');
     }
   }
@@ -1684,7 +1558,7 @@ const client = supabase.createClient(
   // ✅ FUNCIÓN MEJORADA: Resetear inventario con contador de cajas
   async function resetInventory() {
     showConfirmModal(
-      '¿Estás seguro de que quieres resetear el inventario? Esto restaurará el stock Y el contador de cajas a los valores iniciales configurados.',
+      '¿Estás seguro de que quieres resetear el inventario? Esto restaurará el stock Y el contador de cajas a los valores iniciales.',
       async () => {
         try {
           if (!currentConfig || !currentConfig.id) {
@@ -1692,22 +1566,7 @@ const client = supabase.createClient(
             return;
           }
 
-// ✅ FUNCIÓN MEJORADA: Resetear inventario con contador de cajas
-  async function resetInventory() {
-    showConfirmModal(
-      '¿Estás seguro de que quieres resetear el inventario? Esto restaurará el stock Y el contador de cajas a los valores iniciales configurados.',
-      async () => {
-        try {
-          if (!currentConfig || !currentConfig.id) {
-            showAlert('⚠️ No hay configuración activa para resetear', 'warning');
-            return;
-          }
-
-          // ✅ CALCULAR TOTAL DE PREMIOS CONFIGURADOS
-          const totalPremiosConfigurados = currentConfig.cash_prizes + currentConfig.trivia_prizes + 
-                                         currentConfig.minipool_prizes + currentConfig.empty_boxes;
-
-          // ✅ RESETEAR STOCK + CONTADOR DE CAJAS
+          // ✅ NUEVO: También resetear el contador de cajas
           const { error } = await client
             .from('mystery_box_config')
             .update({
@@ -1715,7 +1574,7 @@ const client = supabase.createClient(
               trivia_remaining: currentConfig.trivia_prizes,
               minipool_remaining: currentConfig.minipool_prizes,
               empty_remaining: currentConfig.empty_boxes,
-              cajas_disponibles: totalPremiosConfigurados // ✅ RESETEAR CONTADOR PRINCIPAL
+              cajas_disponibles: currentConfig.cash_prizes + currentConfig.trivia_prizes + currentConfig.minipool_prizes + currentConfig.empty_boxes
             })
             .eq('id', currentConfig.id);
 
@@ -1726,15 +1585,12 @@ const client = supabase.createClient(
           currentConfig.trivia_remaining = currentConfig.trivia_prizes;
           currentConfig.minipool_remaining = currentConfig.minipool_prizes;
           currentConfig.empty_remaining = currentConfig.empty_boxes;
-          currentConfig.cajas_disponibles = totalPremiosConfigurados;
-
-          // ✅ ACTUALIZAR CAMPO EN EL FORMULARIO
-          document.getElementById('totalBoxes').value = totalPremiosConfigurados;
+          currentConfig.cajas_disponibles = currentConfig.cash_prizes + currentConfig.trivia_prizes + currentConfig.minipool_prizes + currentConfig.empty_boxes;
 
           updateInventoryDisplay();
           previewPrizes();
           
-          showAlert(`✅ Inventario reseteado correctamente!\n\n📦 Contador de cajas: ${totalPremiosConfigurados}\n🎁 Stock de premios restaurado`, 'success', 8000);
+          showAlert('✅ Inventario y contador de cajas reseteados correctamente', 'success');
 
         } catch (error) {
           console.error('Error reseteando inventario:', error);
@@ -1744,9 +1600,10 @@ const client = supabase.createClient(
     );
   }
 
-  // ✅ FUNCIÓN: Actualizar estadísticas (sin cambios)
+  // ✅ NUEVA FUNCIÓN: Actualizar estadísticas
   async function refreshStats() {
     try {
+      // Mostrar loading en las tarjetas
       document.querySelectorAll('.stat-card').forEach(card => {
         card.classList.add('loading');
       });
@@ -1754,11 +1611,13 @@ const client = supabase.createClient(
       const stats = await getRealtimeStats();
       
       if (stats) {
+        // Animar los números
         animateNumber('totalBoxes', stats.totalBoxes);
         animateNumber('totalRevenue', stats.totalRevenue, '$');
         animateNumber('totalPrizes', stats.totalPrizes);
         animateNumber('activeUsers', stats.activeUsers);
         
+        // Actualizar subtítulos
         document.getElementById('boxesToday').textContent = `${stats.boxesToday} hoy`;
         document.getElementById('revenueToday').textContent = `$${stats.revenueToday.toLocaleString()} hoy`;
         document.getElementById('prizesToday').textContent = `${stats.prizesToday} hoy`;
@@ -1771,6 +1630,7 @@ const client = supabase.createClient(
       console.error('Error al obtener estadísticas:', error);
       showAlert('❌ Error al cargar estadísticas', 'error');
     } finally {
+      // Remover loading
       setTimeout(() => {
         document.querySelectorAll('.stat-card').forEach(card => {
           card.classList.remove('loading');
@@ -1779,7 +1639,7 @@ const client = supabase.createClient(
     }
   }
 
-  // ✅ FUNCIÓN: Animar números (sin cambios)
+  // ✅ NUEVA FUNCIÓN: Animar números
   function animateNumber(elementId, targetValue, prefix = '') {
     const element = document.getElementById(elementId);
     const startValue = parseInt(element.textContent.replace(/[^0-9]/g, '')) || 0;
@@ -1801,7 +1661,7 @@ const client = supabase.createClient(
     requestAnimationFrame(updateNumber);
   }
 
-  // ✅ FUNCIÓN: Cargar actividad reciente (sin cambios)
+  // ✅ NUEVA FUNCIÓN: Cargar actividad reciente
   async function refreshActivity() {
     try {
       const tbody = document.getElementById('activityTableBody');
@@ -1862,6 +1722,7 @@ const client = supabase.createClient(
             break;
         }
 
+        // Simular stock restante (en producción vendría de la DB)
         const stockRestante = Math.floor(Math.random() * 10);
         
         return `
@@ -1894,7 +1755,7 @@ const client = supabase.createClient(
     }
   }
 
-  // Funciones restantes (sin cambios)
+  // ✅ FUNCIÓN MEJORADA: Resetear todos los premios
   function resetAllPrizes() {
     showConfirmModal(
       '¿Estás seguro de que quieres resetear toda la configuración de premios? Esta acción no se puede deshacer.',
@@ -1908,12 +1769,12 @@ const client = supabase.createClient(
         document.getElementById('boxCost').value = 5000;
         
         previewPrizes();
-        validateConfiguration();
         showAlert('✅ Configuración reseteada correctamente', 'success');
       }
     );
   }
 
+  // ✅ NUEVA FUNCIÓN: Modal de confirmación
   function showConfirmModal(message, callback) {
     document.getElementById('confirmMessage').textContent = message;
     document.getElementById('confirmModal').style.display = 'flex';
@@ -1932,6 +1793,7 @@ const client = supabase.createClient(
     closeConfirmModal();
   }
 
+  // ✅ FUNCIÓN MEJORADA: Exportar estadísticas
   async function exportStats() {
     try {
       const stats = await getRealtimeStats();
@@ -1941,7 +1803,8 @@ const client = supabase.createClient(
         .eq('is_active', true)
         .single();
 
-      const exportData = {
+
+const exportData = {
         fecha_exportacion: new Date().toISOString(),
         estadisticas: stats,
         configuracion_actual: configData,
@@ -1970,6 +1833,7 @@ const client = supabase.createClient(
     }
   }
 
+  // ✅ NUEVA FUNCIÓN: Exportar actividad
   async function exportActivity() {
     try {
       const yesterday = new Date();
@@ -2010,6 +1874,7 @@ const client = supabase.createClient(
     }
   }
 
+  // Funciones del sidebar
   function toggleSidebar() {
     document.getElementById("sidebar").classList.toggle("active");
   }
@@ -2018,46 +1883,40 @@ const client = supabase.createClient(
     document.getElementById("sidebar").classList.remove("active");
   }
 
+  // Función de logout
   async function logout() {
     await client.auth.signOut();
     window.location.href = "index.html";
   }
 
-  // ✅ EVENT LISTENERS MEJORADOS: Validación en tiempo real
-  document.getElementById('totalBoxes').addEventListener('input', () => {
-    previewPrizes();
-    validateConfiguration();
-  });
-  document.getElementById('cashPrizes').addEventListener('input', () => {
-    previewPrizes();
-    validateConfiguration();
-  });
+  // Event listeners para actualizar vista previa en tiempo real
+  document.getElementById('totalBoxes').addEventListener('input', previewPrizes);
+  document.getElementById('cashPrizes').addEventListener('input', previewPrizes);
   document.getElementById('cashAmount').addEventListener('input', previewPrizes);
-  document.getElementById('triviaPrizes').addEventListener('input', () => {
-    previewPrizes();
-    validateConfiguration();
-  });
-  document.getElementById('minipoolPrizes').addEventListener('input', () => {
-    previewPrizes();
-    validateConfiguration();
-  });
-  document.getElementById('emptyBoxes').addEventListener('input', () => {
-    previewPrizes();
-    validateConfiguration();
-  });
+  document.getElementById('triviaPrizes').addEventListener('input', previewPrizes);
+  document.getElementById('minipoolPrizes').addEventListener('input', previewPrizes);
+  document.getElementById('emptyBoxes').addEventListener('input', previewPrizes);
   document.getElementById('boxCost').addEventListener('input', previewPrizes);
 
-  // ✅ FUNCIÓN INICIALIZAR
+  // ✅ NUEVA FUNCIÓN: Inicialización completa
   async function initializePage() {
     try {
-      console.log('🎁 Iniciando panel admin Mystery Box corregido...');
+      console.log('🎁 Iniciando panel admin Mystery Box...');
       
+      // Cargar configuración actual
       await loadCurrentConfig();
+      
+      // Actualizar estadísticas
       await refreshStats();
+      
+      // Cargar actividad reciente
       await refreshActivity();
+      
+      // Actualizar inventario
       await updateInventoryDisplay();
+      
+      // Vista previa inicial
       previewPrizes();
-      validateConfiguration(); // ✅ VALIDAR AL INICIAR
       
       console.log('✅ Panel admin inicializado correctamente');
       
@@ -2067,6 +1926,7 @@ const client = supabase.createClient(
     }
   }
 
+  // ✅ NUEVO: Auto-actualización cada 30 segundos
   setInterval(async () => {
     try {
       await loadCurrentConfig();
@@ -2076,8 +1936,10 @@ const client = supabase.createClient(
     }
   }, 30000);
 
+  // ✅ NUEVO: Auto-refresh de actividad cada 60 segundos
   setInterval(refreshActivity, 60000);
 
+  // Cerrar modal con Escape
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
       closeConfirmModal();
@@ -2085,16 +1947,20 @@ const client = supabase.createClient(
     }
   });
 
+  // Inicializar página cuando cargue el DOM
   document.addEventListener('DOMContentLoaded', initializePage);
 
-  console.log('🎁 Mystery Box Admin Panel CORREGIDO - Sistema cargado');
-  console.log('📊 Correcciones aplicadas:');
-  console.log('  - ✅ Función confirmAddBoxes() completamente corregida');
-  console.log('  - ✅ Validación en tiempo real del contador de cajas');
-  console.log('  - ✅ Sincronización perfecta entre formulario y BD');
-  console.log('  - ✅ Distribución proporcional de cajas adicionales');
-  console.log('  - ✅ Actualización correcta del campo totalBoxes');
-  console.log('  - ✅ Mensajes de error resueltos');
+  console.log('🎁 Mystery Box Admin Panel - Sistema con contador de cajas cargado correctamente');
+  console.log('📊 Funcionalidades habilitadas:');
+  console.log('  - ✅ Estadísticas en tiempo real');
+  console.log('  - ✅ Sistema de inventario con stock');
+  console.log('  - ✅ CONTADOR PRINCIPAL DE CAJAS');
+  console.log('  - ✅ Pausa automática cuando cajas = 0');
+  console.log('  - ✅ Función para agregar más cajas');
+  console.log('  - ✅ Alertas de stock bajo');
+  console.log('  - ✅ Actividad reciente');
+  console.log('  - ✅ Exportación de datos');
+  console.log('  - ✅ Auto-actualización');
 
 </script>
 </body>
